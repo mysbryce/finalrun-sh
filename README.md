@@ -33,3 +33,4 @@ godot_console --headless --path . -s res://tests/run_tests.gd   # tests
 
 - [Architecture](docs/ARCHITECTURE.md): instancing, sync isolation, transfer flow
 - [Conventions](docs/CONVENTIONS.md): folder layout, `lib/`, reuse rules
+- [Roadmap](docs/ROADMAP.md): what's done, what's next
