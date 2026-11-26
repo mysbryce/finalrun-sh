@@ -1,6 +1,11 @@
 # FinalRun
 
+![Vibe Project](https://img.shields.io/badge/vibe-project-ff69b4) ![Godot 4.7](https://img.shields.io/badge/Godot-4.7-478cbf)
+
 > Mask up. Grab the loot. Get out alive.
+
+> [!NOTE]
+> **Vibe Project.** Code is AI-written: Claude plans, briefs, and reviews; a DeepSeek agent (`dsh`) writes the code. Expect rough edges.
 
 A 3D multiplayer extraction crime sandbox built with **Godot 4.7** and server-authoritative ENet networking.
 
