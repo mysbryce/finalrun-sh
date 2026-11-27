@@ -4,6 +4,11 @@ extends CanvasLayer
 ## it never talks to the network. Draws the web UI (docs/design/WEB_UI.md)
 ## in a CefTexture.
 
+## The page asked to take an item from the open body search. Main forwards it to the server.
+signal search_take_requested(target_peer_id: int, item_uid: int)
+## The page asked to close the open body search.
+signal search_close_requested(target_peer_id: int)
+
 
 static func role_text(role: int) -> String:
 	match role:
@@ -152,12 +157,57 @@ static func snapshot(ctx: Dictionary, now_ms: int) -> Dictionary:
 	}
 
 
-## Reply to one page request.
-static func reply_for(request: Dictionary) -> Dictionary:
+## "cop_pistol" -> "Cop pistol".
+static func item_label(item_id: String) -> String:
+	if item_id == "":
+		return ""
+	var text := item_id.replace("_", " ")
+	return text.substr(0, 1).to_upper() + text.substr(1)
+
+
+## Search panel data for the page.
+static func search_view(target_peer_id: int, items: Array) -> Dictionary:
+	var list: Array = []
+	for item: Dictionary in items:
+		list.append({
+			"uid": int(item.get("uid", 0)),
+			"id": String(item.get("id", "")),
+			"label": item_label(String(item.get("id", ""))),
+			"value": int(item.get("value", 0)),
+			"source": String(item.get("source", "bag")),
+		})
+	return {"target": target_peer_id, "title": "Body of %s" % player_name(target_peer_id), "items": list}
+
+
+static func _error_reply(id: int, text: String) -> Dictionary:
+	return {"reply": {"type": "reply", "id": id, "ok": false, "error": text}, "action": []}
+
+
+static func _ok_reply(id: int, data: Dictionary, action: Array) -> Dictionary:
+	return {"reply": {"type": "reply", "id": id, "ok": true, "data": data}, "action": action}
+
+
+## Reply and optional action for one page request.
+static func route_request(request: Dictionary, open_target: int) -> Dictionary:
 	var id := int(request.get("id", 0))
-	if String(request.get("method", "")) == "ping":
-		return {"type": "reply", "id": id, "ok": true, "data": {"pong": true}}
-	return {"type": "reply", "id": id, "ok": false, "error": "unknown_method"}
+	var method := String(request.get("method", ""))
+	var params: Dictionary = request.get("params", {}) if request.get("params", {}) is Dictionary else {}
+	if method == "ping":
+		return _ok_reply(id, {"pong": true}, [])
+	if method == "search.take":
+		var target := int(params.get("target", 0))
+		var uid := int(params.get("uid", 0))
+		if open_target == 0 or target != open_target:
+			return _error_reply(id, "no_search")
+		if uid <= 0:
+			return _error_reply(id, "bad_params")
+		return _ok_reply(id, {}, ["take", target, uid])
+	if method == "search.close":
+		var target := int(params.get("target", 0))
+		if target != open_target or open_target == 0:
+			return _error_reply(id, "no_search")
+		return _ok_reply(id, {}, ["close", target])
+	return _error_reply(id, "unknown_method")
 
 
 var _player: Node3D = null
@@ -174,6 +224,9 @@ var _browser: Control = null
 var _page_ready: bool = false
 var _last_hud_json: String = ""
 var _minimap: Minimap = null
+var _search_target: int = 0
+var _search_items: Array = []
+var _route: String = "/"
 
 
 func _ready() -> void:
@@ -285,9 +338,55 @@ func _on_ipc_message(message: String) -> void:
 	if type == "ready":
 		_page_ready = true
 		_last_hud_json = ""
-		_send_json(JSON.stringify({"type": "route", "to": "/"}))
+		_send_json(JSON.stringify({"type": "route", "to": _route}))
+		if _search_target != 0:
+			_send_json(JSON.stringify({"type": "search", "data": search_view(_search_target, _search_items)}))
 	elif type == "request":
-		_send_json(JSON.stringify(reply_for(parsed)))
+		var routed := route_request(parsed, _search_target)
+		_send_json(JSON.stringify(routed["reply"]))
+		var action: Array = routed["action"]
+		if action.size() == 3 and action[0] == "take":
+			search_take_requested.emit(int(action[1]), int(action[2]))
+		elif action.size() == 2 and action[0] == "close":
+			search_close_requested.emit(int(action[1]))
+
+
+## Body search contents arrived (first open or a change).
+func open_search(target_peer_id: int, items: Array) -> void:
+	_search_target = target_peer_id
+	_search_items = items.duplicate(true)
+	_send_json(JSON.stringify({"type": "search", "data": search_view(_search_target, _search_items)}))
+	if _route != "/search":
+		_navigate("/search")
+		_set_panel_input(true)
+
+
+## The server closed the search (or the player walked away).
+func close_search(target_peer_id: int) -> void:
+	if target_peer_id != _search_target:
+		return
+	_search_target = 0
+	_search_items = []
+	_send_json(JSON.stringify({"type": "search", "data": null}))
+	_navigate("/")
+	_set_panel_input(false)
+
+
+func is_search_open() -> bool:
+	return _search_target != 0
+
+
+func _navigate(to: String) -> void:
+	_route = to
+	_send_json(JSON.stringify({"type": "route", "to": to}))
+
+
+## Panels take the mouse: the page gets clicks and the cursor is free.
+func _set_panel_input(open: bool) -> void:
+	if _browser == null or not is_instance_valid(_browser):
+		return
+	_browser.mouse_filter = Control.MOUSE_FILTER_STOP if open else Control.MOUSE_FILTER_IGNORE
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if open else Input.MOUSE_MODE_CAPTURED
 
 
 func _send_json(json: String) -> void:

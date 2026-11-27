@@ -140,18 +140,76 @@ func test_player_replicates_health() -> void:
 
 
 func test_reply_ping() -> void:
-	assert_eq(
-		Hud.reply_for({"type": "request", "id": 7, "method": "ping"}),
-		{"type": "reply", "id": 7, "ok": true, "data": {"pong": true}},
-		"ping reply"
-	)
+	var routed := Hud.route_request({"type": "request", "id": 7, "method": "ping"}, 0)
+	assert_eq(routed["reply"], {"type": "reply", "id": 7, "ok": true, "data": {"pong": true}}, "ping reply")
+	assert_eq(routed["action"], [], "ping has no action")
 
 
 func test_reply_unknown_method() -> void:
-	var reply := Hud.reply_for({"type": "request", "id": 8, "method": "nope"})
+	var routed := Hud.route_request({"type": "request", "id": 8, "method": "nope"}, 0)
+	var reply: Dictionary = routed["reply"]
 	assert_false(reply.get("ok"), "unknown method is not ok")
 	assert_eq(reply.get("error"), "unknown_method", "error text")
 	assert_eq(reply.get("id"), 8, "echoes the id")
+	assert_eq(routed["action"], [], "unknown method has no action")
+
+
+func test_item_label() -> void:
+	assert_eq(Hud.item_label("cop_pistol"), "Cop pistol", "underscore to space")
+	assert_eq(Hud.item_label("jewelry"), "Jewelry", "capitalised")
+	assert_eq(Hud.item_label(""), "", "empty stays empty")
+
+
+func test_search_view() -> void:
+	var view := Hud.search_view(7, [
+		{"uid": 12, "id": "cop_pistol", "value": 0, "source": "gear"},
+		{"uid": 13, "id": "jewelry", "value": 300},
+	])
+	var items: Array = view.get("items")
+	assert_eq(view.get("target"), 7, "target")
+	assert_eq(view.get("title"), "Body of Player 7", "title")
+	assert_eq(items.size(), 2, "two items")
+	assert_eq(items[0], {"uid": 12, "id": "cop_pistol", "label": "Cop pistol", "value": 0, "source": "gear"}, "first item")
+	assert_eq((items[1] as Dictionary).get("source"), "bag", "missing source is bag")
+
+
+func test_route_search_take() -> void:
+	var req := {"id": 1, "method": "search.take", "params": {"target": 7, "uid": 12}}
+	var ok := Hud.route_request(req, 7)
+	assert_true((ok["reply"] as Dictionary).get("ok"), "take ok")
+	assert_eq(ok["action"], ["take", 7, 12], "take action")
+	var wrong := Hud.route_request({"id": 1, "method": "search.take", "params": {"target": 8, "uid": 12}}, 7)
+	assert_false((wrong["reply"] as Dictionary).get("ok"), "wrong target not ok")
+	assert_eq((wrong["reply"] as Dictionary).get("error"), "no_search", "wrong target error")
+	assert_eq(wrong["action"], [], "wrong target no action")
+	var bad := Hud.route_request({"id": 1, "method": "search.take", "params": {"target": 7, "uid": 0}}, 7)
+	assert_eq((bad["reply"] as Dictionary).get("error"), "bad_params", "uid 0 is bad params")
+	var none := Hud.route_request(req, 0)
+	assert_eq((none["reply"] as Dictionary).get("error"), "no_search", "no open search")
+
+
+func test_route_search_close() -> void:
+	var req := {"id": 2, "method": "search.close", "params": {"target": 7}}
+	var ok := Hud.route_request(req, 7)
+	assert_true((ok["reply"] as Dictionary).get("ok"), "close ok")
+	assert_eq(ok["action"], ["close", 7], "close action")
+	var none := Hud.route_request(req, 0)
+	assert_eq((none["reply"] as Dictionary).get("error"), "no_search", "no open search")
+
+
+func test_open_and_close_search_headless() -> void:
+	var hud := Hud.new()
+	(Engine.get_main_loop() as SceneTree).root.add_child(hud)
+	hud.open_search(7, [{"uid": 1, "id": "jewelry", "value": 300}])
+	var opened := hud.is_search_open()
+	hud.close_search(8)
+	var still_open := hud.is_search_open()
+	hud.close_search(7)
+	var closed := not hud.is_search_open()
+	hud.free()
+	assert_true(opened, "search opens")
+	assert_true(still_open, "other target does not close it")
+	assert_true(closed, "search closes")
 
 
 func test_page_url() -> void:

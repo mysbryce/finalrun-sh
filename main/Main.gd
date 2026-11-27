@@ -49,6 +49,8 @@ func _start_client() -> void:
 	_hud = Hud.new()
 	_hud.name = "Hud"
 	add_child(_hud)
+	_hud.search_take_requested.connect(ServerManager.request_search_take)
+	_hud.search_close_requested.connect(ServerManager.request_search_close)
 	var peer := ENetMultiplayerPeer.new()
 	var error := peer.create_client("127.0.0.1", GameConst.PORT)
 	if error != OK:
@@ -180,11 +182,15 @@ func _process(_delta: float) -> void:
 func _on_search_contents(target_peer_id: int, items: Array) -> void:
 	_search_items[target_peer_id] = items.duplicate(true)
 	print("[Main] Body %d items: %s" % [target_peer_id, str(items)])
+	if _hud != null:
+		_hud.open_search(target_peer_id, items)
 
 
 func _on_search_closed(target_peer_id: int, reason: String) -> void:
 	_search_items.erase(target_peer_id)
 	print("[Main] Body %d search closed (%s)" % [target_peer_id, reason])
+	if _hud != null:
+		_hud.close_search(target_peer_id)
 
 
 func _on_hud_notification(text: String) -> void:

@@ -25,7 +25,8 @@ A new screen adds `features/<screen>/`, one route in `app/router.tsx`, and its r
 |---|---|
 | State Godot pushes (HUD numbers, role, timers, prompt, notifications) | Zustand store, replaced by each `hud` message |
 | Screens/panels (HUD, later: body search, party, shop, inventory) | TanStack Router, memory history; Godot switches screens with `route` messages |
-| Data the UI asks Godot for (request/response: search contents, shop catalog) | TanStack Query over `bridge.request(method, params)` |
+| Actions and data the UI asks Godot for (request/response: `search.take` mutations, later shop catalog queries) | TanStack Query (`useMutation` / `useQuery`) over `bridge.request(method, params)` |
+| Panel data Godot pushes (search contents) | Zustand store per feature, replaced by each push message |
 | Long lists (search items, inventory, shop catalog, notification log) | TanStack Virtual |
 | Styling | Tailwind v4 (`@tailwindcss/vite`) |
 
@@ -36,31 +37,35 @@ Godot to page:
 | `type` | Fields | Meaning |
 |---|---|---|
 | `hud` | `data: HudState` | Full HUD snapshot. Sent only when it changed. |
-| `route` | `to: string` | Navigate to a route (`"/"` is the HUD). |
+| `route` | `to: string` | Navigate to a route (`"/"` = HUD only, `"/search"` = body search panel over the HUD). |
+| `search` | `data: SearchView \| null` | Open body search contents (resent on every change), `null` when it closed. |
 | `reply` | `id: number`, `ok: boolean`, `data?: unknown`, `error?: string` | Answer to a page `request`. |
 
-`HudState`:
+`HudState`: see `docs/design/HUD_LAYOUT.md` ("HudState v2").
+
+`SearchView`:
 ```json
-{
-  "role": "CRIMINAL", "life": "ALIVE",
-  "cash": 50, "bag": 500, "notoriety": 500,
-  "timer": {"label": "Masking", "seconds": 2},
-  "prompt": "E lockpick | V smash",
-  "notifications": ["Looted $300 (silent)"]
-}
+{"target": 7, "title": "Body of Player 7",
+ "items": [{"uid": 12, "id": "cop_pistol", "label": "Cop pistol", "value": 0, "source": "gear"}]}
 ```
-`timer` is `null` when no timer runs. `prompt` is `""` when nothing is in reach.
 
 Page to Godot:
 | `type` | Fields | Meaning |
 |---|---|---|
-| `ready` | none | Page loaded. Godot replies by sending the current `hud` snapshot and the current `route`. |
+| `ready` | none | Page loaded. Godot replies with the current `route`, the open `search` (if any) and the `hud` snapshot. |
 | `request` | `id: number`, `method: string`, `params: object` | Ask Godot for data. Godot always answers with one `reply` carrying the same `id`. Unknown method: `ok: false`, `error: "unknown_method"`. |
 
-Methods so far: `ping` (replies `{"pong": true}`). Screen cards add their own.
+Methods (Godot only forwards them; the server validates every action):
+| Method | Params | Reply `data` | Effect |
+|---|---|---|---|
+| `ping` | none | `{"pong": true}` | none |
+| `search.take` | `{target, uid}` | `{}` | `ServerManager.request_search_take(target, uid)`. Error `no_search` when `target` is not the open search, `bad_params` when `uid <= 0`. |
+| `search.close` | `{target}` | `{}` | `ServerManager.request_search_close(target)`. Error `no_search` as above. |
+
+`ui/` never calls `ServerManager`: `Hud` emits `search_take_requested` / `search_close_requested` and `main/Main.gd` connects them. A reply `ok: true` means "forwarded", not "taken": the result arrives as a new `search` message and a notification.
 
 ## Input
-The HUD is display-only: the `CefTexture` uses `mouse_filter = MOUSE_FILTER_IGNORE` and `focus_mode = FOCUS_NONE`, so mouse and keys reach the game. Interactive panels (later) switch to `MOUSE_FILTER_STOP` and free the mouse while open.
+The HUD is display-only: the `CefTexture` uses `mouse_filter = MOUSE_FILTER_IGNORE` and `focus_mode = FOCUS_NONE`, so mouse and keys reach the game. Interactive panels (body search) switch the `CefTexture` to `MOUSE_FILTER_STOP` and set `Input.mouse_mode = MOUSE_MODE_VISIBLE` while open, then back to `IGNORE` and `CAPTURED` on close. Keys stay with the game (`Q` closes the search).
 
 ## Scale
 Godot stretches its canvas (`canvas_items`, base 1280x720); CEF renders the page at physical pixels. `app/uiScale.ts` zooms the page by `innerWidth / 1280`, so 1 CSS px = 1 Godot canvas unit at every window size. Rects shared by both sides (the minimap) use the same numbers on both sides.
