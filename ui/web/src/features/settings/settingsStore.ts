@@ -24,6 +24,8 @@ type SettingsStore = {
   changedKeys: () => string[]
   patch: () => SettingsValues
   apply: () => Promise<void>
+  /** Stores an error code from a request outside `apply` (display preview confirm). */
+  setError: (code: string | null) => void
 }
 
 function same(a: SettingValue | undefined, b: SettingValue | undefined): boolean {
@@ -109,4 +111,5 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       set({ pending: false, error: e instanceof Error ? e.message : 'apply_failed' })
     }
   },
+  setError: (code) => set({ error: code }),
 }))

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { request } from '@/lib/ipc/bridge'
 import { DEMO_SETTINGS } from './demoSettings'
@@ -164,5 +164,39 @@ describe('SettingsScreen', () => {
     expect(
       await screen.findByText('Settings changed elsewhere. Your other changes were kept. · Restart needed for: Textures'),
     ).toBeInTheDocument()
+  })
+
+  it('an active display preview shows the dialog and locks the screen until the host clears it', () => {
+    render(<SettingsScreen tab="graphics" />)
+    fireEvent.click(screen.getByRole('switch', { name: 'VSync' }))
+    act(() => useSettingsStore.getState().setView({ ...DEMO_SETTINGS, preview: { token: 't1', secondsLeft: 15 } }))
+    expect(screen.getByRole('dialog', { name: 'Keep display settings?' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Apply' })).toBeDisabled()
+    expect(screen.getByRole('tab', { name: 'Controls' })).toHaveAttribute('aria-disabled', 'true')
+    expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled()
+    expect(screen.getByRole('switch', { name: 'VSync' })).toBeDisabled()
+    act(() => useSettingsStore.getState().setView({ ...DEMO_SETTINGS, preview: null }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Apply' })).toBeEnabled()
+  })
+
+  it('a reverted preview keeps the draft and says so in the footer', () => {
+    render(<SettingsScreen tab="graphics" />)
+    fireEvent.click(screen.getByRole('switch', { name: 'VSync' }))
+    const store = useSettingsStore.getState()
+    act(() => store.setView({ ...DEMO_SETTINGS, preview: { token: 't1', secondsLeft: 15 } }))
+    act(() => store.setView({ ...DEMO_SETTINGS, preview: null, saveError: 'preview_reverted' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(useSettingsStore.getState().draft).toEqual({ vsync: false })
+    expect(screen.getByText('Display change reverted. · 1 change')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Discard' }))
+    expect(screen.getByText('Display change reverted.')).toBeInTheDocument()
+  })
+
+  it('Resolution is locked unless the display mode is windowed', () => {
+    render(<SettingsScreen tab="graphics" />)
+    expect(screen.getByRole('button', { name: /^Resolution/ })).toBeDisabled()
+    chooseOption('Display mode', 'Windowed')
+    expect(screen.getByRole('button', { name: /^Resolution/ })).toBeEnabled()
   })
 })

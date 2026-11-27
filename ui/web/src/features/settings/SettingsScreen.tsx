@@ -6,6 +6,7 @@ import { Button } from '@/lib/ui/Button'
 import { Modal } from '@/lib/ui/Modal'
 import { TabBar } from '@/lib/ui/TabBar'
 import { CaptureDialog } from './CaptureDialog'
+import { DisplayPreviewDialog } from './DisplayPreviewDialog'
 import { ALWAYS_AVAILABLE, SettingRow } from './SettingRow'
 import { SETTINGS, TABS, entriesFor, entryFor } from './schema'
 import { effectiveValue, useSettingsStore } from './settingsStore'
@@ -27,6 +28,8 @@ const ERROR_TEXT: Record<string, string> = {
   save_failed: 'Could not save settings.',
 }
 
+const changeText = (n: number) => (n === 1 ? '1 change' : `${n} changes`)
+
 function statusText(
   view: SettingsView | null,
   pending: boolean,
@@ -37,7 +40,9 @@ function statusText(
   let text: string
   if (pending) text = 'Applying'
   else if (error !== null) text = ERROR_TEXT[error] ?? 'Could not apply settings.'
-  else if (changes > 0) text = changes === 1 ? '1 change' : `${changes} changes`
+  else if (view.saveError === 'preview_reverted')
+    text = changes > 0 ? `Display change reverted. · ${changeText(changes)}` : 'Display change reverted.'
+  else if (changes > 0) text = changeText(changes)
   else text = 'Saved'
   if (view.pendingRestart.length > 0) {
     const labels = view.pendingRestart.map((k) => entryFor(k)?.label ?? k)
@@ -58,7 +63,7 @@ export function SettingsScreen({ tab }: { tab: SettingsTab }) {
   const conflicts = useSettingsStore((s) => s.conflicts)
   const pending = useSettingsStore((s) => s.pending)
   const error = useSettingsStore((s) => s.error)
-  const { edit, discard, stageDefaults, apply } = useSettingsStore.getState()
+  const { edit, discard, stageDefaults, apply, setError } = useSettingsStore.getState()
   const [confirm, setConfirm] = useState<Confirm>(null)
   const [captureKey, setCaptureKey] = useState<string | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -67,6 +72,8 @@ export function SettingsScreen({ tab }: { tab: SettingsTab }) {
   const dirty = changes > 0
   const ready = view !== null
   const capturing = captureKey !== null
+  const previewing = view?.preview != null
+  const busy = pending || capturing || previewing
   const captureEntry = captureKey !== null ? entryFor(captureKey) : undefined
   const tabLabel = TABS.find((t) => t.id === tab)?.label ?? tab
 
@@ -79,12 +86,12 @@ export function SettingsScreen({ tab }: { tab: SettingsTab }) {
     void request('settings.close').catch(() => undefined)
   }
   const back = () => {
-    if (pending || capturing) return
+    if (busy) return
     if (dirty) setConfirm('back')
     else close()
   }
   const selectTab = (id: string) => {
-    if (pending || capturing || id === tab) return
+    if (busy || id === tab) return
     void request('settings.tab', { tab: id }).catch(() => undefined)
   }
   const scrollToGroup = (group: string) => {
@@ -104,19 +111,22 @@ export function SettingsScreen({ tab }: { tab: SettingsTab }) {
     setConfirm(null)
   }
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Escape' && !e.defaultPrevented && confirm === null && !capturing) {
+    if (e.key === 'Escape' && !e.defaultPrevented && confirm === null && !capturing && !previewing) {
       e.preventDefault()
       back()
     }
   }
 
   const voiceLocked = effectiveValue(view, draft, 'voice_mode') !== 'open_mic'
+  // Resolution only applies in windowed mode on the host.
+  // ponytail: filtering resolutions larger than the screen needs host data that SettingsView does not carry yet.
+  const resolutionLocked = effectiveValue(view, draft, 'display_mode') !== 'windowed'
 
   return (
     <div className="pointer-events-auto absolute inset-0 bg-zinc-950 text-zinc-100" onKeyDown={onKeyDown}>
       <header style={box(96, 32, 1088, 56)}>
         <div style={box(16, 8, 96, 40)} className={BTN}>
-          <Button label="Back" variant="secondary" disabled={pending || capturing} onPress={back} />
+          <Button label="Back" variant="secondary" disabled={busy} onPress={back} />
         </div>
         <h1 style={box(128, 8, 584, 40)} tabIndex={-1} className="m-0 flex items-center text-2xl leading-8 font-bold">
           Settings
@@ -129,7 +139,7 @@ export function SettingsScreen({ tab }: { tab: SettingsTab }) {
       <div style={box(96, 100, 1088, 44)}>
         <TabBar
           label="Settings sections"
-          tabs={TABS.map((t) => ({ id: t.id, label: t.label, disabled: pending || capturing }))}
+          tabs={TABS.map((t) => ({ id: t.id, label: t.label, disabled: busy }))}
           selectedId={tab}
           onSelect={selectTab}
         />
@@ -172,7 +182,12 @@ export function SettingsScreen({ tab }: { tab: SettingsTab }) {
                 conflict={conflicts.includes(e.key)}
                 availability={availability(e.key)}
                 devices={view.devices}
-                locked={pending || (e.key === 'voice_input_threshold' && voiceLocked)}
+                locked={
+                  pending ||
+                  previewing ||
+                  (e.key === 'voice_input_threshold' && voiceLocked) ||
+                  (e.key === 'resolution' && resolutionLocked)
+                }
                 onChange={(v) => edit(e.key, v)}
                 onReset={onReset}
                 onCapture={() => setCaptureKey(e.key)}
@@ -190,22 +205,25 @@ export function SettingsScreen({ tab }: { tab: SettingsTab }) {
           {statusText(view, pending, error, changes)}
         </div>
         <div style={box(688, 8, 120, 40)} className={BTN}>
-          <Button label="Reset" variant="secondary" disabled={!ready || pending || capturing} onPress={() => setConfirm('reset')} />
+          <Button label="Reset" variant="secondary" disabled={!ready || busy} onPress={() => setConfirm('reset')} />
         </div>
         <div style={box(816, 8, 120, 40)} className={BTN}>
-          <Button label="Discard" variant="secondary" disabled={!ready || pending || capturing || !dirty} onPress={discard} />
+          <Button label="Discard" variant="secondary" disabled={!ready || busy || !dirty} onPress={discard} />
         </div>
         <div style={box(944, 8, 128, 40)} className={BTN}>
           <Button
             label="Apply"
             variant="primary"
-            disabled={!ready || capturing || !dirty}
+            disabled={!ready || capturing || previewing || !dirty}
             loading={pending}
             onPress={() => void apply()}
           />
         </div>
       </footer>
 
+      {view?.preview != null && (
+        <DisplayPreviewDialog key={view.preview.token} preview={view.preview} onError={setError} />
+      )}
       {captureEntry && view !== null && (
         <CaptureDialog
           entry={captureEntry}
