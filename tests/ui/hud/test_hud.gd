@@ -613,3 +613,112 @@ func test_route_party_methods() -> void:
 	assert_eq(negative["reply"].get("error"), "bad_params", "negative id is bad_params")
 	assert_eq(wrong_key["reply"].get("error"), "bad_params", "accept needs inviterPeerId")
 	assert_eq(missing["action"], [], "bad_params has no action")
+
+
+func test_base_route() -> void:
+	assert_eq(Hud.base_route(true, "death", false), "/transfer", "transfer wins")
+	assert_eq(Hud.base_route(false, "death", false), "/death", "death receipt route")
+	assert_eq(Hud.base_route(false, "arrest", false), "/arrest", "arrest receipt route")
+	assert_eq(Hud.base_route(false, "death", true), "/", "a new spawn hides the receipt route")
+	assert_eq(Hud.base_route(false, "", false), "/", "plain HUD")
+
+
+func test_receipt_view() -> void:
+	var death := {"receiptId": "r1", "kind": "death", "cause": "bleed_out", "started_ms": 1000, "player": 0}
+	var arrest := {"receiptId": "r2", "kind": "arrest", "cause": "cuffed", "started_ms": 1000, "player": 0}
+	assert_eq(Hud.receipt_view({}, 1300), null, "no receipt")
+	var view: Dictionary = Hud.receipt_view(death, 1300)
+	assert_eq(view["receiptId"], "r1", "receipt id")
+	assert_eq(view["remainingMs"], 600, "remaining ms")
+	assert_eq(view["kind"], "death", "kind")
+	assert_eq(view["cause"], "bleed_out", "cause")
+	assert_eq(view["destination"], GameConst.MAP_MOTEL, "destination")
+	assert_false(view.has("bagForfeited"), "death has no bag flag")
+	var arrest_view: Dictionary = Hud.receipt_view(arrest, 1300)
+	assert_true(arrest_view["bagForfeited"], "arrest forfeits the bag")
+	assert_true(arrest_view["gearKept"], "arrest keeps the gear")
+	assert_eq(Hud.receipt_view(death, 1900), null, "expired receipt")
+
+
+func test_transfer_timing() -> void:
+	assert_eq(Hud.transfer_disconnect_error(1000, 9999), "disconnected", "early disconnect")
+	assert_eq(Hud.transfer_disconnect_error(1000, 10000), "transfer_timeout", "disconnect near the deadline")
+	assert_false(Hud.transfer_expired(1000, 11999), "not expired yet")
+	assert_true(Hud.transfer_expired(1000, 12000), "expired")
+
+
+func test_route_overlay_and_transfer_requests() -> void:
+	var dismiss := Hud.route_request({"id": 1, "method": "overlay.dismiss", "params": {"receiptId": "r1"}}, 0)
+	var bad := Hud.route_request({"id": 2, "method": "overlay.dismiss", "params": {"receiptId": 1}}, 0)
+	var back := Hud.route_request({"id": 3, "method": "transfer.return_to_lobby", "params": {}}, 0)
+	assert_true(dismiss["reply"]["ok"], "dismiss replies ok")
+	assert_eq(dismiss["action"], ["overlay_dismiss", "r1"], "dismiss action")
+	assert_eq(bad["reply"].get("error"), "bad_params", "non-string receipt id")
+	assert_eq(back["reply"], null, "return to lobby replies later")
+	assert_eq(back["action"], ["transfer_return_to_lobby", 3], "return to lobby action")
+
+
+func test_receipt_and_transfer_state() -> void:
+	var hud := Hud.new()
+	hud.show_receipt("death", "bleed_out", 1000)
+	var death_route: String = hud.get("_route")
+	var first_id := String((hud.get("_receipt") as Dictionary).get("receiptId", ""))
+	var click := hud.dismiss_receipt_by_click()
+	hud.dismiss_receipt("nope")
+	var kept := not (hud.get("_receipt") as Dictionary).is_empty()
+	hud.show_receipt("death", "bleed_out", 1100)
+	var second_id := String((hud.get("_receipt") as Dictionary).get("receiptId", ""))
+	hud.begin_transfer("Motel", "Motel-01", "death", 1000)
+	var transfer_route: String = hud.get("_route")
+	var transferring := hud.is_transferring()
+	var by_key := hud.dismiss_receipt_by_key()
+	var route_after_key: String = hud.get("_route")
+	hud.transfer_loaded()
+	var loaded_stage := String((hud.get("_transfer") as Dictionary).get("stage", ""))
+	hud.fail_transfer("map_load_failed")
+	var on_disconnect := hud.fail_transfer_on_disconnect(20000)
+	var error := String((hud.get("_transfer") as Dictionary).get("error", ""))
+	var failed := hud.is_transfer_failed()
+	hud.clear_transfer()
+	var cleared_transferring := hud.is_transferring()
+	var cleared_failed := hud.is_transfer_failed()
+	var cleared_route: String = hud.get("_route")
+	hud.free()
+	assert_eq(death_route, "/death", "receipt shows the death route")
+	assert_false(click, "click does not dismiss over the death route")
+	assert_true(kept, "a wrong receipt id keeps the receipt")
+	assert_true(first_id != second_id, "a newer receipt gets a new id")
+	assert_eq(transfer_route, "/transfer", "transfer route")
+	assert_true(transferring, "transferring")
+	assert_true(by_key, "key dismisses the receipt over the transfer")
+	assert_eq(route_after_key, "/transfer", "route stays on the transfer")
+	assert_eq(loaded_stage, "waiting_for_spawn", "loaded waits for the spawn")
+	assert_true(on_disconnect, "disconnect during a transfer is handled")
+	assert_eq(error, "map_load_failed", "the earlier error is kept")
+	assert_true(failed, "transfer failed")
+	assert_false(cleared_transferring, "cleared: not transferring")
+	assert_false(cleared_failed, "cleared: not failed")
+	assert_eq(cleared_route, "/", "cleared: plain HUD")
+
+
+func test_show_lobby_clears_transfer_and_receipt() -> void:
+	var hud := Hud.new()
+	hud.show_receipt("arrest", "cuffed", 1000)
+	hud.begin_transfer("Motel", "Motel-01", "arrest", 1000)
+	hud.show_lobby({})
+	var transfer: Dictionary = hud.get("_transfer")
+	var receipt: Dictionary = hud.get("_receipt")
+	var route: String = hud.get("_route")
+	hud.free()
+	assert_true(transfer.is_empty(), "lobby clears the transfer")
+	assert_true(receipt.is_empty(), "lobby clears the receipt")
+	assert_eq(route, "/lobby", "lobby route")
+
+
+func test_transfer_keeps_settings_open() -> void:
+	var hud := Hud.new()
+	hud.set("_route", "/settings/graphics")
+	hud.begin_transfer("Motel", "Motel-01", "join", 1000)
+	var route: String = hud.get("_route")
+	hud.free()
+	assert_eq(route, "/settings/graphics", "Settings stays open over a transfer")

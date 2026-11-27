@@ -27,6 +27,15 @@ const MAX_SERVER_ID: int = 9999
 
 const EMPTY_INSTANCE_FREE_SECONDS: float = 60.0
 const TRANSFER_TIMEOUT_SECONDS: float = 10.0
+const TRANSFER_REASON_JOIN := "join"
+const TRANSFER_REASON_TRAVEL := "travel"
+const TRANSFER_REASON_EXTRACT := "extract"
+const TRANSFER_REASON_DEATH := "death"
+const TRANSFER_REASON_ARREST := "arrest"
+## The client's transfer clock starts after the server's: a disconnect within
+## this much of the deadline counts as a timeout, and the client's own expiry
+## waits this much longer than the server's.
+const TRANSFER_CLIENT_SLACK_MS: int = 1000
 
 # --- Map config --------------------------------------------------------------
 
@@ -127,6 +136,7 @@ const HUD_MAX_NOTIFICATIONS: int = 4    # newest kept, oldest dropped
 const HUD_HOTBAR_SLOTS: int = 6  # hotbar slots, keys 1-6
 const HEIST_TOAST_MS: int = 8000          # heist alert toast countdown
 const HEIST_ALERT_ACTIVE_MS: int = 90000  # heist alert line stays active this long (local expiry)
+const RECEIPT_MS: int = 900  # death/arrest receipt auto-dismisses after this
 const INVENTORY_BAG_COLUMNS: int = 6
 const INVENTORY_BAG_SLOTS: int = 54  # bag grid slots (6 columns x 9 rows)
 const HUD_MINIMAP_RECT := Rect2(24, 40, 200, 170)  # px; must match ui/web/src/features/hud/layout.ts MINIMAP

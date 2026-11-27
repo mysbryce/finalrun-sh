@@ -78,8 +78,8 @@ func is_peer_alive(peer_id: int) -> bool:
 	return controller != null and controller.is_alive()
 
 
-func transfer_to_motel(peer_id: int) -> bool:
-	return _transfers.transfer_to_motel(peer_id)
+func transfer_to_motel(peer_id: int, reason: String) -> bool:
+	return _transfers.transfer_to_motel(peer_id, reason)
 
 
 func refresh_police_vehicle(instance: GameInstance) -> void:
@@ -126,7 +126,7 @@ func handle_peer_joined(peer_id: int) -> void:
 		return
 	_states[peer_id] = RoleControllerScript.default_player_state()
 	_notify(peer_id, "Connected to %s" % String(_host.get("server_id")))
-	if not _transfers.transfer_to_motel(peer_id):
+	if not _transfers.transfer_to_motel(peer_id, GameConst.TRANSFER_REASON_JOIN):
 		push_error("ServerManager: could not start initial transfer for peer %d" % peer_id)
 
 
@@ -516,7 +516,8 @@ func surrender(peer_id: int) -> void:
 		return
 	_notify(int(cop.get("peer_id")), "Surrender accepted: +$%d reward" % int(result.get("reward", 0)))
 	_notify(peer_id, "Surrendered: bag handed over, gear kept")
-	if not _transfers.transfer_to_motel(peer_id):
+	_send_life_outcome(peer_id, "arrest", "surrender")
+	if not _transfers.transfer_to_motel(peer_id, GameConst.TRANSFER_REASON_ARREST):
 		_notify(peer_id, "Could not transfer to Motel")
 
 
@@ -564,7 +565,7 @@ func handle_player_death(player: Node) -> void:
 
 func _transfer_after_death(peer_id: int) -> void:
 	_death_pending.erase(peer_id)
-	if not _transfers.transfer_to_motel(peer_id):
+	if not _transfers.transfer_to_motel(peer_id, GameConst.TRANSFER_REASON_DEATH):
 		_notify(peer_id, "Respawn transfer failed")
 
 
@@ -594,6 +595,19 @@ func _on_player_life_state_changed(
 ) -> void:
 	if _life_changed_hook.is_valid():
 		_life_changed_hook.call(player, old_state, new_state, cause)
+	var peer_id := int(player.get("peer_id")) if player != null else 0
+	if new_state == RoleControllerScript.LifeState.DEAD and cause != "disconnect" and peer_id > 0:
+		_send_life_outcome(peer_id, "death", death_cause(cause))
+
+
+## Maps a role-controller life cause to the GameOverlayView death cause.
+static func death_cause(life_cause: String) -> String:
+	match life_cause:
+		"bleedout":
+			return "bleed_out"
+		"finish":
+			return "finished"
+	return "other"
 
 
 # --- Zones -------------------------------------------------------------------
@@ -646,7 +660,7 @@ func _handle_extraction(player: Node, instance: GameInstance) -> void:
 	controller.server_on_extraction()
 	_states[peer_id] = controller.export_state()
 	_refresh_police_vehicle(instance)
-	if not _transfers.transfer_to_motel(peer_id):
+	if not _transfers.transfer_to_motel(peer_id, GameConst.TRANSFER_REASON_EXTRACT):
 		_notify(peer_id, "Extraction failed")
 		return
 	_notify(peer_id, "Extracted from LootyBay")
@@ -770,6 +784,10 @@ func _send_hud_state(peer_id: int, controller: PlayerRoleController) -> void:
 
 func _send_mask_channel(peer_id: int, seconds: float) -> void:
 	_host.call("_send_client_rpc", peer_id, "client_mask_channel", [seconds])
+
+
+func _send_life_outcome(peer_id: int, kind: String, cause: String) -> void:
+	_host.call("_send_client_rpc", peer_id, "client_life_outcome", [kind, cause])
 
 
 func _on_hud_inventory_changed(peer_id: int, controller: PlayerRoleController) -> void:

@@ -596,8 +596,9 @@ func _apply_cuff(actor_peer: int, target_peer: int) -> void:
 	)
 	_notify(actor_peer, "Arrested a criminal (+$%d)" % int(result.get("reward", 0)))
 	_notify(target_peer, "You were cuffed and sent to Motel")
+	_send_client(target_peer, "client_life_outcome", ["arrest", "cuffed"])
 	var instance := _players.current_instance(target_peer)
-	var transferred: bool = _players.transfer_to_motel(target_peer)
+	var transferred: bool = _players.transfer_to_motel(target_peer, GameConst.TRANSFER_REASON_ARREST)
 	_players.refresh_police_vehicle(instance)
 	if not transferred:
 		_notify(target_peer, "Could not transfer to Motel")

@@ -17,6 +17,7 @@ signal hud_state_received(state: Dictionary)
 signal mask_channel_received(seconds: float)
 signal surrender_available_changed(available: bool)
 signal downed_channel_changed(kind: String, duration_ms: int)
+signal life_outcome_received(kind: String, cause: String)
 
 const MAP_SCENES := {
 	GameConst.MAP_MOTEL: preload("res://maps/motel/Motel.tscn"),
@@ -316,15 +317,18 @@ func client_instance_ready(instance_id: String) -> void:
 # --- Client-bound RPCs (server -> one client) --------------------------------
 
 @rpc("authority", "call_remote", "reliable")
-func client_load_instance(instance_id: String, map_name: String) -> void:
+func client_load_instance(instance_id: String, map_name: String, reason: String) -> void:
 	if multiplayer.is_server():
 		return
+	var ok := false
 	var scene := get_tree().current_scene
 	if scene != null and scene.has_method("client_show_instance"):
-		scene.call("client_show_instance", instance_id, map_name)
+		ok = bool(scene.call("client_show_instance", instance_id, map_name, reason))
 	else:
 		push_error("client_load_instance: current scene cannot show instances")
-	rpc_id(1, "client_instance_ready", instance_id)
+	# A failed load is never acked: the server times out and disconnects the peer.
+	if ok:
+		rpc_id(1, "client_instance_ready", instance_id)
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -356,6 +360,12 @@ func client_surrender_available(available: bool) -> void:
 @rpc("authority", "call_remote", "reliable")
 func client_downed_channel(kind: String, duration_ms: int) -> void:
 	downed_channel_changed.emit(kind, duration_ms)
+
+
+## Owner-only death/arrest outcome; kinds and causes are GameOverlayView literals.
+@rpc("authority", "call_remote", "reliable")
+func client_life_outcome(kind: String, cause: String) -> void:
+	life_outcome_received.emit(kind, cause)
 
 
 @rpc("authority", "call_remote", "reliable")

@@ -78,6 +78,7 @@ func _start_client() -> void:
 	_hud.lobby_join_requested.connect(_on_lobby_join)
 	_hud.lobby_news_retry_requested.connect(_on_lobby_news_retry)
 	_hud.session_leave_requested.connect(_leave_session)
+	_hud.transfer_return_requested.connect(_leave_session.bind("disconnected"))
 	_hud.party_action_requested.connect(_on_party_action)
 	_hud.settings_open_requested.connect(_on_settings_open)
 	_hud.settings_close_requested.connect(_on_settings_close)
@@ -107,6 +108,7 @@ func _start_client() -> void:
 	ServerManager.mask_channel_received.connect(_on_hud_mask_channel)
 	ServerManager.surrender_available_changed.connect(_on_surrender_available)
 	ServerManager.downed_channel_changed.connect(_on_downed_channel)
+	ServerManager.life_outcome_received.connect(_on_life_outcome)
 	ServerManager.party_changed_client.connect(_on_hud_party)
 	ServerManager.party_invite_received.connect(_on_party_invite)
 	ServerManager.party_roster_received.connect(_on_party_roster)
@@ -239,17 +241,17 @@ func _process_lobby() -> void:
 
 
 ## Pause -> Leave to Lobby: drop the connection ourselves (the server sees a
-## normal disconnect) and show the lobby without an error.
-func _leave_session() -> void:
-	if _peer == null:
-		return
-	_peer.close()
-	_peer = null
+## normal disconnect) and show the lobby without an error. The transfer failure
+## screen calls it with "disconnected" (the peer may already be gone).
+func _leave_session(error: Variant = null) -> void:
+	if _peer != null:
+		_peer.close()
+		_peer = null
 	multiplayer.multiplayer_peer = null
 	_search_items.clear()
 	_hud.clear_party_session()
 	_clear_settings_session()
-	_show_lobby(null)
+	_show_lobby(error)
 
 
 ## Session settings (party invites, muted players) reset with the connection.
@@ -511,10 +513,14 @@ func _create_client_view_container() -> void:
 
 
 ## Called by ServerManager.client_load_instance on this client. Rebuilds the
-## local instance at /root/Main/Instances/<instance_id>, then acks the server.
-func client_show_instance(instance_id: String, map_name: String) -> void:
+## local instance at /root/Main/Instances/<instance_id>. Returns true when the
+## instance was built (ServerManager then acks the server).
+func client_show_instance(
+	instance_id: String, map_name: String, reason: String = GameConst.TRANSFER_REASON_TRAVEL
+) -> bool:
 	if _server_mode:
-		return
+		return false
+	_hud.begin_transfer(map_name, instance_id, reason, Time.get_ticks_msec())
 	if _client_view == null or not is_instance_valid(_client_view):
 		_create_client_view_container()
 	for child: Node in _client_view.get_children():
@@ -523,7 +529,8 @@ func client_show_instance(instance_id: String, map_name: String) -> void:
 	var map_scene: PackedScene = ServerManager.get_map_scene(map_name)
 	if map_scene == null:
 		push_error("Main.client_show_instance: unknown map %s" % map_name)
-		return
+		_hud.fail_transfer("map_load_failed")
+		return false
 	var instance: GameInstance = InstanceScript.new()
 	instance.name = instance_id
 	_client_view.add_child(instance)
@@ -541,6 +548,8 @@ func client_show_instance(instance_id: String, map_name: String) -> void:
 	if _settings != null:
 		SettingsApplier.apply_viewport(instance, _settings.values())
 	print("[Main] Client loaded instance %s (%s)" % [instance_id, map_name])
+	_hud.transfer_loaded()
+	return true
 
 
 func _on_peer_connected(peer_id: int) -> void:
@@ -579,7 +588,12 @@ func _on_server_disconnected() -> void:
 	multiplayer.multiplayer_peer = null
 	# _lobby is already set when the player left on purpose (_leave_session).
 	if _boot == null and _hud != null and _lobby == null:
-		_show_lobby("disconnected")
+		if _hud.fail_transfer_on_disconnect(Time.get_ticks_msec()):
+			_create_client_view_container()
+			_search_items.clear()
+			_hud.clear_party_session()
+		else:
+			_show_lobby("disconnected")
 
 
 func _on_viewport_size_changed() -> void:
@@ -665,6 +679,10 @@ func _on_surrender_available(on: bool) -> void:
 func _on_downed_channel(kind: String, ms: int) -> void:
 	if _hud != null:
 		_hud.set_downed_channel(kind, ms, _client_now_ms())
+
+
+func _on_life_outcome(kind: String, cause: String) -> void:
+	_hud.show_receipt(kind, cause, Time.get_ticks_msec())
 
 
 func _on_loot_alert(loot_id: String, _pos: Vector3) -> void:
@@ -792,6 +810,8 @@ func _on_escape() -> void:
 	# _unhandled_input (it reverts the preview).
 	if _hud.is_settings_open():
 		return
+	if _hud.dismiss_receipt_by_key():
+		return
 	if _hud.is_inventory_open():
 		_hud.close_inventory()
 	elif _hud.is_search_open():
@@ -828,6 +848,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 		if _boot != null or _lobby != null:
+			return
+		if (key_event.keycode == KEY_ENTER or key_event.keycode == KEY_KP_ENTER) and _hud.is_transfer_failed():
+			_leave_session("disconnected")
+			get_viewport().set_input_as_handled()
 			return
 		if key_event.physical_keycode == KEY_ESCAPE:
 			_on_escape()
@@ -938,13 +962,25 @@ func _run_action(action: String) -> void:
 func _input(event: InputEvent) -> void:
 	if _server_mode:
 		return
-	if _capture == null:
+	if _capture != null:
+		var r := _capture.feed(event)
+		if bool(r["consume"]):
+			get_viewport().set_input_as_handled()
+		if bool(r["done"]):
+			_finish_capture(r["binding"])
 		return
-	var r := _capture.feed(event)
-	if bool(r["consume"]):
+	# Mouse events reach the `Instances` SubViewportContainer in the GUI pass,
+	# after `_input`, so consuming here keeps the dismissing click from firing.
+	# ponytail: receipts only follow a Motel respawn where weapons are locked, so
+	# a leaked click at worst shows "Weapons are locked here".
+	if (
+		event is InputEventMouseButton
+		and (event as InputEventMouseButton).pressed
+		and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT
+		and _hud != null
+		and _hud.dismiss_receipt_by_click()
+	):
 		get_viewport().set_input_as_handled()
-	if bool(r["done"]):
-		_finish_capture(r["binding"])
 
 
 func _notification(what: int) -> void:

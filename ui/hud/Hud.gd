@@ -39,6 +39,11 @@ signal settings_capture_requested(request_id: int, key: String)
 signal settings_capture_cancel_requested
 ## The settings page answered the display preview dialog (keep or revert). Main replies with send_reply(request_id, ...).
 signal settings_display_confirm_requested(request_id: int, token: String, keep: bool)
+## The transfer failure screen pressed Return to Lobby. Main closes the connection.
+signal transfer_return_requested
+
+## Routes the HUD picks itself from the transfer and receipt state.
+const BASE_ROUTES := ["/", "/transfer", "/death", "/arrest"]
 
 const PARTY_VERBS_WITH_TARGET := {
 	"party.invite": ["invite", "targetPeerId"],
@@ -393,6 +398,51 @@ static func inventory_view(money: Dictionary) -> Dictionary:
 	}
 
 
+## Base route: a transfer wins, then a receipt until the player respawned.
+static func base_route(transfer_active: bool, receipt_kind: String, new_spawn: bool) -> String:
+	if transfer_active:
+		return "/transfer"
+	if receipt_kind != "" and not new_spawn:
+		return "/" + receipt_kind
+	return "/"
+
+
+## GameOverlayView for the page; null when there is no receipt or it expired.
+static func receipt_view(receipt: Dictionary, ticks_ms: int) -> Variant:
+	if receipt.is_empty():
+		return null
+	var elapsed := ticks_ms - int(receipt.get("started_ms", 0))
+	if elapsed >= GameConst.RECEIPT_MS:
+		return null
+	var kind := String(receipt.get("kind", ""))
+	var view := {
+		"receiptId": String(receipt.get("receiptId", "")),
+		"remainingMs": clampi(GameConst.RECEIPT_MS - elapsed, 0, GameConst.RECEIPT_MS),
+		"kind": kind,
+		"cause": String(receipt.get("cause", "")),
+		"destination": GameConst.MAP_MOTEL,
+	}
+	if kind == "arrest":
+		view["bagForfeited"] = true
+		view["gearKept"] = true
+	return view
+
+
+## TransferView error for a disconnect during a transfer.
+static func transfer_disconnect_error(started_ms: int, now_ms: int) -> String:
+	var timeout_ms := int(GameConst.TRANSFER_TIMEOUT_SECONDS * 1000.0)
+	if now_ms - started_ms >= timeout_ms - GameConst.TRANSFER_CLIENT_SLACK_MS:
+		return "transfer_timeout"
+	return "disconnected"
+
+
+## True when the server dropped the transfer without spawning or disconnecting
+## (e.g. "Instance became full during transfer").
+static func transfer_expired(started_ms: int, now_ms: int) -> bool:
+	var timeout_ms := int(GameConst.TRANSFER_TIMEOUT_SECONDS * 1000.0)
+	return now_ms - started_ms >= timeout_ms + GameConst.TRANSFER_CLIENT_SLACK_MS
+
+
 static func _error_reply(id: int, text: String) -> Dictionary:
 	return {"reply": {"type": "reply", "id": id, "ok": false, "error": text}, "action": []}
 
@@ -494,6 +544,14 @@ static func route_request(request: Dictionary, open_target: int) -> Dictionary:
 			return _error_reply(id, "bad_params")
 		# Main keeps or reverts the preview and sends the reply with send_reply.
 		return {"reply": null, "action": ["settings_display_confirm", id, token, keep]}
+	if method == "overlay.dismiss":
+		var receipt_id: Variant = params.get("receiptId")
+		if not receipt_id is String:
+			return _error_reply(id, "bad_params")
+		return _ok_reply(id, {}, ["overlay_dismiss", receipt_id])
+	if method == "transfer.return_to_lobby":
+		# Main checks the failed state; the reply is sent with send_reply.
+		return {"reply": null, "action": ["transfer_return_to_lobby", id]}
 	return _error_reply(id, "unknown_method")
 
 
@@ -535,6 +593,14 @@ var _route: String = "/"
 var _snapshots: Dictionary = {}
 ## Route Settings was opened from (/lobby or /pause); "" when closed.
 var _settings_origin: String = ""
+## TransferView keys: mapName, instanceId, stage, reason, progress, error; empty when none.
+var _transfer: Dictionary = {}
+var _transfer_started_ms: int = 0
+## {receiptId, kind, cause, started_ms, player}; empty when none.
+var _receipt: Dictionary = {}
+var _next_receipt: int = 1
+## _base_key() at the last _show_base().
+var _base_input: String = ""
 
 
 func _ready() -> void:
@@ -665,6 +731,21 @@ func _process(_delta: float) -> void:
 	if _last_life == PlayerRoleController.LifeState.DOWNED and current_life != PlayerRoleController.LifeState.DOWNED:
 		_channels = {}
 	_last_life = current_life
+	var ticks_ms := Time.get_ticks_msec()
+	if (
+		String(_transfer.get("stage", "")) == "waiting_for_spawn"
+		and has_player
+		and _instance != null
+		and is_instance_valid(_instance)
+		and _instance.instance_id == String(_transfer.get("instanceId", ""))
+	):
+		clear_transfer()
+	elif is_transferring() and transfer_expired(_transfer_started_ms, ticks_ms):
+		fail_transfer("transfer_timeout")
+	if not _receipt.is_empty() and ticks_ms - int(_receipt.get("started_ms", 0)) >= GameConst.RECEIPT_MS:
+		dismiss_receipt()
+	if BASE_ROUTES.has(_route) and _base_key() != _base_input:
+		_show_base()
 	if not _page_ready:
 		return
 	var ctx: Dictionary = {
@@ -742,6 +823,8 @@ func _on_ipc_message(message: String) -> void:
 		_send_json(JSON.stringify({"type": "route", "to": _route}))
 		for snapshot_json: String in _snapshots.values():
 			_send_json(snapshot_json)
+		if not _receipt.is_empty():
+			_send_json(JSON.stringify({"type": "game_overlay", "data": receipt_view(_receipt, Time.get_ticks_msec())}))
 		if _search_target != 0:
 			_send_json(JSON.stringify({"type": "search", "data": search_view(_search_target, _search_items)}))
 		if is_inventory_open() or is_search_open():
@@ -796,6 +879,14 @@ func _on_ipc_message(message: String) -> void:
 			settings_capture_cancel_requested.emit()
 		elif action.size() == 4 and action[0] == "settings_display_confirm":
 			settings_display_confirm_requested.emit(int(action[1]), String(action[2]), bool(action[3]))
+		elif action.size() == 2 and action[0] == "overlay_dismiss":
+			dismiss_receipt(String(action[1]))
+		elif action.size() == 2 and action[0] == "transfer_return_to_lobby":
+			if is_transfer_failed():
+				send_reply(int(action[1]), true, {}, "")
+				transfer_return_requested.emit()
+			else:
+				send_reply(int(action[1]), false, {}, "not_available")
 
 
 ## Sends the reply envelope for a request answered later (deferred reply).
@@ -811,9 +902,10 @@ func send_reply(id: int, ok: bool, data: Variant, error: String) -> void:
 	_send_json(JSON.stringify(reply))
 
 
-## Sends a snapshot message for `boot`, `lobby`, `party`, `settings`, `transfer`
-## or `game_overlay` and caches it; cached snapshots are replayed on page `ready`.
-## A null `data` is sent and clears the cache entry.
+## Sends a snapshot message for `boot`, `lobby`, `party`, `settings` or
+## `transfer` and caches it; cached snapshots are replayed on page `ready`.
+## A null `data` is sent and clears the cache entry. `game_overlay` is sent
+## directly (not cached) because its `remainingMs` must be fresh on replay.
 func publish(type: String, data: Variant) -> void:
 	var json := JSON.stringify({"type": type, "data": data})
 	_send_json(json)
@@ -834,17 +926,18 @@ func show_boot(view: Dictionary) -> void:
 ## Boot is over: clear the boot snapshot and return to the HUD.
 func end_boot() -> void:
 	_snapshots.erase("boot")
-	_navigate("/")
-	_set_panel_input(false)
+	_show_base()
 
 
-## Shows the lobby route with the current LobbyView. Open search/inventory/pause
-## panels are closed locally (no server request: the connection is gone).
+## Shows the lobby route with the current LobbyView. The transfer and receipt
+## are dropped and open search/inventory/pause panels are closed locally (no
+## server request: the connection is gone).
 func show_lobby(view: Dictionary) -> void:
-	if is_search_open():
-		close_search(_search_target)
-	close_inventory()
-	close_pause()
+	_transfer = {}
+	publish("transfer", null)
+	_receipt = {}
+	_send_json(JSON.stringify({"type": "game_overlay", "data": null}))
+	_close_panels()
 	_active_slot = 0
 	_surrender_available = false
 	_heist = {}
@@ -860,8 +953,7 @@ func show_lobby(view: Dictionary) -> void:
 ## Lobby is over (connected again): clear the lobby snapshot and return to the HUD.
 func end_lobby() -> void:
 	_snapshots.erase("lobby")
-	_navigate("/")
-	_set_panel_input(false)
+	_show_base()
 
 
 ## Loads the page again (boot retry after a CEF timeout). Waits for a new `ready`.
@@ -893,8 +985,7 @@ func close_search(target_peer_id: int) -> void:
 	_search_target = 0
 	_search_items = []
 	_send_json(JSON.stringify({"type": "search", "data": null}))
-	_navigate("/")
-	_set_panel_input(false)
+	_show_base()
 
 
 func is_search_open() -> bool:
@@ -918,8 +1009,7 @@ func toggle_inventory() -> void:
 func close_inventory() -> void:
 	if not is_inventory_open():
 		return
-	_navigate("/")
-	_set_panel_input(false)
+	_show_base()
 
 
 func is_pause_open() -> bool:
@@ -942,8 +1032,7 @@ func open_pause() -> void:
 func close_pause() -> void:
 	if not is_pause_open():
 		return
-	_navigate("/")
-	_set_panel_input(false)
+	_show_base()
 
 
 ## Opens Settings on the Graphics tab. Only from the lobby or the pause menu.
@@ -962,9 +1051,10 @@ func close_settings() -> void:
 		return
 	var origin := _settings_origin
 	_settings_origin = ""
-	_navigate(origin if origin != "" else "/")
 	if origin == "":
-		_set_panel_input(false)
+		_show_base()
+	else:
+		_navigate(origin)
 
 
 func is_settings_open() -> bool:
@@ -992,10 +1082,165 @@ func _navigate(to: String) -> void:
 
 ## Panels take the mouse: the page gets clicks and the cursor is free.
 func _set_panel_input(open: bool) -> void:
+	_set_input(open, open)
+
+
+## free_cursor: visible cursor vs captured; stop: the page takes clicks.
+func _set_input(free_cursor: bool, stop: bool) -> void:
 	if _browser == null or not is_instance_valid(_browser):
 		return
-	_browser.mouse_filter = Control.MOUSE_FILTER_STOP if open else Control.MOUSE_FILTER_IGNORE
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if open else Input.MOUSE_MODE_CAPTURED
+	_browser.mouse_filter = Control.MOUSE_FILTER_STOP if stop else Control.MOUSE_FILTER_IGNORE
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if free_cursor else Input.MOUSE_MODE_CAPTURED
+
+
+# --- Transfer and life receipts ----------------------------------------------
+
+## Closes search/inventory/pause locally; Settings opened from pause loses its origin.
+func _close_panels() -> void:
+	if is_search_open():
+		close_search(_search_target)
+	close_inventory()
+	close_pause()
+	if _settings_origin == "/pause":
+		_settings_origin = ""
+
+
+## True once the receipt's player was replaced by a new spawn.
+func _new_spawn() -> bool:
+	return _player != null and is_instance_valid(_player) and _player.get_instance_id() != int(_receipt.get("player", 0))
+
+
+func _current_base() -> String:
+	return base_route(not _transfer.is_empty(), String(_receipt.get("kind", "")), _new_spawn())
+
+
+## Whether the page takes clicks on a base route.
+func _base_stop(route: String) -> bool:
+	if route == "/death" or route == "/arrest":
+		return true
+	if route == "/transfer":
+		return not _receipt.is_empty() or is_transfer_failed()
+	return false
+
+
+func _base_key() -> String:
+	var route := _current_base()
+	return route + "|" + str(_base_stop(route))
+
+
+func _show_base() -> void:
+	var route := _current_base()
+	if route != _route:
+		_navigate(route)
+	_set_input(route != "/", _base_stop(route))
+	_base_input = _base_key()
+
+
+## The client started loading a transfer destination.
+func begin_transfer(map_name: String, instance_id: String, reason: String, ticks_ms: int) -> void:
+	# ponytail: maps load synchronously, so progress stays null.
+	_transfer = {
+		"mapName": map_name,
+		"instanceId": instance_id,
+		"stage": "loading",
+		"reason": reason,
+		"progress": null,
+		"error": null,
+	}
+	_transfer_started_ms = ticks_ms
+	publish("transfer", _transfer)
+	_close_panels()
+	# ponytail: Settings stays open over a transfer; closing it goes to the base route.
+	if BASE_ROUTES.has(_route):
+		_show_base()
+
+
+## The destination is built; now waiting for the server spawn.
+func transfer_loaded() -> void:
+	if String(_transfer.get("stage", "")) != "loading":
+		return
+	_transfer["stage"] = "waiting_for_spawn"
+	publish("transfer", _transfer)
+
+
+func fail_transfer(error: String) -> void:
+	if _transfer.is_empty() or String(_transfer.get("stage", "")) == "failed":
+		return
+	_transfer["stage"] = "failed"
+	_transfer["error"] = error
+	publish("transfer", _transfer)
+	if BASE_ROUTES.has(_route):
+		_show_base()
+
+
+## Disconnect during a transfer: show the failure instead of the lobby.
+func fail_transfer_on_disconnect(now_ms: int) -> bool:
+	if _transfer.is_empty():
+		return false
+	fail_transfer(transfer_disconnect_error(_transfer_started_ms, now_ms))
+	return true
+
+
+func is_transferring() -> bool:
+	return not _transfer.is_empty() and String(_transfer.get("stage", "")) != "failed"
+
+
+func is_transfer_failed() -> bool:
+	return String(_transfer.get("stage", "")) == "failed"
+
+
+func clear_transfer() -> void:
+	_transfer = {}
+	publish("transfer", null)
+	if BASE_ROUTES.has(_route):
+		_show_base()
+
+
+## Death/arrest receipt from the server; a newer one replaces the old one.
+func show_receipt(kind: String, cause: String, ticks_ms: int) -> void:
+	if kind != "death" and kind != "arrest":
+		return
+	var has_player := _player != null and is_instance_valid(_player)
+	_receipt = {
+		"receiptId": "r%d" % _next_receipt,
+		"kind": kind,
+		"cause": cause,
+		"started_ms": ticks_ms,
+		"player": _player.get_instance_id() if has_player else 0,
+	}
+	_next_receipt += 1
+	_send_json(JSON.stringify({"type": "game_overlay", "data": receipt_view(_receipt, ticks_ms)}))
+	_close_panels()
+	if BASE_ROUTES.has(_route):
+		_show_base()
+
+
+## Clears the receipt; a non-empty receipt_id must match the current one.
+func dismiss_receipt(receipt_id: String = "") -> void:
+	if _receipt.is_empty():
+		return
+	if receipt_id != "" and receipt_id != String(_receipt.get("receiptId", "")):
+		return
+	_receipt = {}
+	_send_json(JSON.stringify({"type": "game_overlay", "data": null}))
+	if BASE_ROUTES.has(_route):
+		_show_base()
+
+
+## Esc dismisses the receipt on any base route.
+func dismiss_receipt_by_key() -> bool:
+	if _receipt.is_empty() or not BASE_ROUTES.has(_route):
+		return false
+	dismiss_receipt()
+	return true
+
+
+## A left click dismisses the receipt only on the plain HUD.
+func dismiss_receipt_by_click() -> bool:
+	if _receipt.is_empty() or _route != "/":
+		return false
+	dismiss_receipt()
+	return true
 
 
 ## Messages before the page's `ready` are dropped: snapshots, route and panels

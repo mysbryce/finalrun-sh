@@ -81,7 +81,9 @@ func handle_join_map(peer_id: int, map_name: String) -> void:
 ## Reserves a slot in the target, snapshots and despawns the player from the
 ## old instance, then asks the client to load the destination and waits for the
 ## ack.
-func begin_transfer(peer_id: int, target: GameInstance) -> bool:
+func begin_transfer(
+	peer_id: int, target: GameInstance, reason: String = GameConst.TRANSFER_REASON_TRAVEL
+) -> bool:
 	if target == null or _transfers.has(peer_id):
 		return false
 	if not target.is_shared() and target.free_slots() < 1:
@@ -101,7 +103,7 @@ func begin_transfer(peer_id: int, target: GameInstance) -> bool:
 		"_send_client_rpc",
 		peer_id,
 		"client_load_instance",
-		[target.instance_id, target.map_name]
+		[target.instance_id, target.map_name, reason]
 	)
 	return true
 
@@ -162,11 +164,11 @@ func update() -> void:
 
 ## Shared path for extraction, death and surrender: create/select Motel and
 ## transfer the player there.
-func transfer_to_motel(peer_id: int) -> bool:
+func transfer_to_motel(peer_id: int, reason: String) -> bool:
 	var motel := _get_or_create_instance(GameConst.MAP_MOTEL, 1)
 	if motel == null:
 		return false
-	return begin_transfer(peer_id, motel)
+	return begin_transfer(peer_id, motel, reason)
 
 
 func _handle_lootybay_entry(peer_id: int, current_instance: GameInstance) -> void:
