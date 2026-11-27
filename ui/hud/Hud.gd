@@ -8,6 +8,8 @@ extends CanvasLayer
 signal search_take_requested(target_peer_id: int, item_uid: int)
 ## The page asked to close the open body search.
 signal search_close_requested(target_peer_id: int)
+## The page dragged a bag item to a slot. Main forwards it to the server.
+signal inventory_move_requested(item_uid: int, slot: int)
 
 
 static func role_text(role: int) -> String:
@@ -180,6 +182,7 @@ static func item_view(item: Dictionary, default_source: String) -> Dictionary:
 		"label": item_label(String(item.get("id", ""))),
 		"value": int(item.get("value", 0)),
 		"source": String(item.get("source", default_source)),
+		"slot": int(item.get("slot", -1)),
 	}
 
 
@@ -230,6 +233,12 @@ static func route_request(request: Dictionary, open_target: int) -> Dictionary:
 		return _ok_reply(id, {}, ["close", target])
 	if method == "inventory.close":
 		return _ok_reply(id, {}, ["inventory_close"])
+	if method == "inventory.move":
+		var uid := int(params.get("uid", 0))
+		var slot := int(params.get("slot", -1))
+		if uid <= 0 or slot < 0 or slot >= GameConst.INVENTORY_BAG_SLOTS:
+			return _error_reply(id, "bad_params")
+		return _ok_reply(id, {}, ["move", uid, slot])
 	return _error_reply(id, "unknown_method")
 
 
@@ -374,6 +383,8 @@ func _on_ipc_message(message: String) -> void:
 		var action: Array = routed["action"]
 		if action.size() == 3 and action[0] == "take":
 			search_take_requested.emit(int(action[1]), int(action[2]))
+		elif action.size() == 3 and action[0] == "move":
+			inventory_move_requested.emit(int(action[1]), int(action[2]))
 		elif action.size() == 2 and action[0] == "close":
 			search_close_requested.emit(int(action[1]))
 		elif action.size() == 1 and action[0] == "inventory_close":

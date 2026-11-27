@@ -37,4 +37,10 @@ Source: `PlayerService.hud_state_of` adds `bag_items` (`loot_bag`) and `gear` (`
 - `TAB` toggles the screen (only from the plain HUD, not over the body search). `ESC` closes it.
 - Page request `inventory.close` (footer `BACK`) closes it; reply `{}`.
 - While open: route `/inventory`, browser `MOUSE_FILTER_STOP`, mouse visible; on close route `/`, `IGNORE`, captured.
-- View only for now: no drop, use or move actions.
+- Drag and drop (owner request): drag a bag item onto another bag slot to move it there; dropping on an occupied slot swaps the two. Only inside the bag: moving between bag and equipment would let a criminal hide loot from seizure (bag items are seized, gear is not), so it waits for a real equip rule. No drop/use yet.
+
+## Bag slots (server-authoritative)
+- Each bag item carries `"slot": int` (0-based grid index). A new or received item gets the first free slot; a received item never keeps the slot it had in another inventory.
+- Page request `inventory.move {uid, slot}` -> `Hud` validates shape (`uid > 0`, `0 <= slot < INVENTORY_BAG_SLOTS`, else `bad_params`) and emits `inventory_move_requested(uid, slot)` -> `Main` -> `ServerManager.request_move_bag_item(uid, slot)` -> RPC `server_request_move_bag_item` (alive-gated) -> `PlayerRoleController.move_bag_item(uid, slot)` (swap if occupied) -> `inventory_changed` -> new `client_hud_state` -> new `inventory` message.
+- The page moves the tile at once (optimistic) and the next `inventory` message from Godot is the truth.
+- Drag uses pointer events (`@dnd-kit/core`), not native HTML5 drag and drop: CEF off-screen rendering does not run native drag sessions.

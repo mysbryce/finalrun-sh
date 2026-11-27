@@ -169,7 +169,7 @@ func test_search_view() -> void:
 	assert_eq(view.get("target"), 7, "target")
 	assert_eq(view.get("title"), "Body of Player 7", "title")
 	assert_eq(items.size(), 2, "two items")
-	assert_eq(items[0], {"uid": 12, "id": "cop_pistol", "label": "Cop pistol", "value": 0, "source": "gear"}, "first item")
+	assert_eq(items[0], {"uid": 12, "id": "cop_pistol", "label": "Cop pistol", "value": 0, "source": "gear", "slot": -1}, "first item")
 	assert_eq((items[1] as Dictionary).get("source"), "bag", "missing source is bag")
 
 
@@ -214,7 +214,7 @@ func test_open_and_close_search_headless() -> void:
 
 func test_item_view_default_source() -> void:
 	var view := Hud.item_view({"uid": 1, "id": "cop_pistol", "value": 0}, "gear")
-	assert_eq(view, {"uid": 1, "id": "cop_pistol", "label": "Cop pistol", "value": 0, "source": "gear"}, "item view uses the default source")
+	assert_eq(view, {"uid": 1, "id": "cop_pistol", "label": "Cop pistol", "value": 0, "source": "gear", "slot": -1}, "item view uses the default source")
 
 
 func test_inventory_view() -> void:
@@ -239,6 +239,16 @@ func test_route_inventory_close() -> void:
 	var routed := Hud.route_request({"id": 4, "method": "inventory.close", "params": {}}, 0)
 	assert_eq(routed["reply"]["ok"], true, "inventory.close is ok")
 	assert_eq(routed["action"], ["inventory_close"], "inventory.close action")
+
+
+func test_route_inventory_move() -> void:
+	var ok := Hud.route_request({"id": 5, "method": "inventory.move", "params": {"uid": 3, "slot": 4}}, 0)
+	var bad_slot := Hud.route_request({"id": 5, "method": "inventory.move", "params": {"uid": 3, "slot": 36}}, 0)
+	var bad_uid := Hud.route_request({"id": 5, "method": "inventory.move", "params": {"uid": 0, "slot": 4}}, 0)
+	assert_eq(ok["reply"]["ok"], true, "inventory.move is ok")
+	assert_eq(ok["action"], ["move", 3, 4], "inventory.move action")
+	assert_eq(bad_slot["reply"]["error"], "bad_params", "slot 36 is bad params")
+	assert_eq(bad_uid["reply"]["error"], "bad_params", "uid 0 is bad params")
 
 
 func test_toggle_inventory_headless() -> void:

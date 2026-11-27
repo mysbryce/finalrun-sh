@@ -559,6 +559,7 @@ func set_item_uid_allocator(allocator: Callable) -> void:
 ## an existing item use `receive_item()` so the uid survives the move.
 func grant_loot(loot_id: String, value: int, issued: bool = false) -> Dictionary:
 	var item := ItemUtils.make_item(_allocate_item_uid(), loot_id, value, issued)
+	item["slot"] = first_free_slot(loot_bag)
 	loot_bag.append(item)
 	if not issued:
 		notoriety += float(int(item["value"]))
@@ -584,13 +585,50 @@ func receive_item(item: Dictionary, source: String) -> Dictionary:
 	if int(received.get("uid", 0)) <= 0:
 		received["uid"] = _allocate_item_uid()
 	if source == "gear":
+		received.erase("slot")
 		equipped_gear.append(received)
 	else:
+		received["slot"] = first_free_slot(loot_bag)
 		loot_bag.append(received)
 		if not bool(received.get("issued", false)):
 			notoriety += float(int(received.get("value", 0)))
 	inventory_changed.emit()
 	return received
+
+
+## Smallest grid slot (>= 0) not used by any item in `bag`.
+static func first_free_slot(bag: Array) -> int:
+	var used := {}
+	for item: Dictionary in bag:
+		used[int(item.get("slot", -1))] = true
+	var slot: int = 0
+	while used.has(slot):
+		slot += 1
+	return slot
+
+
+## Moves a bag item to a grid slot; swaps with the item already there.
+## Returns false (no change) for an unknown uid or a slot outside the grid.
+func move_bag_item(uid: int, slot: int) -> bool:
+	if slot < 0 or slot >= GameConst.INVENTORY_BAG_SLOTS:
+		return false
+	var moving: Dictionary = {}
+	for item: Dictionary in loot_bag:
+		if int(item.get("uid", 0)) == uid:
+			moving = item
+			break
+	if moving.is_empty():
+		return false
+	var old_slot: int = int(moving.get("slot", -1))
+	if old_slot == slot:
+		return true
+	for item: Dictionary in loot_bag:
+		if not is_same(item, moving) and int(item.get("slot", -1)) == slot:
+			item["slot"] = old_slot
+			break
+	moving["slot"] = slot
+	inventory_changed.emit()
+	return true
 
 
 ## The victim's notoriety falls by the value of a removed bag item (clamped at 0);

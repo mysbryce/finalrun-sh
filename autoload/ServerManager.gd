@@ -187,6 +187,13 @@ func server_request_sell_loot() -> void:
 
 
 @rpc("any_peer", "call_remote", "reliable")
+func server_request_move_bag_item(item_uid: int, slot: int) -> void:
+	var sender: int = multiplayer.get_remote_sender_id()
+	if _can_accept_alive_request(sender):
+		_players.move_bag_item(sender, item_uid, slot)
+
+
+@rpc("any_peer", "call_remote", "reliable")
 func server_request_mask() -> void:
 	var sender: int = multiplayer.get_remote_sender_id()
 	if _can_accept_alive_request(sender):
@@ -339,6 +346,7 @@ func request_party_accept(inviter_peer_id: int) -> void: _send_client_request("s
 func request_party_leave() -> void: _send_client_request("server_request_party_leave")
 func request_party_kick(target_peer_id: int) -> void: _send_client_request("server_request_party_kick", [target_peer_id])
 func request_sell_loot() -> void: _send_client_request("server_request_sell_loot")
+func request_move_bag_item(item_uid: int, slot: int) -> void: _send_client_request("server_request_move_bag_item", [item_uid, slot])
 func request_mask() -> void: _send_client_request("server_request_mask")
 func request_cop_duty() -> void: _send_client_request("server_request_cop_duty")
 func request_surrender() -> void: _send_client_request("server_request_surrender")

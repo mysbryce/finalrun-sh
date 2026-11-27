@@ -236,6 +236,17 @@ func sell_loot(peer_id: int) -> void:
 		_notify(peer_id, "Sold loot for $%d (notoriety reset)" % earned)
 
 
+func move_bag_item(peer_id: int, item_uid: int, slot: int) -> void:
+	var player := _get_player(peer_id)
+	if player == null:
+		return
+	var controller := player.get_role_controller()
+	if controller == null:
+		return
+	if not controller.move_bag_item(item_uid, slot):
+		_notify(peer_id, "Cannot move that item")
+
+
 func mask(peer_id: int) -> void:
 	var player := _get_player(peer_id)
 	if player == null:

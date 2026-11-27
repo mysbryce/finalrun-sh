@@ -51,6 +51,7 @@ func _start_client() -> void:
 	add_child(_hud)
 	_hud.search_take_requested.connect(ServerManager.request_search_take)
 	_hud.search_close_requested.connect(ServerManager.request_search_close)
+	_hud.inventory_move_requested.connect(ServerManager.request_move_bag_item)
 	var peer := ENetMultiplayerPeer.new()
 	var error := peer.create_client("127.0.0.1", GameConst.PORT)
 	if error != OK:
