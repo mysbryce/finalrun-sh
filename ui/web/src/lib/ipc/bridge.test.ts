@@ -74,6 +74,52 @@ describe('bridge', () => {
     expect(deps.setInventory).toHaveBeenCalledWith(view)
   })
 
+  it('new snapshot types reach their setters', () => {
+    const deps: BridgeDeps = {
+      ...makeDeps(),
+      setBoot: vi.fn(),
+      setLobby: vi.fn(),
+      setParty: vi.fn(),
+      setSettings: vi.fn(),
+      setTransfer: vi.fn(),
+      setGameOverlay: vi.fn(),
+    }
+    const cases: Array<[string, unknown, unknown]> = [
+      ['boot', { phase: 'title', buildId: 'dev' }, deps.setBoot],
+      ['lobby', { canPlay: true }, deps.setLobby],
+      ['party', { members: [] }, deps.setParty],
+      ['settings', { revision: 1 }, deps.setSettings],
+      ['transfer', { mapName: 'Motel' }, deps.setTransfer],
+      ['game_overlay', { kind: 'death', receiptId: 'r1' }, deps.setGameOverlay],
+    ]
+    for (const [type, data, setter] of cases) {
+      handleMessage(JSON.stringify({ type, data }), deps)
+      expect(setter).toHaveBeenCalledWith(data)
+    }
+  })
+
+  it('nullable snapshot types pass null', () => {
+    const deps: BridgeDeps = {
+      ...makeDeps(),
+      setParty: vi.fn(),
+      setTransfer: vi.fn(),
+      setGameOverlay: vi.fn(),
+    }
+    handleMessage(JSON.stringify({ type: 'party', data: null }), deps)
+    handleMessage(JSON.stringify({ type: 'transfer', data: null }), deps)
+    handleMessage(JSON.stringify({ type: 'game_overlay', data: null }), deps)
+    expect(deps.setParty).toHaveBeenCalledWith(null)
+    expect(deps.setTransfer).toHaveBeenCalledWith(null)
+    expect(deps.setGameOverlay).toHaveBeenCalledWith(null)
+  })
+
+  it('new type without a setter is ignored', () => {
+    const deps = makeDeps()
+    for (const type of ['boot', 'lobby', 'party', 'settings', 'transfer', 'game_overlay']) {
+      expect(() => handleMessage(JSON.stringify({ type, data: {} }), deps)).not.toThrow()
+    }
+  })
+
   it('bad json is ignored', () => {
     const deps = makeDeps()
     expect(() => handleMessage('{oops', deps)).not.toThrow()

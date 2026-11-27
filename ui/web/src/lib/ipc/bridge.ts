@@ -1,4 +1,15 @@
-import type { HudState, InventoryView, PageToGodot, SearchView } from './protocol'
+import type {
+  BootView,
+  GameOverlayView,
+  HudState,
+  InventoryView,
+  LobbyView,
+  PageToGodot,
+  PartyView,
+  SearchView,
+  SettingsView,
+  TransferView,
+} from './protocol'
 
 declare global {
   interface Window {
@@ -42,6 +53,12 @@ export type BridgeDeps = {
   navigate: (to: string) => void
   setSearch: (view: SearchView | null) => void
   setInventory: (view: InventoryView) => void
+  setBoot?: (view: BootView) => void
+  setLobby?: (view: LobbyView) => void
+  setParty?: (view: PartyView | null) => void
+  setSettings?: (view: SettingsView) => void
+  setTransfer?: (view: TransferView | null) => void
+  setGameOverlay?: (view: GameOverlayView | null) => void
 }
 
 export function handleMessage(text: string, deps: BridgeDeps): void {
@@ -66,6 +83,24 @@ export function handleMessage(text: string, deps: BridgeDeps): void {
       break
     case 'route':
       deps.navigate(message.to as string)
+      break
+    case 'boot':
+      deps.setBoot?.(message.data as BootView)
+      break
+    case 'lobby':
+      deps.setLobby?.(message.data as LobbyView)
+      break
+    case 'party':
+      deps.setParty?.((message.data ?? null) as PartyView | null)
+      break
+    case 'settings':
+      deps.setSettings?.(message.data as SettingsView)
+      break
+    case 'transfer':
+      deps.setTransfer?.((message.data ?? null) as TransferView | null)
+      break
+    case 'game_overlay':
+      deps.setGameOverlay?.((message.data ?? null) as GameOverlayView | null)
       break
     case 'reply': {
       const id = message.id as number

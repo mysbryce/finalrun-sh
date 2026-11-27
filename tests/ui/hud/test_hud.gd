@@ -272,6 +272,21 @@ func test_toggle_inventory_headless() -> void:
 	assert_true(ignored, "TAB is ignored over search")
 
 
+func test_publish_snapshot_cache() -> void:
+	var hud := Hud.new()
+	hud.publish("lobby", {"canPlay": true})
+	var lobby_json := String(hud._snapshots.get("lobby", ""))
+	hud.publish("lobby", null)
+	var lobby_cleared := not hud._snapshots.has("lobby")
+	hud.publish("boot", {"phase": "title"})
+	hud.publish("transfer", {"mapName": "Motel"})
+	var count := hud._snapshots.size()
+	hud.free()
+	assert_true(lobby_json.contains("\"type\":\"lobby\""), "lobby snapshot is cached as JSON")
+	assert_true(lobby_cleared, "null data clears the cached snapshot")
+	assert_eq(count, 2, "boot and transfer keep two entries")
+
+
 func test_page_url() -> void:
 	assert_eq(Hud.page_url(PackedStringArray()), GameConst.UI_PAGE_URL, "built page by default")
 	assert_eq(

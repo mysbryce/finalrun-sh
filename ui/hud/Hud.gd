@@ -262,6 +262,7 @@ var _minimap: Minimap = null
 var _search_target: int = 0
 var _search_items: Array = []
 var _route: String = "/"
+var _snapshots: Dictionary = {}
 
 
 func _ready() -> void:
@@ -376,6 +377,8 @@ func _on_ipc_message(message: String) -> void:
 		_page_ready = true
 		_last_hud_json = ""
 		_send_json(JSON.stringify({"type": "route", "to": _route}))
+		for snapshot_json: String in _snapshots.values():
+			_send_json(snapshot_json)
 		if _search_target != 0:
 			_send_json(JSON.stringify({"type": "search", "data": search_view(_search_target, _search_items)}))
 		if is_inventory_open() or is_search_open():
@@ -392,6 +395,18 @@ func _on_ipc_message(message: String) -> void:
 			search_close_requested.emit(int(action[1]))
 		elif action.size() == 1 and action[0] == "inventory_close":
 			close_inventory()
+
+
+## Sends a snapshot message for `boot`, `lobby`, `party`, `settings`, `transfer`
+## or `game_overlay` and caches it; cached snapshots are replayed on page `ready`.
+## A null `data` is sent and clears the cache entry.
+func publish(type: String, data: Variant) -> void:
+	var json := JSON.stringify({"type": type, "data": data})
+	_send_json(json)
+	if data == null:
+		_snapshots.erase(type)
+	else:
+		_snapshots[type] = json
 
 
 ## Body search contents arrived (first open or a change).
