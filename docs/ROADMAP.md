@@ -24,6 +24,9 @@ Status: `[x]` done · `[~]` in progress · `[ ]` planned. Each item ships as one
 ## Phase 2: Playable slice `[ ]`
 - [ ] Player controller + camera, client input → server movement, interpolation
 - [ ] Health, hitscan weapons (server raycast in instance world), safezone weapon lock
+- [ ] Downed (knock) state before death: bleed-out, revive, finish off, body as searchable loot node ([design](design/DOWNED_STATE.md))
+- [ ] Shared `LootContainer` component for downed bodies, `LootDrop`, `Lootable`
+- [ ] Fix: criminal death respawns as Citizen
 - [ ] Interact system (`lib/components/InteractArea`), basic HUD (role, mask timer, bag value)
 - [ ] Appearance foundation: `AppearanceData` Resource (body type, slot → item id), synced once on spawn, modular character rig with swappable slots. Built now so later cosmetics are data only, no code changes.
 - [ ] Local 1 server + 3 clients smoke test script
