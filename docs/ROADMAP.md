@@ -7,14 +7,14 @@ Status: `[x]` done · `[~]` in progress · `[ ]` planned. Each item ships as one
 - [x] `docs/CONVENTIONS.md`: folder layout, `lib/`, reuse rules
 - [x] README
 
-## Phase 1: Core systems `[~]`
-- [~] Server ID `SV-SPACE-XXXX`, instance registry (Motel/LootyBay instanced, House/Center shared)
-- [~] Instance isolation: own `World3D` per instance, per-instance spawner, synchronizer visibility, member-only RPC
-- [~] Party (max 3), party-aware LootyBay matchmaking, cross-map transfers
-- [~] Role state machine: Citizen / Criminal (3 s mask) / Cop
-- [~] Surrender (lose bag, keep gear) vs death (drop all), notoriety multiplier
-- [~] Lootable: silent lockpick vs loud heist alert
-- [~] Headless logic tests, `docs/ARCHITECTURE.md`
+## Phase 1: Core systems `[x]`
+- [x] Server ID `SV-SPACE-XXXX`, instance registry (Motel/LootyBay instanced, House/Center shared)
+- [x] Instance isolation: own `World3D` per instance, per-instance spawner, synchronizer visibility, member-only RPC
+- [x] Party (max 3), party-aware LootyBay matchmaking, cross-map transfers
+- [x] Role state machine: Citizen / Criminal (3 s mask) / Cop
+- [x] Surrender (lose bag, keep gear) vs death (drop all), notoriety multiplier
+- [x] Lootable: silent lockpick vs loud heist alert
+- [x] Headless logic tests, `docs/ARCHITECTURE.md`
 
 ## Phase 1.5: Restructure `[ ]`
 - [ ] Move to `features/` + `lib/` layout, split `ServerManager` (registry, party, transfer)
