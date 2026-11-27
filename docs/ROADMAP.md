@@ -25,6 +25,7 @@ Status: `[x]` done · `[~]` in progress · `[ ]` planned. Each item ships as one
 - [ ] Player controller + camera, client input → server movement, interpolation
 - [ ] Health, hitscan weapons (server raycast in instance world), safezone weapon lock
 - [ ] Interact system (`lib/components/InteractArea`), basic HUD (role, mask timer, bag value)
+- [ ] Appearance foundation: `AppearanceData` Resource (body type, slot → item id), synced once on spawn, modular character rig with swappable slots. Built now so later cosmetics are data only, no code changes.
 - [ ] Local 1 server + 3 clients smoke test script
 
 ## Phase 3: Heist loop `[ ]`
@@ -43,12 +44,23 @@ Status: `[x]` done · `[~]` in progress · `[ ]` planned. Each item ships as one
 - [ ] Center market: sell with notoriety multiplier, upgrades, player trading
 - [ ] House plots, storage, laundering desk (dirty → clean cash)
 
-## Phase 6: Persistence and scale `[ ]`
+## Phase 6: Customization and skins `[ ]`
+All cosmetics are `CosmeticData` Resources (`id`, `slot`, `mesh/material`, `rarity`). Pure visual: no stat changes.
+- [ ] Character creator: body type (male / female), skin tone, face, hair style and color
+- [ ] Clothing slots: top, bottom, shoes, hat, glasses, accessories
+- [ ] Mask skins (shown only while Criminal; masked players hide name tags)
+- [ ] Vehicle skins: paint, wraps, rims (cop vehicles keep fixed police livery)
+- [ ] Loot bag skins
+- [ ] Weapon skins
+- [ ] Wardrobe at Motel and House, cosmetic shop in Center
+- [ ] Owned cosmetics inventory (persisted in Phase 7)
+
+## Phase 7: Persistence and scale `[ ]`
 - [ ] Player save data (DB), auth
 - [ ] Multiple big servers, server browser / matchmaker
 - [ ] Linux dedicated server export, Docker deploy
 
-## Phase 7: Polish `[ ]`
+## Phase 8: Polish `[ ]`
 - [ ] Art, audio, VFX
 - [ ] Server-side anti-cheat checks (speed, fire rate, range)
 - [ ] Performance pass, network bandwidth budget
