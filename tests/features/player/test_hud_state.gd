@@ -23,6 +23,7 @@ func test_hud_state_counts_bag_and_cash() -> void:
 	assert_eq(state["cash"], 50, "HUD state reports cash")
 	assert_eq(state["bag_value"], 500, "HUD state sums the loot bag")
 	assert_eq(state["notoriety"], 500.0, "HUD state reports notoriety")
+	assert_eq(state["bag_items"].size(), 2, "HUD state lists bag items")
 
 
 func test_hud_state_has_only_owner_fields() -> void:
@@ -31,4 +32,4 @@ func test_hud_state_has_only_owner_fields() -> void:
 	controller.free()
 	var keys: Array = state.keys()
 	keys.sort()
-	assert_eq(keys, ["bag_value", "cash", "notoriety"], "HUD state exposes only owner fields")
+	assert_eq(keys, ["bag_items", "bag_value", "cash", "gear", "notoriety"], "HUD state exposes only owner fields")

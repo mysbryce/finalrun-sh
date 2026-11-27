@@ -308,6 +308,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			ServerManager.request_join_map(GameConst.MAP_CENTER)
 		KEY_5:
 			ServerManager.request_sell_loot()
+		KEY_TAB:
+			if _hud != null:
+				_hud.toggle_inventory()
+		KEY_ESCAPE:
+			if _hud != null:
+				_hud.close_inventory()
 		KEY_F:
 			ServerManager.request_mask()
 		KEY_G:

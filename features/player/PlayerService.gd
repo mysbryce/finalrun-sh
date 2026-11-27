@@ -375,6 +375,8 @@ static func hud_state_of(controller: PlayerRoleController) -> Dictionary:
 		"cash": controller.cash,
 		"bag_value": controller.loot_value(),
 		"notoriety": controller.notoriety,
+		"bag_items": controller.loot_bag.duplicate(true),
+		"gear": controller.equipped_gear.duplicate(true),
 	}
 
 

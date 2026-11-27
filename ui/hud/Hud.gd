@@ -169,14 +169,35 @@ static func item_label(item_id: String) -> String:
 static func search_view(target_peer_id: int, items: Array) -> Dictionary:
 	var list: Array = []
 	for item: Dictionary in items:
-		list.append({
-			"uid": int(item.get("uid", 0)),
-			"id": String(item.get("id", "")),
-			"label": item_label(String(item.get("id", ""))),
-			"value": int(item.get("value", 0)),
-			"source": String(item.get("source", "bag")),
-		})
+		list.append(item_view(item, "bag"))
 	return {"target": target_peer_id, "title": "Body of %s" % player_name(target_peer_id), "items": list}
+
+
+static func item_view(item: Dictionary, default_source: String) -> Dictionary:
+	return {
+		"uid": int(item.get("uid", 0)),
+		"id": String(item.get("id", "")),
+		"label": item_label(String(item.get("id", ""))),
+		"value": int(item.get("value", 0)),
+		"source": String(item.get("source", default_source)),
+	}
+
+
+## Inventory panel data for the page.
+static func inventory_view(money: Dictionary) -> Dictionary:
+	var bag: Array = []
+	for item: Dictionary in money.get("bag_items", []):
+		bag.append(item_view(item, "bag"))
+	var gear: Array = []
+	for item: Dictionary in money.get("gear", []):
+		gear.append(item_view(item, "gear"))
+	return {
+		"cash": int(money.get("cash", 0)),
+		"bagValue": int(money.get("bag_value", 0)),
+		"bagSlots": GameConst.INVENTORY_BAG_SLOTS,
+		"bag": bag,
+		"gear": gear,
+	}
 
 
 static func _error_reply(id: int, text: String) -> Dictionary:
@@ -207,6 +228,8 @@ static func route_request(request: Dictionary, open_target: int) -> Dictionary:
 		if target != open_target or open_target == 0:
 			return _error_reply(id, "no_search")
 		return _ok_reply(id, {}, ["close", target])
+	if method == "inventory.close":
+		return _ok_reply(id, {}, ["inventory_close"])
 	return _error_reply(id, "unknown_method")
 
 
@@ -253,6 +276,8 @@ func set_player(player: Node3D) -> void:
 
 func set_money(state: Dictionary) -> void:
 	_money = state.duplicate()
+	if is_inventory_open():
+		_send_inventory()
 
 
 func set_mask_channel(seconds: float, now_ms: int) -> void:
@@ -341,6 +366,8 @@ func _on_ipc_message(message: String) -> void:
 		_send_json(JSON.stringify({"type": "route", "to": _route}))
 		if _search_target != 0:
 			_send_json(JSON.stringify({"type": "search", "data": search_view(_search_target, _search_items)}))
+		if is_inventory_open():
+			_send_inventory()
 	elif type == "request":
 		var routed := route_request(parsed, _search_target)
 		_send_json(JSON.stringify(routed["reply"]))
@@ -349,10 +376,14 @@ func _on_ipc_message(message: String) -> void:
 			search_take_requested.emit(int(action[1]), int(action[2]))
 		elif action.size() == 2 and action[0] == "close":
 			search_close_requested.emit(int(action[1]))
+		elif action.size() == 1 and action[0] == "inventory_close":
+			close_inventory()
 
 
 ## Body search contents arrived (first open or a change).
 func open_search(target_peer_id: int, items: Array) -> void:
+	if is_inventory_open():
+		close_inventory()
 	_search_target = target_peer_id
 	_search_items = items.duplicate(true)
 	_send_json(JSON.stringify({"type": "search", "data": search_view(_search_target, _search_items)}))
@@ -374,6 +405,31 @@ func close_search(target_peer_id: int) -> void:
 
 func is_search_open() -> bool:
 	return _search_target != 0
+
+
+func is_inventory_open() -> bool:
+	return _route == "/inventory"
+
+
+## TAB: open from the plain HUD, close when open. Ignored over other panels.
+func toggle_inventory() -> void:
+	if is_inventory_open():
+		close_inventory()
+	elif _route == "/":
+		_send_inventory()
+		_navigate("/inventory")
+		_set_panel_input(true)
+
+
+func close_inventory() -> void:
+	if not is_inventory_open():
+		return
+	_navigate("/")
+	_set_panel_input(false)
+
+
+func _send_inventory() -> void:
+	_send_json(JSON.stringify({"type": "inventory", "data": inventory_view(_money)}))
 
 
 func _navigate(to: String) -> void:

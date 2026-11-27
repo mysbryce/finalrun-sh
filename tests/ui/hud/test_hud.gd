@@ -212,6 +212,54 @@ func test_open_and_close_search_headless() -> void:
 	assert_true(closed, "search closes")
 
 
+func test_item_view_default_source() -> void:
+	var view := Hud.item_view({"uid": 1, "id": "cop_pistol", "value": 0}, "gear")
+	assert_eq(view, {"uid": 1, "id": "cop_pistol", "label": "Cop pistol", "value": 0, "source": "gear"}, "item view uses the default source")
+
+
+func test_inventory_view() -> void:
+	var view := Hud.inventory_view({
+		"cash": 50,
+		"bag_value": 300,
+		"bag_items": [{"uid": 3, "id": "jewelry", "value": 300}],
+		"gear": [{"uid": 1, "id": "cop_pistol", "value": 0}],
+	})
+	var empty := Hud.inventory_view({})
+	assert_eq(view["cash"], 50, "cash")
+	assert_eq(view["bagValue"], 300, "bag value")
+	assert_eq(view["bagSlots"], GameConst.INVENTORY_BAG_SLOTS, "bag slots")
+	assert_eq(view["bag"][0]["label"], "Jewelry", "bag label")
+	assert_eq(view["bag"][0]["source"], "bag", "bag source")
+	assert_eq(view["gear"][0]["source"], "gear", "gear source")
+	assert_eq(empty["bag"], [], "empty bag")
+	assert_eq(empty["gear"], [], "empty gear")
+
+
+func test_route_inventory_close() -> void:
+	var routed := Hud.route_request({"id": 4, "method": "inventory.close", "params": {}}, 0)
+	assert_eq(routed["reply"]["ok"], true, "inventory.close is ok")
+	assert_eq(routed["action"], ["inventory_close"], "inventory.close action")
+
+
+func test_toggle_inventory_headless() -> void:
+	var hud := Hud.new()
+	(Engine.get_main_loop() as SceneTree).root.add_child(hud)
+	hud.toggle_inventory()
+	var opened := hud.is_inventory_open()
+	hud.toggle_inventory()
+	var closed := not hud.is_inventory_open()
+	hud.toggle_inventory()
+	hud.open_search(7, [])
+	var search_won := hud.is_search_open() and not hud.is_inventory_open()
+	hud.toggle_inventory()
+	var ignored := not hud.is_inventory_open()
+	hud.free()
+	assert_true(opened, "TAB opens the inventory")
+	assert_true(closed, "TAB closes it again")
+	assert_true(search_won, "search wins over the inventory")
+	assert_true(ignored, "TAB is ignored over search")
+
+
 func test_page_url() -> void:
 	assert_eq(Hud.page_url(PackedStringArray()), GameConst.UI_PAGE_URL, "built page by default")
 	assert_eq(
