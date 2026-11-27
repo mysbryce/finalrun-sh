@@ -22,6 +22,8 @@ signal page_ready
 signal lobby_join_requested
 ## The lobby asked to reload the bundled patch notes.
 signal lobby_news_retry_requested
+## The pause menu confirmed Leave to Lobby. Main closes the connection.
+signal session_leave_requested
 
 
 static func role_text(role: int) -> String:
@@ -271,6 +273,11 @@ static func route_request(request: Dictionary, open_target: int) -> Dictionary:
 		return _ok_reply(id, {}, ["lobby_join"])
 	if method == "lobby.news_retry":
 		return _ok_reply(id, {}, ["news_retry"])
+	if method == "pause.resume":
+		return _ok_reply(id, {}, ["pause_resume"])
+	if method == "session.leave":
+		# ponytail: the contract's busy / not_available errors are deferred.
+		return _ok_reply(id, {}, ["session_leave"])
 	if method == "settings.open":
 		# ponytail: not_available until the settings card.
 		return _error_reply(id, "not_available")
@@ -438,6 +445,10 @@ func _on_ipc_message(message: String) -> void:
 			lobby_join_requested.emit()
 		elif action.size() == 1 and action[0] == "news_retry":
 			lobby_news_retry_requested.emit()
+		elif action.size() == 1 and action[0] == "pause_resume":
+			close_pause()
+		elif action.size() == 1 and action[0] == "session_leave":
+			session_leave_requested.emit()
 
 
 ## Sends a snapshot message for `boot`, `lobby`, `party`, `settings`, `transfer`
@@ -467,12 +478,13 @@ func end_boot() -> void:
 	_set_panel_input(false)
 
 
-## Shows the lobby route with the current LobbyView. Open search/inventory
+## Shows the lobby route with the current LobbyView. Open search/inventory/pause
 ## panels are closed locally (no server request: the connection is gone).
 func show_lobby(view: Dictionary) -> void:
 	if is_search_open():
 		close_search(_search_target)
 	close_inventory()
+	close_pause()
 	publish("lobby", view)
 	if _route != "/lobby":
 		_navigate("/lobby")
@@ -542,6 +554,36 @@ func close_inventory() -> void:
 		return
 	_navigate("/")
 	_set_panel_input(false)
+
+
+func is_pause_open() -> bool:
+	return _route == "/pause"
+
+
+## Any route other than the plain HUD: the cursor is free and gameplay keys are off.
+func is_panel_open() -> bool:
+	return _route != "/"
+
+
+## Esc from the plain HUD. Ignored over other panels.
+func open_pause() -> void:
+	if _route != "/":
+		return
+	_navigate("/pause")
+	_set_panel_input(true)
+
+
+func close_pause() -> void:
+	if not is_pause_open():
+		return
+	_navigate("/")
+	_set_panel_input(false)
+
+
+## Esc over an open body search: ask the server to close it (it replies with close).
+func request_search_close() -> void:
+	if is_search_open():
+		search_close_requested.emit(_search_target)
 
 
 func _send_inventory() -> void:

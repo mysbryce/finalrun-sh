@@ -70,6 +70,7 @@ func _start_client() -> void:
 	_hud.page_ready.connect(_on_page_ready)
 	_hud.lobby_join_requested.connect(_on_lobby_join)
 	_hud.lobby_news_retry_requested.connect(_on_lobby_news_retry)
+	_hud.session_leave_requested.connect(_leave_session)
 	_endpoint = BootFlow.parse_endpoint(OS.get_cmdline_user_args())
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	ServerManager.search_contents_received.connect(_on_search_contents)
@@ -87,7 +88,7 @@ func _start_client() -> void:
 	print(
 		"[Main] Controls: 1 Motel | 2 LootyBay | 3 House | 4 Center | 5 sell loot | "
 		+ "F mask | G cop duty | H surrender | P create party | R revive | X finish | "
-		+ "C cuff | E lockpick/search | V smash | T take | Q close | LMB fire (mouse captured, Esc frees it)"
+		+ "C cuff | E lockpick/search | V smash | T take | Q close | LMB fire | Esc pause menu"
 	)
 
 
@@ -202,6 +203,18 @@ func _process_lobby() -> void:
 		return
 	_abort_connect()
 	_lobby_failed("connection_timeout")
+
+
+## Pause -> Leave to Lobby: drop the connection ourselves (the server sees a
+## normal disconnect) and show the lobby without an error.
+func _leave_session() -> void:
+	if _peer == null:
+		return
+	_peer.close()
+	_peer = null
+	multiplayer.multiplayer_peer = null
+	_search_items.clear()
+	_show_lobby(null)
 
 
 func _on_quit() -> void:
@@ -360,7 +373,8 @@ func _on_connection_failed() -> void:
 func _on_server_disconnected() -> void:
 	print("[Main] Server disconnected")
 	multiplayer.multiplayer_peer = null
-	if _boot == null and _hud != null:
+	# _lobby is already set when the player left on purpose (_leave_session).
+	if _boot == null and _hud != null and _lobby == null:
 		_show_lobby("disconnected")
 
 
@@ -513,6 +527,30 @@ func _life_state_name(state: int) -> String:
 			return "ALIVE"
 
 
+## Esc, first match wins: close inventory, close search (server closes it),
+## resume from pause, open pause from the plain HUD in a live session.
+func _on_escape() -> void:
+	if _hud == null:
+		return
+	if _hud.is_inventory_open():
+		_hud.close_inventory()
+	elif _hud.is_search_open():
+		_hud.request_search_close()
+	elif _hud.is_pause_open():
+		_hud.close_pause()
+	elif not _hud.is_panel_open() and _is_connected() and _local_player() != null:
+		_hud.open_pause()
+
+
+func _is_connected() -> bool:
+	var peer := multiplayer.multiplayer_peer
+	return (
+		peer != null
+		and not peer is OfflineMultiplayerPeer
+		and peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED
+	)
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if _server_mode:
 		return
@@ -527,6 +565,17 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if _boot != null or _lobby != null:
 		return
+	if key_event.physical_keycode == KEY_ESCAPE:
+		_on_escape()
+		get_viewport().set_input_as_handled()
+		return
+	if key_event.physical_keycode == KEY_TAB:
+		if _hud != null:
+			_hud.toggle_inventory()
+		return
+	# Any open panel (pause, inventory, search) owns the cursor: no gameplay or debug keys.
+	if _hud != null and _hud.is_panel_open():
+		return
 	match key_event.physical_keycode:
 		KEY_1:
 			ServerManager.request_join_map(GameConst.MAP_MOTEL)
@@ -538,12 +587,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			ServerManager.request_join_map(GameConst.MAP_CENTER)
 		KEY_5:
 			ServerManager.request_sell_loot()
-		KEY_TAB:
-			if _hud != null:
-				_hud.toggle_inventory()
-		KEY_ESCAPE:
-			if _hud != null:
-				_hud.close_inventory()
 		KEY_F:
 			ServerManager.request_mask()
 		KEY_G:

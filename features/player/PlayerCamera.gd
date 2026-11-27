@@ -45,11 +45,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			GameConst.CAMERA_PITCH_MIN,
 			GameConst.CAMERA_PITCH_MAX
 		)
-	elif event is InputEventKey:
-		var key := event as InputEventKey
-		if key.pressed and not key.echo and key.physical_keycode == KEY_ESCAPE:
-			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	elif event is InputEventMouseButton:
+		# Recaptures the cursor after alt-tab. Esc belongs to the pause menu (Main).
+		# While a HUD panel is open the browser (MOUSE_FILTER_STOP, CanvasLayer above
+		# the Instances SubViewportContainer) consumes the click, so it never reaches
+		# this SubViewport and the freed cursor stays free.
 		var button := event as InputEventMouseButton
 		if (
 			button.pressed

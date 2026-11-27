@@ -9,6 +9,7 @@ import {
 import { HudScreen } from '@/features/hud/HudScreen'
 import { InventoryScreen } from '@/features/inventory/InventoryScreen'
 import { LobbyScreen } from '@/features/lobby/LobbyScreen'
+import { PauseScreen } from '@/features/pause/PauseScreen'
 import { SearchScreen } from '@/features/search/SearchScreen'
 import { SplashScreen } from '@/features/splash/SplashScreen'
 
@@ -54,8 +55,15 @@ const lobbyRoute = createRoute({
   component: LobbyScreen,
 })
 
+// The HUD stays visible under the pause menu (RootLayout does not hide it on /pause).
+const pauseRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/pause',
+  component: PauseScreen,
+})
+
 export const router = createRouter({
-  routeTree: rootRoute.addChildren([hudRoute, searchRoute, inventoryRoute, splashRoute, lobbyRoute]),
+  routeTree: rootRoute.addChildren([hudRoute, searchRoute, inventoryRoute, splashRoute, lobbyRoute, pauseRoute]),
   history: createMemoryHistory({ initialEntries: ['/'] }),
 })
 

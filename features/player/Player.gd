@@ -319,6 +319,10 @@ func _client_input_tick(delta: float) -> void:
 func _read_input() -> Vector2:
 	if not multiplayer.has_multiplayer_peer():
 		return Vector2.ZERO
+	# A free cursor means a HUD panel or the pause menu is open: WASD must not
+	# move the character behind it (the session keeps running).
+	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		return Vector2.ZERO
 	var x: float = 0.0
 	var z: float = 0.0
 	if Input.is_physical_key_pressed(KEY_D):

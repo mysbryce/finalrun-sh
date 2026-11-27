@@ -270,6 +270,38 @@ func test_route_boot_and_quit() -> void:
 	assert_eq(quit["action"], ["quit"], "app.quit action")
 
 
+func test_route_pause_resume_and_session_leave() -> void:
+	var resume := Hud.route_request({"id": 12, "method": "pause.resume", "params": {}}, 0)
+	var leave := Hud.route_request({"id": 13, "method": "session.leave", "params": {}}, 0)
+	assert_eq(resume["reply"], {"type": "reply", "id": 12, "ok": true, "data": {}}, "pause.resume ok reply")
+	assert_eq(resume["action"], ["pause_resume"], "pause.resume action")
+	assert_eq(leave["reply"], {"type": "reply", "id": 13, "ok": true, "data": {}}, "session.leave ok reply")
+	assert_eq(leave["action"], ["session_leave"], "session.leave action")
+
+
+func test_pause_open_close_headless() -> void:
+	var hud := Hud.new()
+	(Engine.get_main_loop() as SceneTree).root.add_child(hud)
+	var start_closed := not hud.is_panel_open() and not hud.is_pause_open()
+	hud.open_pause()
+	var opened := hud.is_pause_open() and hud.is_panel_open() and hud._route == "/pause"
+	hud.close_pause()
+	var closed := not hud.is_pause_open() and not hud.is_panel_open() and hud._route == "/"
+	hud.toggle_inventory()
+	hud.open_pause()
+	var ignored := not hud.is_pause_open() and hud.is_inventory_open()
+	hud.close_inventory()
+	hud.open_pause()
+	hud.show_lobby({})
+	var lobby_closed := not hud.is_pause_open() and hud._route == "/lobby"
+	hud.free()
+	assert_true(start_closed, "starts on the plain HUD")
+	assert_true(opened, "open_pause from / goes to /pause")
+	assert_true(closed, "close_pause returns to /")
+	assert_true(ignored, "open_pause does nothing while /inventory")
+	assert_true(lobby_closed, "show_lobby clears the pause route")
+
+
 func test_route_inventory_close() -> void:
 	var routed := Hud.route_request({"id": 4, "method": "inventory.close", "params": {}}, 0)
 	assert_eq(routed["reply"]["ok"], true, "inventory.close is ok")

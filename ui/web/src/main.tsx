@@ -48,6 +48,9 @@ if (import.meta.env.DEV && !window.sendIpcMessage) {
     useLobbyStore.getState().setLobby(DEMO_LOBBY)
     void router.navigate({ to: '/lobby' })
   }
+  if (window.location.hash === '#pause') {
+    void router.navigate({ to: '/pause' })
+  }
 }
 
 createRoot(document.getElementById('root')!).render(
