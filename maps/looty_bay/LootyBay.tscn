@@ -1,4 +1,8 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene load_steps=19 format=3]
+
+[ext_resource type="Script" path="res://features/heist/Lootable.gd" id="1_lootable"]
+
+[ext_resource type="Script" path="res://lib/components/InteractArea.gd" id="2_interact"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
 size = Vector3(60, 1, 60)
@@ -44,6 +48,12 @@ size = Vector3(4.2, 1.1, 1.9)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_police_car"]
 albedo_color = Color(0.1, 0.16, 0.85, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_crate"]
+size = Vector3(0.8, 0.8, 0.8)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_crate"]
+albedo_color = Color(0.85, 0.65, 0.2, 1)
 
 [node name="LootyBay" type="Node3D"]
 
@@ -202,3 +212,47 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0.2, -8)
 
 [node name="Spawn12" type="Marker3D" parent="SpawnPoints"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.2, -8)
+
+[node name="Lootables" type="Node3D" parent="."]
+
+[node name="Crate01" type="Node3D" parent="Lootables"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0.4, -10)
+script = ExtResource("1_lootable")
+loot_id = "jewelry"
+value = 300
+
+[node name="Mesh" type="MeshInstance3D" parent="Lootables/Crate01"]
+mesh = SubResource("BoxMesh_crate")
+surface_material_override/0 = SubResource("StandardMaterial3D_crate")
+
+[node name="InteractArea" type="Node3D" parent="Lootables/Crate01"]
+script = ExtResource("2_interact")
+prompt = "E lockpick | V smash"
+
+[node name="Crate02" type="Node3D" parent="Lootables"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0.4, -16)
+script = ExtResource("1_lootable")
+loot_id = "electronics"
+value = 500
+
+[node name="Mesh" type="MeshInstance3D" parent="Lootables/Crate02"]
+mesh = SubResource("BoxMesh_crate")
+surface_material_override/0 = SubResource("StandardMaterial3D_crate")
+
+[node name="InteractArea" type="Node3D" parent="Lootables/Crate02"]
+script = ExtResource("2_interact")
+prompt = "E lockpick | V smash"
+
+[node name="Crate03" type="Node3D" parent="Lootables"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0.4, -10)
+script = ExtResource("1_lootable")
+loot_id = "cash_box"
+value = 800
+
+[node name="Mesh" type="MeshInstance3D" parent="Lootables/Crate03"]
+mesh = SubResource("BoxMesh_crate")
+surface_material_override/0 = SubResource("StandardMaterial3D_crate")
+
+[node name="InteractArea" type="Node3D" parent="Lootables/Crate03"]
+script = ExtResource("2_interact")
+prompt = "E lockpick | V smash"

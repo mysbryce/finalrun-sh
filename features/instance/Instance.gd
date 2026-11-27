@@ -253,6 +253,13 @@ func sync_state_to_peer(peer_id: int) -> void:
 		return
 	var peers: Array = [peer_id]
 	rpc_to_specific_members("client_set_police_vehicle", [police_vehicle_active], peers)
+	if map_root != null:
+		var lootables := map_root.get_node_or_null("Lootables")
+		if lootables != null:
+			for child: Node in lootables.get_children():
+				var lootable := child as Lootable
+				if lootable != null and lootable.looted:
+					rpc_to_specific_members("client_lootable_looted", [String(child.name)], peers)
 	if drops_root == null:
 		return
 	for drop: Node in drops_root.get_children():
@@ -278,6 +285,13 @@ func set_police_vehicle_active(active: bool) -> void:
 func client_set_police_vehicle(active: bool) -> void:
 	police_vehicle_active = active
 	_apply_police_vehicle_local(active)
+
+
+@rpc("authority", "call_remote", "reliable")
+func client_lootable_looted(lootable_name: String) -> void:
+	var lootable := Lootable.find_in(map_root, lootable_name)
+	if lootable != null:
+		lootable.mark_looted()
 
 
 @rpc("authority", "call_remote", "reliable")

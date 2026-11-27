@@ -62,7 +62,7 @@ func _start_client() -> void:
 	print(
 		"[Main] Controls: 1 Motel | 2 LootyBay | 3 House | 4 Center | 5 sell loot | "
 		+ "F mask | G cop duty | H surrender | P create party | R revive | X finish | "
-		+ "C cuff | E search | T take | Q close | LMB fire (mouse captured, Esc frees it)"
+		+ "C cuff | E lockpick/search | V smash | T take | Q close | LMB fire (mouse captured, Esc frees it)"
 	)
 
 
@@ -187,6 +187,14 @@ func _local_player() -> PlayerCharacter:
 	return instance.get_player(multiplayer.get_unique_id()) as PlayerCharacter
 
 
+## Lootable under the nearest InteractArea in reach, or null.
+func _nearest_lootable() -> Lootable:
+	var area := InteractArea.nearest(_local_player(), GameConst.INTERACT_RANGE)
+	if area == null:
+		return null
+	return area.get_parent() as Lootable
+
+
 ## Every action key targets the nearest other player in the current instance.
 func _nearest_other_player() -> PlayerCharacter:
 	var instance := _current_instance()
@@ -264,9 +272,19 @@ func _unhandled_input(event: InputEvent) -> void:
 			if cuff_target > 0:
 				ServerManager.request_cuff(cuff_target)
 		KEY_E:
-			var search_target := _target_peer_id()
-			if search_target > 0:
-				ServerManager.request_search_open(search_target)
+			var lootable := _nearest_lootable()
+			if lootable != null:
+				ServerManager.request_loot(String(lootable.name), false)
+			else:
+				var search_target := _target_peer_id()
+				if search_target > 0:
+					ServerManager.request_search_open(search_target)
+		KEY_V:
+			var smash_target := _nearest_lootable()
+			if smash_target != null:
+				ServerManager.request_loot(String(smash_target.name), true)
+			else:
+				print("[Main] Nothing to smash")
 		KEY_T:
 			var take_target := _target_peer_id()
 			if take_target <= 0:

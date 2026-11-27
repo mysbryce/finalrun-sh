@@ -324,6 +324,34 @@ func fire(peer_id: int, aim: Vector3, now_ms: int) -> void:
 	target.take_damage(GameConst.ATTACK_DAMAGE)
 
 
+## Server-validated loot action on a map Lootable. smash=false is the silent
+## lockpick, smash=true is loud and alerts COP and CRIMINAL members.
+func loot(peer_id: int, lootable_name: String, smash: bool) -> void:
+	if _transfers.has_transfer(peer_id):
+		return
+	var instance := _instances.current_instance_for_peer(peer_id)
+	if instance == null:
+		return
+	var player := instance.get_player(peer_id) as PlayerCharacter
+	if player == null:
+		return
+	var lootable := Lootable.find_in(instance.map_root, lootable_name)
+	if lootable == null:
+		return
+	if lootable.looted:
+		_notify(peer_id, "Already looted")
+		return
+	if player.global_position.distance_to(lootable.global_position) > GameConst.INTERACT_RANGE:
+		_notify(peer_id, "Too far away")
+		return
+	var value: int = lootable.value
+	var ok: bool = lootable.server_smash(player) if smash else lootable.server_lockpick(player)
+	if ok:
+		_notify(peer_id, "Looted $%d (%s)" % [value, "loud" if smash else "silent"])
+	else:
+		_notify(peer_id, "Only an ALIVE CRIMINAL can loot (mask first)")
+
+
 ## True when enough time has passed since the last accepted shot.
 static func fire_allowed(now_ms: int, last_fire_ms: int, interval_ms: int) -> bool:
 	return now_ms - last_fire_ms >= interval_ms
