@@ -22,7 +22,7 @@ Status: `[x]` done · `[~]` in progress · `[ ]` planned. Each item ships as one
 - [x] `tests/run_tests.gd` single entry, remove scratch files
 
 ## Phase 2: Playable slice `[~]`
-- [ ] Player controller + camera, client input → server movement, interpolation
+- [x] Player controller + camera, client input → server movement, interpolation
 - [ ] Health, hitscan weapons (server raycast in instance world), safezone weapon lock
 - [x] Downed (knock) state before death: bleed-out, revive, finish off, body as searchable loot node ([design](design/DOWNED_STATE.md))
 - [x] Shared `LootContainer` component for downed bodies, `LootDrop`, `Lootable`
