@@ -16,10 +16,10 @@ Status: `[x]` done · `[~]` in progress · `[ ]` planned. Each item ships as one
 - [x] Lootable: silent lockpick vs loud heist alert
 - [x] Headless logic tests, `docs/ARCHITECTURE.md`
 
-## Phase 1.5: Restructure `[ ]`
-- [ ] Move to `features/` + `lib/` layout, split `ServerManager` (registry, party, transfer)
-- [ ] `lib/constants/GameConst.gd`, `lib/net/` helpers, pure rule functions
-- [ ] `tests/run_tests.gd` single entry, remove scratch files
+## Phase 1.5: Restructure `[x]`
+- [x] Move to `features/` + `lib/` layout, split `ServerManager` (registry, party, transfer)
+- [x] `lib/constants/GameConst.gd`, `lib/net/` helpers, pure rule functions
+- [x] `tests/run_tests.gd` single entry, remove scratch files
 
 ## Phase 2: Playable slice `[ ]`
 - [ ] Player controller + camera, client input → server movement, interpolation
