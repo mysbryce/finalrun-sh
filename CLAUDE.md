@@ -30,7 +30,7 @@ Folder structure, lib/utils placement, and reuse rules: `docs/CONVENTIONS.md` (b
 
 ## Worker effort (task cards)
 - Supervisor thinks, worker types. Split each brief into small step-by-step task cards (`docs/tasks/<topic>/NN-<slug>.md`, template in the `dsh-worker` skill) and run one card per dsh run.
-- Default `medium`; `low` for mechanical edits; `high` after one failure; `max` after two failures or for net races the card cannot spell out.
+- deepseek-flash accepts only `low`, `high`, `max`. Default `low`; `high` after one failure; `max` after two failures or for net races the card cannot spell out.
 - Write the next card while the current one runs. Parallel runs only when file lists do not overlap.
 
 ## Memory

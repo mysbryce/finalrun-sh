@@ -1,11 +1,11 @@
 ---
 name: dsh-worker
-description: Delegate a coding task to the DeepSeek worker (dsh CLI, DeepSeek-V4.1-Flash) as small step-by-step task cards at low/medium effort, then review and commit. Use for any code change in FinalRun.
+description: Delegate a coding task to the DeepSeek worker (dsh CLI, DeepSeek-V4.1-Flash) as small step-by-step task cards at low effort, then review and commit. Use for any code change in FinalRun.
 ---
 
 # dsh-worker
 
-The supervisor does the thinking; the worker types. Design, ordering, names, signatures, and edge cases are decided in the card. The worker follows the steps and does not redesign. Small cards at medium effort finish in minutes; one big brief at max effort spends most of its time reasoning.
+The supervisor does the thinking; the worker types. Design, ordering, names, signatures, and edge cases are decided in the card. The worker follows the steps and does not redesign. Small cards at low effort finish in minutes; one big brief at max effort spends most of its time reasoning.
 
 ## 1. Design and brief (once per feature)
 - Design doc (`docs/design/*.md`) and feature brief (`docs/BRIEF_<topic>.md`) hold the decisions. EGM-review them per `CLAUDE.md`.
@@ -54,9 +54,8 @@ Rules for steps:
 - No open questions. If something is undecided, decide it first.
 
 ## 3. Run the card
-Effort by card:
-- `dsh-flash-medium.yml`: default for a card.
-- `dsh-flash-low.yml`: mechanical edits (rename, add constants, register tests, move files).
+Effort by card (deepseek-flash accepts only `low`, `high`, `max`):
+- `dsh-flash-low.yml`: default for a card.
 - `dsh-flash-high.yml`: the card failed once.
 - `dsh-flash-max.yml`: failed twice, or a networking race / sync bug that the card cannot fully spell out.
 
@@ -64,7 +63,7 @@ Run in background from the repo root (PowerShell):
 
 ```powershell
 "Read docs/tasks/<topic>/NN-<slug>.md. Do exactly its steps, in order, nothing more. Do not redesign. If a step cannot be done as written, stop and say why. Run the Done-when commands. Do not run git." |
-  dsh --profile headless --patch .claude/skills/dsh-worker/dsh-flash-medium.yml `
+  dsh --profile headless --patch .claude/skills/dsh-worker/dsh-flash-low.yml `
       --permission-mode workspace-write --approval-policy never - *> logs/dsh-<topic>-NN.log
 ```
 
