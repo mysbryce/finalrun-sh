@@ -193,6 +193,11 @@ func spawn_node(data: Variant) -> Node:
 		player.call("setup_server", instance, state)
 		if controller != null:
 			controller.life_state_changed.connect(_on_player_life_state_changed.bind(player))
+			controller.inventory_changed.connect(_on_hud_inventory_changed.bind(peer_id, controller))
+			controller.role_changed.connect(_on_hud_role_changed.bind(peer_id, controller))
+			controller.mask_channel_started.connect(_on_hud_mask_started.bind(peer_id))
+			controller.mask_channel_cancelled.connect(_on_hud_mask_cancelled.bind(peer_id))
+			_send_hud_state(peer_id, controller)
 	else:
 		var client_instance := _find_client_instance(instance_id)
 		if client_instance != null:
@@ -362,6 +367,15 @@ static func sanitize_aim(aim: Vector3) -> Vector3:
 	if not aim.is_finite() or aim.length_squared() < 0.0001:
 		return Vector3.ZERO
 	return aim.normalized()
+
+
+## HUD numbers the owning client may see.
+static func hud_state_of(controller: PlayerRoleController) -> Dictionary:
+	return {
+		"cash": controller.cash,
+		"bag_value": controller.loot_value(),
+		"notoriety": controller.notoriety,
+	}
 
 
 ## Pure party role rule: COP and CRIMINAL may not share a party. CITIZEN is
@@ -651,3 +665,29 @@ func _party_roles(peer_id: int) -> Array:
 
 func _notify(peer_id: int, text: String) -> void:
 	_host.call("_notify", peer_id, text)
+
+
+func _send_hud_state(peer_id: int, controller: PlayerRoleController) -> void:
+	if is_instance_valid(controller):
+		_host.call("_send_client_rpc", peer_id, "client_hud_state", [hud_state_of(controller)])
+
+
+func _send_mask_channel(peer_id: int, seconds: float) -> void:
+	_host.call("_send_client_rpc", peer_id, "client_mask_channel", [seconds])
+
+
+func _on_hud_inventory_changed(peer_id: int, controller: PlayerRoleController) -> void:
+	_send_hud_state(peer_id, controller)
+
+
+func _on_hud_role_changed(_old_role: int, _new_role: int, peer_id: int, controller: PlayerRoleController) -> void:
+	_send_mask_channel(peer_id, 0.0)
+	_send_hud_state(peer_id, controller)
+
+
+func _on_hud_mask_started(duration_seconds: float, peer_id: int) -> void:
+	_send_mask_channel(peer_id, duration_seconds)
+
+
+func _on_hud_mask_cancelled(_reason: String, peer_id: int) -> void:
+	_send_mask_channel(peer_id, 0.0)

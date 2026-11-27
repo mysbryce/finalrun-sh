@@ -12,6 +12,8 @@ signal party_invite_received(inviter_id: int)
 signal party_changed_client(party_info: Dictionary)
 signal search_contents_received(target_peer_id: int, items: Array)
 signal search_closed_received(target_peer_id: int, reason: String)
+signal hud_state_received(state: Dictionary)
+signal mask_channel_received(seconds: float)
 
 const MAP_SCENES := {
 	GameConst.MAP_MOTEL: preload("res://maps/motel/Motel.tscn"),
@@ -289,6 +291,18 @@ func client_load_instance(instance_id: String, map_name: String) -> void:
 func client_message(text: String) -> void:
 	print("[FinalRun] %s" % text)
 	notification_received.emit(text)
+
+
+## Owner-only HUD numbers: {"cash": int, "bag_value": int, "notoriety": float}.
+@rpc("authority", "call_remote", "reliable")
+func client_hud_state(state: Dictionary) -> void:
+	hud_state_received.emit(state)
+
+
+## Owner-only mask channel: seconds > 0 started, 0 ended or cancelled.
+@rpc("authority", "call_remote", "reliable")
+func client_mask_channel(seconds: float) -> void:
+	mask_channel_received.emit(seconds)
 
 
 @rpc("authority", "call_remote", "reliable")
