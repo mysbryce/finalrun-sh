@@ -142,6 +142,11 @@ const SHADOW_ATLAS_SIZES := {"low": 1024, "medium": 2048, "high": 4096}  # direc
 const VIEW_DISTANCE_FAR := {"low": 150.0, "medium": 300.0, "high": 600.0}  # Camera3D.far (m) per `view_distance` option
 ## Command-line flags that set the window: display settings are not applied at startup when any is present.
 const DISPLAY_CMDLINE_FLAGS: PackedStringArray = ["--resolution", "--position", "--windowed", "-w", "--fullscreen", "-f"]
+## Volume setting key -> audio bus name (buses are created at startup by SettingsApplier).
+const AUDIO_BUSES: Dictionary = {"music_volume": "Music", "sfx_volume": "SFX", "ui_volume": "UI"}
+const STREAMER_ID_MODULO: int = 100      # streamer mode keeps only the last two digits of a peer ID
+const STREAMER_MASK: String = "••"       # streamer mode prefix replacing the hidden peer ID digits
+const SERVER_ID_MASK: String = "••••"    # streamer mode replacement for the server ID number
 
 # Input bindings
 ## Binding settings whose value can never change (Escape stays hard-coded in Main).

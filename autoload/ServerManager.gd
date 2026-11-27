@@ -200,6 +200,16 @@ func server_request_party_kick(target_peer_id: int) -> void:
 		_notify(sender, "Cannot kick that player")
 
 
+## Session party_invites preference. Not alive-gated: a downed player may change it.
+@rpc("any_peer", "call_remote", "reliable")
+func server_request_party_invites(allowed: bool) -> void:
+	var sender: int = multiplayer.get_remote_sender_id()
+	if not _can_accept_request(sender):
+		return
+	_parties.set_invites_allowed(sender, allowed)
+	print("[ServerManager] peer %d party invites %s" % [sender, "everyone" if allowed else "nobody"])
+
+
 @rpc("any_peer", "call_remote", "reliable")
 func server_request_sell_loot() -> void:
 	var sender: int = multiplayer.get_remote_sender_id()
@@ -373,6 +383,7 @@ func request_party_decline(inviter_peer_id: int) -> void: _send_client_request("
 func request_party_roster() -> void: _send_client_request("server_request_party_roster")
 func request_party_leave() -> void: _send_client_request("server_request_party_leave")
 func request_party_kick(target_peer_id: int) -> void: _send_client_request("server_request_party_kick", [target_peer_id])
+func request_party_invites(allowed: bool) -> void: _send_client_request("server_request_party_invites", [allowed])
 func request_sell_loot() -> void: _send_client_request("server_request_sell_loot")
 func request_move_bag_item(item_uid: int, slot: int) -> void: _send_client_request("server_request_move_bag_item", [item_uid, slot])
 func request_mask() -> void: _send_client_request("server_request_mask")

@@ -73,6 +73,26 @@ func test_apply_camera() -> void:
 	assert_eq(sensitivity, 0.005, "mouse sensitivity set on the camera")
 
 
+func test_ensure_audio_buses_idempotent() -> void:
+	SettingsApplier.ensure_audio_buses()
+	SettingsApplier.ensure_audio_buses()
+	for bus_name: String in ["Music", "SFX", "UI"]:
+		var count := 0
+		for i in range(AudioServer.bus_count):
+			if AudioServer.get_bus_name(i) == bus_name:
+				count += 1
+		assert_eq(count, 1, "exactly one %s bus" % bus_name)
+
+
+func test_apply_engine_bus_volumes() -> void:
+	SettingsApplier.apply_engine({"music_volume": 50})
+	var music := AudioServer.get_bus_index("Music")
+	assert_true(is_equal_approx(AudioServer.get_bus_volume_db(music), linear_to_db(0.5)), "music 50 -> linear_to_db(0.5)")
+	assert_false(AudioServer.is_bus_mute(music), "music 50 is unmuted")
+	SettingsApplier.apply_engine({"sfx_volume": 0})
+	assert_true(AudioServer.is_bus_mute(AudioServer.get_bus_index("SFX")), "sfx 0 mutes SFX")
+
+
 func test_pitch_delta_invert_flips_sign() -> void:
 	var normal := PlayerCamera.pitch_delta(10.0, 0.01, false)
 	var inverted := PlayerCamera.pitch_delta(10.0, 0.01, true)

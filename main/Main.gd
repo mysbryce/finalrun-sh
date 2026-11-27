@@ -84,6 +84,7 @@ func _start_client() -> void:
 	_hud.settings_capture_cancel_requested.connect(_on_settings_capture_cancel)
 	_settings = SettingsService.new()
 	_settings.load()
+	_hud.push_settings(_settings.view())
 	InputBindings.set_bindings(_settings.active_bindings())
 	print("[Main] Settings loaded (%d keys)" % _settings.values().size())
 	var settings_values := _settings.values()
@@ -313,11 +314,24 @@ func _on_settings_changed(values: Dictionary, changed_keys: Array) -> void:
 	if camera != null:
 		SettingsApplier.apply_camera(camera, values)
 	_apply_hud_settings(values)
+	if changed_keys.has("party_invites") and _is_connected():
+		_send_party_invites()
+	_hud.push_settings(_settings.view())
 
 
 func _apply_hud_settings(values: Dictionary) -> void:
 	if values.has("notifications_duration"):
 		_hud.notification_ms = int(values["notifications_duration"]) * 1000
+	if values.has("streamer_mode"):
+		Hud.streamer_mode = bool(values["streamer_mode"])
+	if values.has("minimap_rotate"):
+		_hud.set_minimap_rotate(bool(values["minimap_rotate"]))
+
+
+## Sends the session party_invites preference (everyone / nobody) to the server.
+func _send_party_invites() -> void:
+	var allowed := String(_settings.values().get("party_invites", "everyone")) == "everyone"
+	ServerManager.request_party_invites(allowed)
 
 
 ## The local player's PlayerCamera once it is in the tree, or null.
@@ -482,6 +496,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 
 func _on_connected_to_server() -> void:
 	print("[Main] Connected to server as peer %d" % multiplayer.get_unique_id())
+	_send_party_invites()
 	if _boot != null:
 		_boot.on_connected()
 		_hud.end_boot()

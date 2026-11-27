@@ -5,9 +5,19 @@ extends RefCounted
 ## (docs/ui-design/03-settings.md section 4). Pure static functions over values
 ## and nodes; only keys present in `values` are applied. Client only.
 ##
-## Stored but not applied yet: textures (needs a restart path), ui_scale,
-## colorblind_mode, show_player_names, streamer_mode, minimap_rotate,
-## show_compass, language, music/sfx/ui volume buses, voice settings.
+## Stored but not applied (each with its reason):
+## - textures: the restart path is not built.
+## - show_player_names: no world nameplates yet.
+## - language: English only.
+## - voice_* (voice_chat, voice_mode, voice_input_threshold, voice_input_device,
+##   voice_output_device, voice_receive_volume), voice_volume, muted_players:
+##   the voice_chat capability is hidden.
+## - chat_filter, show_damage_numbers: coming later (capabilities chat and
+##   damage_numbers are off; the schema marks them coming_later, shown disabled).
+## - telemetry, crash_reports: the backend capabilities are hidden.
+## - ads_sensitivity, aim_mode, crouch_mode, sprint_mode: the features are not
+##   built (capabilities aim, crouch, sprint are off; the schema marks them
+##   coming_later, shown disabled).
 
 const DISPLAY_KEYS: Array = ["display_mode", "resolution"]
 const MODE_WINDOWED := "windowed"
@@ -44,7 +54,7 @@ static func apply_window(values: Dictionary, keys: Array) -> void:
 	DisplayServer.window_set_position(DisplayServer.screen_get_position(screen) + (screen_size - size) / 2)
 
 
-## vsync, frame cap, master volume.
+## vsync, frame cap, master/music/sfx/ui volume.
 static func apply_engine(values: Dictionary) -> void:
 	if values.has("vsync"):
 		DisplayServer.window_set_vsync_mode(
@@ -53,11 +63,33 @@ static func apply_engine(values: Dictionary) -> void:
 	if values.has("frame_cap"):
 		Engine.max_fps = max_fps_for(String(values["frame_cap"]))
 	if values.has("master_volume"):
-		var volume := int(values["master_volume"])
-		AudioServer.set_bus_mute(MASTER_BUS, volume <= 0)
-		if volume > 0:
-			AudioServer.set_bus_volume_db(MASTER_BUS, linear_to_db(volume / PERCENT))
-	# ponytail: music/sfx/ui buses do not exist yet; their volumes stay stored only.
+		apply_bus_volume(MASTER_BUS, int(values["master_volume"]))
+	ensure_audio_buses()
+	for key: String in GameConst.AUDIO_BUSES:
+		if values.has(key):
+			apply_bus_volume(AudioServer.get_bus_index(String(GameConst.AUDIO_BUSES[key])), int(values[key]))
+
+
+## Adds each missing GameConst.AUDIO_BUSES bus (sending to master). Idempotent.
+## No sounds play yet; future players pick a bus by these names.
+static func ensure_audio_buses() -> void:
+	for key: String in GameConst.AUDIO_BUSES:
+		var bus_name := String(GameConst.AUDIO_BUSES[key])
+		if AudioServer.get_bus_index(bus_name) >= 0:
+			continue
+		AudioServer.add_bus()
+		var index := AudioServer.bus_count - 1
+		AudioServer.set_bus_name(index, bus_name)
+		AudioServer.set_bus_send(index, AudioServer.get_bus_name(MASTER_BUS))
+
+
+## Volume 0..100 on one bus: muted at 0. Ignores a missing bus (index < 0).
+static func apply_bus_volume(bus_index: int, volume: int) -> void:
+	if bus_index < 0:
+		return
+	AudioServer.set_bus_mute(bus_index, volume <= 0)
+	if volume > 0:
+		AudioServer.set_bus_volume_db(bus_index, linear_to_db(volume / PERCENT))
 
 
 ## Render scale, anti-aliasing, shadows and gamma for one instance viewport.

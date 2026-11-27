@@ -11,6 +11,8 @@ const PartyScript = preload("res://features/party/Party.gd")
 var _parties: Dictionary = {}
 var _peer_party: Dictionary = {}
 var _pending_invites: Dictionary = {}
+## peer_id -> true for peers whose session party_invites preference is "nobody".
+var _invites_blocked: Dictionary = {}
 var _next_party_id: int = 1
 
 var _notify: Callable = Callable()
@@ -61,6 +63,8 @@ func invite_to_party(inviter_id: int, target_id: int, now_ms: int = Time.get_tic
 		return false
 	if not bool(_is_player_known.call(target_id)):
 		return false
+	if _invites_blocked.has(target_id):
+		return false
 	if get_party(target_id) != null:
 		return false
 	var party := get_party(inviter_id)
@@ -79,6 +83,16 @@ func invite_to_party(inviter_id: int, target_id: int, now_ms: int = Time.get_tic
 	)
 	_notify.call(inviter_id, "Invite sent to player %d" % target_id)
 	return true
+
+
+## Session invite permission for `peer_id`. Blocking also drops a pending
+## invite addressed to that peer.
+func set_invites_allowed(peer_id: int, allowed: bool) -> void:
+	if allowed:
+		_invites_blocked.erase(peer_id)
+		return
+	_invites_blocked[peer_id] = true
+	_pending_invites.erase(peer_id)
 
 
 func accept_party_invite(target_id: int, inviter_id: int, now_ms: int = Time.get_ticks_msec()) -> bool:
@@ -155,7 +169,7 @@ func send_party_state(party: Party) -> void:
 		"members": party.members.duplicate(),
 	}
 	for member: int in party.members:
-		_notify.call(member, "Party: leader %d, members %s" % [party.leader_id, str(party.members)])
+		_notify.call(member, "Party: leader player %d, %d members" % [party.leader_id, party.members.size()])
 		_send_client_rpc.call(member, "client_party_state", [info])
 
 
@@ -163,6 +177,7 @@ func send_party_state(party: Party) -> void:
 ## remove it from its party.
 func remove_peer(peer_id: int) -> void:
 	_pending_invites.erase(peer_id)
+	_invites_blocked.erase(peer_id)
 	for target_value: Variant in _pending_invites.keys():
 		var target_id: int = int(target_value)
 		var invite: Variant = _pending_invites.get(target_id)

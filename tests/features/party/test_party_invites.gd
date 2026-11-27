@@ -53,3 +53,26 @@ func test_declined_invite_cannot_be_accepted() -> void:
 	service.decline_party_invite(TARGET, INVITER)
 	assert_false(service.accept_party_invite(TARGET, INVITER, NOW_MS), "declined invite cannot be accepted")
 	assert_true(service.get_party(TARGET) == null, "target is not in a party")
+
+
+func test_blocked_target_cannot_be_invited() -> void:
+	var service := _make_service()
+	service.set_invites_allowed(TARGET, false)
+	assert_false(service.invite_to_party(INVITER, TARGET, NOW_MS), "blocked target refuses the invite")
+	service.set_invites_allowed(TARGET, true)
+	assert_true(service.invite_to_party(INVITER, TARGET, NOW_MS), "allowed again: invite works")
+
+
+func test_blocking_erases_pending_invite() -> void:
+	var service := _make_service()
+	service.invite_to_party(INVITER, TARGET, NOW_MS)
+	service.set_invites_allowed(TARGET, false)
+	assert_false(service.accept_party_invite(TARGET, INVITER, NOW_MS), "pending invite was erased by blocking")
+	assert_true(service.get_party(TARGET) == null, "target did not join")
+
+
+func test_remove_peer_clears_block() -> void:
+	var service := _make_service()
+	service.set_invites_allowed(TARGET, false)
+	service.remove_peer(TARGET)
+	assert_true(service.invite_to_party(INVITER, TARGET, NOW_MS), "same peer ID can be invited after reconnecting")

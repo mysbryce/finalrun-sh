@@ -125,9 +125,35 @@ static func interact_of(title: String, prompt: String) -> Variant:
 	return {"title": title, "actions": actions}
 
 
+## Streamer mode: mask player IDs and the server ID in page text (set by Main).
+static var streamer_mode: bool = false
+static var _player_id_regex: RegEx = null
+static var _server_id_regex: RegEx = null
+
+
 ## Display name for a peer; "Player %d" until a name system exists.
+## Streamer mode keeps only the last two digits: "Player ••45".
 static func player_name(peer_id: int) -> String:
+	if streamer_mode:
+		return "Player %s%02d" % [GameConst.STREAMER_MASK, peer_id % GameConst.STREAMER_ID_MODULO]
 	return "Player %d" % peer_id
+
+
+## Streamer mode: masks "player 123" IDs and the server ID in a text. Off -> unchanged.
+static func redact(text: String) -> String:
+	if not streamer_mode:
+		return text
+	if _player_id_regex == null:
+		_player_id_regex = RegEx.create_from_string("\\b([Pp]layer) ([0-9]+)\\b")
+		_server_id_regex = RegEx.create_from_string(GameConst.SERVER_ID_PREFIX + "[0-9]{4}")
+	var result := ""
+	var last := 0
+	for m: RegExMatch in _player_id_regex.search_all(text):
+		result += text.substr(last, m.get_start() - last)
+		result += m.get_string(1) + " " + GameConst.STREAMER_MASK + "%02d" % (int(m.get_string(2)) % GameConst.STREAMER_ID_MODULO)
+		last = m.get_end()
+	result += text.substr(last)
+	return _server_id_regex.sub(result, GameConst.SERVER_ID_PREFIX + GameConst.SERVER_ID_MASK, true)
 
 
 ## One other party member. present = their player node is in our instance.
@@ -237,7 +263,7 @@ static func snapshot(ctx: Dictionary, now_ms: int) -> Dictionary:
 		timer = {"label": "Masking", "seconds": seconds_left(mask_end_ms, now_ms)}
 	var texts: Array = []
 	for entry: Dictionary in notifications:
-		texts.append(String(entry.get("text", "")))
+		texts.append(redact(String(entry.get("text", ""))))
 	return {
 		"role": role_text(role),
 		"life": life_text(life),
@@ -459,6 +485,12 @@ func set_player(player: Node3D) -> void:
 		_minimap.follow(player)
 
 
+## minimap_rotate setting: counter-rotate the minimap with the camera heading.
+func set_minimap_rotate(on: bool) -> void:
+	if _minimap != null:
+		_minimap.rotate_with_heading = on
+
+
 func set_money(state: Dictionary) -> void:
 	_money = state.duplicate()
 	if is_inventory_open() or is_search_open():
@@ -550,6 +582,8 @@ func _process(_delta: float) -> void:
 		var camera := _player.get_viewport().get_camera_3d()
 		if camera != null:
 			ctx["heading"] = heading_from_yaw(camera.global_rotation.y)
+			if _minimap != null:
+				_minimap.heading_yaw = camera.global_rotation.y
 	var party: Array = []
 	for member: int in _party_members:
 		if member == self_id:

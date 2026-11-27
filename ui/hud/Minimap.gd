@@ -1,6 +1,6 @@
 class_name Minimap
 extends TextureRect
-## North-up top-down view of the followed node's world, drawn in HUD_MINIMAP_RECT
+## North-up (or heading-up with minimap_rotate) top-down view of the followed node's world, drawn in HUD_MINIMAP_RECT
 ## under the web page (which draws the frame and arrow).
 
 
@@ -8,6 +8,16 @@ static func camera_position(target: Vector3) -> Vector3:
 	return Vector3(target.x, target.y + GameConst.HUD_MINIMAP_HEIGHT, target.z)
 
 
+## Top-down camera rotation. Euler order YXZ applies the yaw first, then the
+## -90 degree pitch, so screen-up is the camera's facing when `rotate` is on.
+static func camera_rotation(yaw: float, rotate: bool) -> Vector3:
+	return Vector3(-PI / 2.0, yaw if rotate else 0.0, 0.0)
+
+
+## minimap_rotate setting (Hud.set_minimap_rotate).
+var rotate_with_heading: bool = false
+## Camera yaw in radians, fed by the Hud every frame.
+var heading_yaw: float = 0.0
 var _viewport: SubViewport = null
 var _camera: Camera3D = null
 var _target: Node3D = null
@@ -47,4 +57,5 @@ func _process(_delta: float) -> void:
 		_viewport.world_3d = world
 	_camera.current = true
 	_camera.global_position = camera_position(_target.global_position)
+	_camera.rotation = camera_rotation(heading_yaw, rotate_with_heading)
 	visible = true

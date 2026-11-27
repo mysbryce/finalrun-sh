@@ -422,6 +422,40 @@ func test_headless_has_no_browser() -> void:
 	assert_false(Hud.can_use_browser(), "no browser available in headless tests")
 
 
+func test_player_name_streamer_mode() -> void:
+	Hud.streamer_mode = false
+	var off := Hud.player_name(12345)
+	Hud.streamer_mode = true
+	var on := Hud.player_name(12345)
+	Hud.streamer_mode = false
+	assert_eq(off, "Player 12345", "streamer off: full peer ID")
+	assert_eq(on, "Player ••45", "streamer on: last two digits")
+
+
+func test_redact_streamer_mode() -> void:
+	Hud.streamer_mode = false
+	var off := Hud.redact("Invite sent to player 678")
+	Hud.streamer_mode = true
+	var on := Hud.redact("Invite sent to player 678")
+	var two := Hud.redact("Player 5 and Player 1234")
+	var server := Hud.redact("Connected to SV-SPACE-0042")
+	var state := Hud.snapshot({"notifications": [{"text": "Joined by Player 901", "expires_ms": 9999}]}, 0)
+	Hud.streamer_mode = false
+	assert_eq(off, "Invite sent to player 678", "streamer off: unchanged")
+	assert_eq(on, "Invite sent to player ••78", "streamer on: player ID masked")
+	assert_eq(two, "Player ••05 and Player ••34", "every player ID masked, two digits kept")
+	assert_eq(server, "Connected to SV-SPACE-••••", "server ID masked")
+	assert_eq(state["notifications"], ["Joined by Player ••01"], "snapshot notifications are redacted")
+
+
+func test_set_minimap_rotate_headless() -> void:
+	var hud := Hud.new()
+	(Engine.get_main_loop() as SceneTree).root.add_child(hud)
+	hud.set_minimap_rotate(true)
+	hud.free()
+	assert_true(true, "set_minimap_rotate without a browser raises no error")
+
+
 func test_party_view_no_party() -> void:
 	var view := Hud.party_view(10, [], 0, [10, 11, 12], {}, "", 0)
 	assert_true(view["canCreate"], "no party can create")
