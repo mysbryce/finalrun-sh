@@ -28,3 +28,4 @@ godot_console --headless --path . -s res://tests/run_tests.gd
 - Moving a script: move its `.gd.uid` with it and update every `res://` path and `ext_resource`.
 - Never broadcast `rpc()` for gameplay. Use the instance member helpers. Every `any_peer` RPC validates `multiplayer.get_remote_sender_id()` first.
 - Per-tick input RPCs should be `unreliable`, not `reliable`.
+- Life/role state changes go through one idempotent server function; every other path calls it (no direct writes).
