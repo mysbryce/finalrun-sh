@@ -42,7 +42,7 @@ func _process(_delta: float) -> void:
 	if _target == null or not is_instance_valid(_target) or not _target.is_inside_tree():
 		visible = false
 		return
-	var world := _target.get_viewport().world_3d
+	var world := _target.get_world_3d()
 	if _viewport.world_3d != world:
 		_viewport.world_3d = world
 	_camera.current = true
