@@ -20,6 +20,7 @@ import {
   cellBox,
 } from './layout'
 import { moveBagItem, placeBagItems, slotFromDropId, targetSlot } from './placement'
+import { unzoomModifier } from './dragZoom'
 import { BagGrid } from './components/BagGrid'
 import { DetailsPanel } from './components/DetailsPanel'
 import { EquipmentPanel } from './components/EquipmentPanel'
@@ -158,7 +159,7 @@ export function InventoryScreen() {
             />
           </div>
         </div>
-        <DragOverlay>
+        <DragOverlay modifiers={[unzoomModifier]}>
           {activeItem ? (
             <ItemTile
               item={activeItem}

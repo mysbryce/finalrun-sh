@@ -46,3 +46,4 @@ godot_console --headless --path . -s res://tests/run_tests.gd
 - npm in this sandbox: the default cache is outside the workspace (`EPERM`), so pass `--cache <session temp dir>\npm-cache` to `npm install` / `npm ci`. Vitest needs `pool: 'threads'` (forks cannot spawn).
 - Web UI source is `ui/web/` (layout in `docs/design/WEB_UI.md`); build output `ui/dist/` is generated: change the source and rebuild, never edit `ui/dist/`.
 - Instance SubViewports use own_world_3d, so Viewport.world_3d is null there. Get a node's world with Node3D.get_world_3d() (or Viewport.find_world_3d()).
+- The web page is zoomed with CSS `zoom` on `<html>` (`app/uiScale.ts`): anything placed with `position: fixed` from screen-px coords (dnd-kit `DragOverlay`, popovers at the cursor) must cancel the zoom, see `features/inventory/dragZoom.ts`.
