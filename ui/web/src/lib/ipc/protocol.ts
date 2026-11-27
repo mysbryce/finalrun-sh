@@ -32,9 +32,19 @@ export type HudState = {
 export type SearchItem = { uid: number; id: string; label: string; value: number; source: string }
 export type SearchView = { target: number; title: string; items: SearchItem[] }
 
+export type InventoryItem = { uid: number; id: string; label: string; value: number; source: string }
+export type InventoryView = {
+  cash: number
+  bagValue: number
+  bagSlots: number
+  bag: InventoryItem[]
+  gear: InventoryItem[]
+}
+
 export type GodotToPage =
   | { type: 'hud'; data: HudState }
   | { type: 'search'; data: SearchView | null }
+  | { type: 'inventory'; data: InventoryView }
   | { type: 'route'; to: string }
   | { type: 'reply'; id: number; ok: boolean; data?: unknown; error?: string }
 

@@ -37,7 +37,7 @@ const sample: HudState = {
 }
 
 function makeDeps(): BridgeDeps {
-  return { setHud: vi.fn(), navigate: vi.fn(), setSearch: vi.fn() }
+  return { setHud: vi.fn(), navigate: vi.fn(), setSearch: vi.fn(), setInventory: vi.fn() }
 }
 
 describe('bridge', () => {
@@ -65,6 +65,13 @@ describe('bridge', () => {
     expect(deps.setSearch).toHaveBeenCalledWith(view)
     handleMessage(JSON.stringify({ type: 'search', data: null }), deps)
     expect(deps.setSearch).toHaveBeenLastCalledWith(null)
+  })
+
+  it('inventory message calls setInventory', () => {
+    const deps = makeDeps()
+    const view = { cash: 5, bagValue: 0, bagSlots: 36, bag: [], gear: [] }
+    handleMessage(JSON.stringify({ type: 'inventory', data: view }), deps)
+    expect(deps.setInventory).toHaveBeenCalledWith(view)
   })
 
   it('bad json is ignored', () => {

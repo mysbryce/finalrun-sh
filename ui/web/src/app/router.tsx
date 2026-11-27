@@ -1,15 +1,26 @@
-import { createRootRoute, createRoute, createRouter, createMemoryHistory, Outlet } from '@tanstack/react-router'
+import {
+  createRootRoute,
+  createRoute,
+  createRouter,
+  createMemoryHistory,
+  Outlet,
+  useRouterState,
+} from '@tanstack/react-router'
 import { HudScreen } from '@/features/hud/HudScreen'
+import { InventoryScreen } from '@/features/inventory/InventoryScreen'
 import { SearchScreen } from '@/features/search/SearchScreen'
 
-const rootRoute = createRootRoute({
-  component: () => (
+function RootLayout() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  return (
     <>
-      <HudScreen />
+      {pathname !== '/inventory' && <HudScreen />}
       <Outlet />
     </>
-  ),
-})
+  )
+}
+
+const rootRoute = createRootRoute({ component: RootLayout })
 
 const hudRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -23,8 +34,14 @@ const searchRoute = createRoute({
   component: SearchScreen,
 })
 
+const inventoryRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/inventory',
+  component: InventoryScreen,
+})
+
 export const router = createRouter({
-  routeTree: rootRoute.addChildren([hudRoute, searchRoute]),
+  routeTree: rootRoute.addChildren([hudRoute, searchRoute, inventoryRoute]),
   history: createMemoryHistory({ initialEntries: ['/'] }),
 })
 
