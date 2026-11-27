@@ -38,7 +38,7 @@ Card template (English):
 
 ## Tests
 - `tests/features/downed/test_downed_service.gd`: `test_can_revive_requires_same_party` asserts ...
-- Register the test file in `tests/run_tests.gd`.
+- (`tests/run_tests.gd` auto-discovers `tests/**/test_*.gd`; no registration step.)
 
 ## Done when
 - `godot_console --headless --path . --import` has no script errors.
