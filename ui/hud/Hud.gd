@@ -173,11 +173,15 @@ var _ping: int = 0
 var _browser: Control = null
 var _page_ready: bool = false
 var _last_hud_json: String = ""
+var _minimap: Minimap = null
 
 
 func _ready() -> void:
 	if not can_use_browser():
 		return
+	_minimap = Minimap.new()
+	_minimap.name = "Minimap"
+	add_child(_minimap)
 	_browser = ClassDB.instantiate("CefTexture") as Control
 	_browser.name = "Browser"
 	_browser.set("url", page_url(OS.get_cmdline_user_args()))
@@ -190,6 +194,8 @@ func _ready() -> void:
 
 func set_player(player: Node3D) -> void:
 	_player = player
+	if _minimap != null:
+		_minimap.follow(player)
 
 
 func set_money(state: Dictionary) -> void:
