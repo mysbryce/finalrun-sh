@@ -138,6 +138,7 @@ describe('HudScreen', () => {
     useHudStore.setState({ hud: { ...DEMO_HUD, life: 'ALIVE' } })
     renderHud()
     await screen.findByText(formatMoney(DEMO_HUD.cash))
+    expect(screen.queryByRole('progressbar', { name: 'Bleed-out' })).toBeNull()
     expect(screen.queryByText('Being revived')).toBeNull()
     expect(screen.queryByText('At risk of being finished')).toBeNull()
   })
@@ -156,6 +157,14 @@ describe('HudScreen', () => {
     expect(screen.queryByText('Surrender')).toBeNull()
     expect(screen.queryByText(/Heist alert/)).toBeNull()
     expect(screen.getByText(DEMO_HUD.notifications[0])).toBeInTheDocument()
+  })
+
+  it('renders the downed panel while downed', async () => {
+    useHudStore.setState({ hud: { ...DEMO_HUD, life: 'DOWNED', timer: { label: 'Bleed-out', seconds: 42 } } })
+    renderHud()
+    expect(await screen.findByText('42 s')).toBeInTheDocument()
+    expect(screen.getByRole('progressbar', { name: 'Bleed-out' })).toHaveAttribute('aria-valuenow', '42')
+    expect(screen.getByText('Crawl to cover · wait for a revive')).toBeInTheDocument()
   })
 
   it('shows a dash for a downed old snapshot without channels', async () => {

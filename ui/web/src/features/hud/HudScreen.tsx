@@ -6,7 +6,7 @@ import { MinimapFrame } from './components/MinimapFrame'
 import { StatusColumn } from './components/StatusColumn'
 import { Compass } from './components/Compass'
 import { NotificationStack } from './components/NotificationStack'
-import { BleedOutBanner } from './components/BleedOutBanner'
+import { DownedPanel } from './components/DownedPanel'
 import { CashBox } from './components/CashBox'
 import { PartyPanel } from './components/PartyPanel'
 import { Hotbar } from './components/Hotbar'
@@ -35,7 +35,7 @@ export function HudScreen() {
       {showCompass && <Compass heading={hud.heading} />}
       {hud.heistAlert?.active && <HeistAlert alert={hud.heistAlert} />}
       <NotificationStack items={hud.notifications} heistToast={heistToast} />
-      {hud.life === 'DOWNED' && hud.timer && <BleedOutBanner seconds={hud.timer.seconds} />}
+      {hud.life === 'DOWNED' && <DownedPanel seconds={hud.timer?.seconds ?? null} />}
       {hud.life === 'DOWNED' && <DownedChannels channels={hud.channels} />}
       <CashBox cash={hud.cash} />
       <PartyPanel

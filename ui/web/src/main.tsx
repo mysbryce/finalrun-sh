@@ -8,6 +8,13 @@ import { prefsFromValues, usePrefs } from '@/lib/prefs'
 import type { SettingsView } from '@/lib/ipc/protocol'
 import { useHudStore } from '@/features/hud/hudStore'
 import { DEMO_HUD } from '@/features/hud/demoHud'
+import { useOverlayStore } from '@/features/hud/overlayStore'
+import {
+  DEMO_RECEIPT_ARREST,
+  DEMO_RECEIPT_DEATH,
+  DEMO_TRANSFER,
+  DEMO_TRANSFER_FAILED,
+} from '@/features/hud/demoOverlay'
 import { useSearchStore } from '@/features/search/searchStore'
 import { DEMO_SEARCH } from '@/features/search/demoSearch'
 import { useInventoryStore } from '@/features/inventory/inventoryStore'
@@ -43,6 +50,8 @@ installBridge({
   setLobby: (v) => useLobbyStore.getState().setLobby(v),
   setParty: (v) => usePartyStore.getState().setParty(v),
   setSettings: onSettings,
+  setTransfer: (v) => useOverlayStore.getState().setTransfer(v),
+  setGameOverlay: (v) => useOverlayStore.getState().setOverlay(v),
 })
 
 if (import.meta.env.DEV && !window.sendIpcMessage) {
@@ -70,6 +79,25 @@ if (import.meta.env.DEV && !window.sendIpcMessage) {
   if (window.location.hash === '#settings') {
     onSettings(DEMO_SETTINGS)
     void router.navigate({ to: '/settings/graphics' })
+  }
+  if (window.location.hash === '#death') {
+    useOverlayStore.getState().setOverlay(DEMO_RECEIPT_DEATH)
+    void router.navigate({ to: '/death' })
+  }
+  if (window.location.hash === '#arrest') {
+    useOverlayStore.getState().setOverlay(DEMO_RECEIPT_ARREST)
+    void router.navigate({ to: '/arrest' })
+  }
+  if (window.location.hash === '#receipt') {
+    useOverlayStore.getState().setOverlay(DEMO_RECEIPT_DEATH)
+  }
+  if (window.location.hash === '#transfer') {
+    useOverlayStore.getState().setTransfer(DEMO_TRANSFER)
+    void router.navigate({ to: '/transfer' })
+  }
+  if (window.location.hash === '#transfer-failed') {
+    useOverlayStore.getState().setTransfer(DEMO_TRANSFER_FAILED)
+    void router.navigate({ to: '/transfer' })
   }
 }
 
