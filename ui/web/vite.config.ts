@@ -10,5 +10,5 @@ export default defineConfig({
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   build: { outDir: '../dist', emptyOutDir: true },
   server: { port: 5173, strictPort: true },
-  test: { environment: 'jsdom', pool: 'threads' },
+  test: { environment: 'jsdom', pool: 'threads', setupFiles: ['./src/test/setup.ts'] },
 })
