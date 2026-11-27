@@ -37,6 +37,8 @@ signal settings_apply_requested(request_id: int, revision: int, patch: Dictionar
 signal settings_capture_requested(request_id: int, key: String)
 ## The settings page cancelled a running capture.
 signal settings_capture_cancel_requested
+## The settings page answered the display preview dialog (keep or revert). Main replies with send_reply(request_id, ...).
+signal settings_display_confirm_requested(request_id: int, token: String, keep: bool)
 
 const PARTY_VERBS_WITH_TARGET := {
 	"party.invite": ["invite", "targetPeerId"],
@@ -425,9 +427,13 @@ static func route_request(request: Dictionary, open_target: int) -> Dictionary:
 		return {"reply": null, "action": ["settings_capture", id, key]}
 	if method == "settings.capture_cancel":
 		return _ok_reply(id, {}, ["settings_capture_cancel"])
-	if method in ["settings.display_confirm"]:
-		# ponytail: display preview comes in a later card.
-		return _error_reply(id, "not_available")
+	if method == "settings.display_confirm":
+		var token: Variant = params.get("token")
+		var keep: Variant = params.get("keep")
+		if not token is String or not keep is bool:
+			return _error_reply(id, "bad_params")
+		# Main keeps or reverts the preview and sends the reply with send_reply.
+		return {"reply": null, "action": ["settings_display_confirm", id, token, keep]}
 	return _error_reply(id, "unknown_method")
 
 
@@ -682,6 +688,8 @@ func _on_ipc_message(message: String) -> void:
 			settings_capture_requested.emit(int(action[1]), String(action[2]))
 		elif action.size() == 1 and action[0] == "settings_capture_cancel":
 			settings_capture_cancel_requested.emit()
+		elif action.size() == 4 and action[0] == "settings_display_confirm":
+			settings_display_confirm_requested.emit(int(action[1]), String(action[2]), bool(action[3]))
 
 
 ## Sends the reply envelope for a request answered later (deferred reply).

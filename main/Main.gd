@@ -30,6 +30,8 @@ var _settings: SettingsService = null
 var _applied_camera_id: int = 0
 ## Running settings.capture request, or null.
 var _capture: BindingCapture = null
+## Real window {mode, size, position} before the running display preview; {} when none.
+var _preview_window: Dictionary = {}
 
 
 func _ready() -> void:
@@ -82,6 +84,7 @@ func _start_client() -> void:
 	_hud.settings_apply_requested.connect(_on_settings_apply)
 	_hud.settings_capture_requested.connect(_on_settings_capture)
 	_hud.settings_capture_cancel_requested.connect(_on_settings_capture_cancel)
+	_hud.settings_display_confirm_requested.connect(_on_settings_display_confirm)
 	_settings = SettingsService.new()
 	_settings.load()
 	_hud.push_settings(_settings.view())
@@ -262,6 +265,7 @@ func _on_settings_open() -> void:
 
 func _on_settings_close() -> void:
 	_finish_capture(null)
+	_revert_preview()
 	_hud.close_settings()
 
 
@@ -293,11 +297,62 @@ func _finish_capture(binding: Variant) -> void:
 	_capture = null
 
 
+## A display patch starts a preview: the window changes now, the save waits for
+## settings.display_confirm. The snapshot is pushed before the reply.
 func _on_settings_apply(request_id: int, revision: int, patch: Dictionary) -> void:
 	var result := _settings.apply_patch(revision, patch)
-	_hud.send_reply(request_id, bool(result["ok"]), result["data"], String(result["error"]))
-	if bool(result["ok"]):
-		_hud.push_settings(_settings.view())
+	if not bool(result["ok"]):
+		_hud.send_reply(request_id, false, result["data"], String(result["error"]))
+		return
+	if result["data"].get("previewToken") != null:
+		_preview_window = {
+			"mode": DisplayServer.window_get_mode(),
+			"size": DisplayServer.window_get_size(),
+			"position": DisplayServer.window_get_position(),
+		}
+		SettingsApplier.apply_window(_settings.preview_values(), SettingsApplier.DISPLAY_KEYS)
+	_hud.push_settings(_settings.view())
+	_hud.send_reply(request_id, true, result["data"], "")
+
+
+## settings.display_confirm: keep saves the preview, revert restores the window.
+func _on_settings_display_confirm(request_id: int, token: String, keep: bool) -> void:
+	var was_active := _settings.preview_active()
+	var r := _settings.confirm_preview(token, keep)
+	if was_active and not _settings.preview_active() and not (keep and bool(r["ok"])):
+		_restore_preview_window()
+	if keep and bool(r["ok"]):
+		_preview_window = {}
+	_hud.push_settings(_settings.view())
+	_hud.send_reply(request_id, bool(r["ok"]), {}, String(r["error"]))
+
+
+## Automatic revert (timer, focus loss, Settings closed, page reload).
+func _revert_preview() -> void:
+	if _settings == null or not _settings.preview_active():
+		return
+	_settings.revert_preview()
+	_restore_preview_window()
+	_hud.push_settings(_settings.view())
+
+
+## Explicit revert (Esc over the preview dialog).
+func _cancel_preview() -> void:
+	_settings.confirm_preview(_settings.preview_token(), false)
+	_restore_preview_window()
+	_hud.push_settings(_settings.view())
+
+
+## Puts the window back as it was before the preview.
+func _restore_preview_window() -> void:
+	if _preview_window.is_empty():
+		return
+	var mode: DisplayServer.WindowMode = _preview_window["mode"]
+	DisplayServer.window_set_mode(mode)
+	if mode == DisplayServer.WINDOW_MODE_WINDOWED:
+		DisplayServer.window_set_size(_preview_window["size"])
+		DisplayServer.window_set_position(_preview_window["position"])
+	_preview_window = {}
 
 
 ## Applied settings changed: engine, window (changed display keys only), every
@@ -362,6 +417,7 @@ func _on_quit() -> void:
 
 func _on_page_ready() -> void:
 	_finish_capture(null)
+	_revert_preview()
 	if _boot == null:
 		return
 	_boot.on_page_ready(Time.get_ticks_msec())
@@ -537,6 +593,8 @@ func _process(_delta: float) -> void:
 	# (close, show_lobby, end_lobby, leave).
 	if _capture != null and (_capture.timed_out(Time.get_ticks_msec()) or not _hud.is_settings_open()):
 		_finish_capture(null)
+	if _settings != null and _settings.auto_revert_due(Time.get_ticks_msec(), _hud.is_settings_open()):
+		_revert_preview()
 	if _boot != null:
 		_process_boot()
 	if _lobby != null:
@@ -712,7 +770,8 @@ func _on_escape() -> void:
 	if _hud == null:
 		return
 	# ponytail: Esc over Settings is ignored; the page's Back button closes it
-	# (keys never reach the page). Capture/dialog Esc comes with later cards.
+	# (keys never reach the page). Esc over a display preview is handled in
+	# _unhandled_input (it reverts the preview).
 	if _hud.is_settings_open():
 		return
 	if _hud.is_inventory_open():
@@ -744,6 +803,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 		if _boot != null and (key_event.keycode == KEY_ENTER or key_event.keycode == KEY_KP_ENTER):
 			_boot.skip(Time.get_ticks_msec())
+			get_viewport().set_input_as_handled()
+			return
+		if key_event.physical_keycode == KEY_ESCAPE and _settings != null and _settings.preview_active() and _hud.is_settings_open():
+			_cancel_preview()
 			get_viewport().set_input_as_handled()
 			return
 		if _boot != null or _lobby != null:
@@ -871,3 +934,4 @@ func _notification(what: int) -> void:
 		return
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
 		_finish_capture(null)
+		_revert_preview()

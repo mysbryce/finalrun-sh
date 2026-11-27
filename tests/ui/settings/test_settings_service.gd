@@ -275,3 +275,124 @@ func test_capture_error() -> void:
 	assert_eq(service.capture_error("bind_pause"), "bad_params", "fixed binding")
 	assert_eq(service.capture_error("bind_reload"), "not_available", "coming later binding")
 	assert_eq(service.capture_error("bind_interact"), "", "capturable binding")
+
+
+func test_preview_start() -> void:
+	var path := _temp_path()
+	var service := _service(path)
+	var result := service.apply_patch(0, {"display_mode": "windowed"}, 1000)
+	var file_written := FileAccess.file_exists(path)
+	_remove(path)
+	var token: Variant = result["data"].get("previewToken")
+	assert_true(result["ok"], "display patch is accepted")
+	assert_true(token is String, "display patch returns a preview token")
+	assert_eq(service.view(1000)["revision"], 0, "preview keeps the revision")
+	assert_false(file_written, "preview saves nothing")
+	assert_eq(service.view(1000)["preview"]["token"], token, "view carries the token")
+	assert_eq(service.view(1000)["preview"]["secondsLeft"], 15, "15 s at the start")
+	assert_eq(service.view(15001)["preview"]["secondsLeft"], 1, "rounds up to 1 s")
+	assert_false(service.preview_expired(15999), "not expired before 15 s")
+	assert_true(service.preview_expired(16000), "expired at 15 s")
+
+
+func test_auto_revert_due() -> void:
+	var path := _temp_path()
+	var service := _service(path)
+	var none_open := service.auto_revert_due(1000, true)
+	var none_closed := service.auto_revert_due(1000, false)
+	service.apply_patch(0, {"display_mode": "windowed"}, 1000)
+	_remove(path)
+	assert_false(none_open, "no preview, settings open")
+	assert_false(none_closed, "no preview, settings closed")
+	assert_true(service.auto_revert_due(1000, false), "settings closed reverts")
+	assert_false(service.auto_revert_due(1000, true), "running preview with settings open")
+	assert_true(service.auto_revert_due(16000, true), "timed out preview reverts")
+
+
+func test_preview_not_started_and_busy() -> void:
+	var path := _temp_path()
+	var service := _service(path)
+	var plain := service.apply_patch(0, {"fov": 90})
+	var preview := service.apply_patch(1, {"display_mode": "windowed"}, 1000)
+	var busy := service.apply_patch(1, {"fov": 80}, 1000)
+	_remove(path)
+	assert_eq(plain["data"], {"previewToken": null}, "no display key, no preview")
+	assert_true(preview["data"].get("previewToken") is String, "display key starts a preview")
+	assert_eq(busy["error"], "busy", "apply during a preview is busy")
+
+
+func test_confirm_wrong_token() -> void:
+	var path := _temp_path()
+	var service := _service(path)
+	service.apply_patch(0, {"display_mode": "windowed"}, 1000)
+	var r := service.confirm_preview("wrong", true, 2000)
+	_remove(path)
+	assert_eq(r, {"ok": false, "error": "preview_expired"}, "wrong token is preview_expired")
+	assert_true(service.preview_active(), "the running preview is untouched")
+
+
+func test_confirm_keep() -> void:
+	var path := _temp_path()
+	var service := _service(path)
+	var emitted: Array = []
+	service.changed.connect(func(_values: Dictionary, keys: Array) -> void: emitted.append(keys))
+	var token := String(service.apply_patch(0, {"display_mode": "windowed"}, 1000)["data"]["previewToken"])
+	var r := service.confirm_preview(token, true, 2000)
+	var reloaded := _service(path)
+	_remove(path)
+	assert_eq(r, {"ok": true, "error": ""}, "keep is ok")
+	assert_eq(service.view()["revision"], 1, "keep increments the revision")
+	assert_eq(reloaded.get_value("display_mode"), "windowed", "keep saves the value")
+	assert_eq(emitted, [["display_mode"]], "keep emits changed")
+	assert_eq(service.view()["preview"], null, "no preview after keep")
+
+
+func test_confirm_revert() -> void:
+	var path := _temp_path()
+	var service := _service(path)
+	var token := String(service.apply_patch(0, {"display_mode": "windowed"}, 1000)["data"]["previewToken"])
+	var r := service.confirm_preview(token, false, 2000)
+	var file_written := FileAccess.file_exists(path)
+	_remove(path)
+	assert_eq(r, {"ok": true, "error": ""}, "revert is ok")
+	assert_false(file_written, "revert saves nothing")
+	assert_eq(service.get_value("display_mode"), "borderless", "revert keeps the old value")
+	assert_eq(service.view()["saveError"], null, "revert has no save error")
+	assert_false(service.preview_active(), "no preview after revert")
+
+
+func test_confirm_keep_expired() -> void:
+	var path := _temp_path()
+	var service := _service(path)
+	var token := String(service.apply_patch(0, {"display_mode": "windowed"}, 1000)["data"]["previewToken"])
+	var r := service.confirm_preview(token, true, 16000)
+	_remove(path)
+	assert_eq(r, {"ok": false, "error": "preview_expired"}, "late keep is preview_expired")
+	assert_false(service.preview_active(), "late keep drops the preview")
+	assert_eq(service.view()["saveError"], "preview_reverted", "late keep reports preview_reverted")
+
+
+func test_revert_preview_then_apply_clears_error() -> void:
+	var path := _temp_path()
+	var service := _service(path)
+	service.apply_patch(0, {"display_mode": "windowed"}, 1000)
+	service.revert_preview()
+	var reverted_error: Variant = service.view()["saveError"]
+	var applied := service.apply_patch(0, {"fov": 90})
+	_remove(path)
+	assert_eq(reverted_error, "preview_reverted", "automatic revert reports preview_reverted")
+	assert_true(applied["ok"], "apply after a revert works")
+	assert_eq(service.view()["saveError"], null, "successful apply clears the error")
+
+
+func test_keep_save_failure() -> void:
+	var path := "user://missing_dir_%d_%d/settings.cfg" % [Time.get_ticks_usec(), randi()]
+	var service := _service(path)
+	var token := String(service.apply_patch(0, {"display_mode": "windowed"}, 1000)["data"]["previewToken"])
+	var r := service.confirm_preview(token, true, 2000)
+	assert_eq(r, {"ok": false, "error": "save_failed"}, "keep with a failing save")
+	assert_false(service.preview_active(), "failed keep drops the preview")
+	assert_eq(service.save_error, "save_failed", "failed keep sets save_failed")
+	assert_eq(service.get_value("display_mode"), "borderless", "failed keep keeps the old value")
+	assert_eq(service.view()["revision"], 0, "failed keep keeps the revision")
+	assert_eq(service.view()["preview"], null, "no preview after a failed keep")

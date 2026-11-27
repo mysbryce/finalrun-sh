@@ -35,6 +35,9 @@ var _launch_values: Dictionary = {}
 var _saved_keys: Array = []
 var _capabilities: Dictionary = {}
 var _revision: int = 0
+## Running display preview {token, merged, started_ms}; {} when none.
+var _preview: Dictionary = {}
+var _next_token: int = 0
 var _key_pattern: RegEx = RegEx.create_from_string("^[A-Za-z0-9]+$")
 
 
@@ -50,6 +53,7 @@ func load() -> void:
 	_by_key = {}
 	_values = {}
 	_saved_keys = []
+	_preview = {}
 	save_error = null
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(_schema_path))
 	if parsed is Array:
@@ -175,8 +179,12 @@ func capture_error(key: String) -> String:
 	return ""
 
 
-## Validates and commits a full patch. Returns {ok, error, data}.
-func apply_patch(revision: int, patch: Dictionary) -> Dictionary:
+## Validates and commits a full patch. Returns {ok, error, data}. A patch that
+## changes a display key starts a preview instead (nothing saved, data.previewToken
+## set); confirm_preview keeps or drops it.
+func apply_patch(revision: int, patch: Dictionary, now_ms: int = Time.get_ticks_msec()) -> Dictionary:
+	if preview_active():
+		return _fail("busy")
 	if revision != _revision:
 		return _fail("stale_revision")
 	for raw_key: Variant in patch.keys():
@@ -202,9 +210,74 @@ func apply_patch(revision: int, patch: Dictionary) -> Dictionary:
 	var conflict := _binding_conflict(merged)
 	if not conflict.is_empty():
 		return {"ok": false, "error": "binding_conflict", "data": {"conflict": conflict}}
+	for key: String in SettingsApplier.DISPLAY_KEYS:
+		if not _same(_values.get(key), merged.get(key)):
+			_next_token += 1
+			var token := "p%d" % _next_token
+			_preview = {"token": token, "merged": merged, "started_ms": now_ms}
+			return {"ok": true, "error": "", "data": {"previewToken": token}}
+	if not _commit(merged):
+		return _fail("save_failed")
+	return {"ok": true, "error": "", "data": {"previewToken": null}}
+
+
+func preview_active() -> bool:
+	return not _preview.is_empty()
+
+
+## Token of the running preview, "" when none.
+func preview_token() -> String:
+	return String(_preview.get("token", ""))
+
+
+## Merged values of the running preview, {} when none.
+func preview_values() -> Dictionary:
+	if _preview.is_empty():
+		return {}
+	return (_preview["merged"] as Dictionary).duplicate(true)
+
+
+func preview_expired(now_ms: int) -> bool:
+	return preview_active() and now_ms - int(_preview["started_ms"]) >= GameConst.DISPLAY_PREVIEW_MS
+
+
+## The preview must revert on its own: timed out or Settings no longer open.
+func auto_revert_due(now_ms: int, settings_open: bool) -> bool:
+	return preview_active() and (preview_expired(now_ms) or not settings_open)
+
+
+## settings.display_confirm. Returns {ok, error}. Keep saves the previewed patch
+## like a normal apply; revert drops it.
+func confirm_preview(token: String, keep: bool, now_ms: int = Time.get_ticks_msec()) -> Dictionary:
+	if not preview_active() or token != preview_token():
+		return {"ok": false, "error": "preview_expired"}
+	if preview_expired(now_ms):
+		revert_preview()
+		return {"ok": false, "error": "preview_expired"}
+	var merged: Dictionary = _preview["merged"]
+	_preview = {}
+	if not keep:
+		save_error = null
+		return {"ok": true, "error": ""}
+	if not _commit(merged):
+		return {"ok": false, "error": "save_failed"}
+	return {"ok": true, "error": ""}
+
+
+## Automatic revert (timer, focus loss, Settings closed, page reload). No-op without a preview.
+func revert_preview() -> void:
+	if not preview_active():
+		return
+	_preview = {}
+	save_error = "preview_reverted"
+
+
+## Saves `merged` and makes it the current values (revision + 1, changed emitted).
+## On failure sets save_error = "save_failed" and changes nothing else.
+func _commit(merged: Dictionary) -> bool:
 	if not _save(merged):
 		save_error = "save_failed"
-		return _fail("save_failed")
+		return false
 	save_error = null
 	var changed_keys: Array = []
 	for key: String in merged.keys():
@@ -213,7 +286,7 @@ func apply_patch(revision: int, patch: Dictionary) -> Dictionary:
 	_values = merged
 	_revision += 1
 	changed.emit(values(), changed_keys)
-	return {"ok": true, "error": "", "data": {"previewToken": null}}
+	return true
 
 
 ## Session keys back to their defaults (new connection or disconnect).
@@ -244,7 +317,11 @@ func pending_restart() -> Array:
 
 
 ## SettingsView for the page.
-func view() -> Dictionary:
+func view(now_ms: int = Time.get_ticks_msec()) -> Dictionary:
+	var preview: Variant = null
+	if preview_active():
+		var left_ms := GameConst.DISPLAY_PREVIEW_MS - (now_ms - int(_preview["started_ms"]))
+		preview = {"token": preview_token(), "secondsLeft": maxi(0, ceili(left_ms / 1000.0))}
 	return {
 		"values": values(),
 		"revision": _revision,
@@ -255,8 +332,7 @@ func view() -> Dictionary:
 		},
 		"displayModes": DISPLAY_MODES.duplicate(),
 		"pendingRestart": pending_restart(),
-		# ponytail: display preview comes with the display_confirm card.
-		"preview": null,
+		"preview": preview,
 		"saveError": save_error,
 	}
 

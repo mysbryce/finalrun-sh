@@ -35,7 +35,6 @@ const MASTER_BUS := 0
 
 
 ## Display keys in `keys` only. Resolution applies in windowed mode only.
-## ponytail: the 15 s keep/revert display preview comes with a later card.
 static func apply_window(values: Dictionary, keys: Array) -> void:
 	var mode := String(values.get("display_mode", MODE_WINDOWED))
 	if keys.has("display_mode") and values.has("display_mode"):

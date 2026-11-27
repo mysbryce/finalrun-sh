@@ -204,10 +204,17 @@ func test_route_settings_apply_defers_reply() -> void:
 	assert_eq(bad_patch["reply"].get("error"), "bad_params", "non-dictionary patch is bad_params")
 
 
-func test_route_settings_capture_not_available() -> void:
-	var routed := Hud.route_request({"id": 15, "method": "settings.display_confirm", "params": {}}, 0)
-	assert_eq(routed["reply"].get("error"), "not_available", "settings.display_confirm is not_available")
-	assert_eq(routed["action"], [], "settings.display_confirm has no action")
+func test_route_settings_display_confirm() -> void:
+	var confirm := Hud.route_request({"id": 15, "method": "settings.display_confirm", "params": {"token": "p1", "keep": true}}, 0)
+	var empty := Hud.route_request({"id": 19, "method": "settings.display_confirm", "params": {}}, 0)
+	var bad_keep := Hud.route_request({"id": 20, "method": "settings.display_confirm", "params": {"token": "p1", "keep": "yes"}}, 0)
+	var bad_token := Hud.route_request({"id": 21, "method": "settings.display_confirm", "params": {"token": 1, "keep": true}}, 0)
+	assert_eq(confirm["reply"], null, "display_confirm reply is deferred")
+	assert_eq(confirm["action"], ["settings_display_confirm", 15, "p1", true], "display_confirm action carries id, token and keep")
+	assert_eq(empty["reply"].get("error"), "bad_params", "missing params are bad_params")
+	assert_eq(empty["action"], [], "bad params have no action")
+	assert_eq(bad_keep["reply"].get("error"), "bad_params", "non-bool keep is bad_params")
+	assert_eq(bad_token["reply"].get("error"), "bad_params", "non-string token is bad_params")
 
 
 func test_route_settings_capture() -> void:

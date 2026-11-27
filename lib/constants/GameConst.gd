@@ -147,6 +147,7 @@ const AUDIO_BUSES: Dictionary = {"music_volume": "Music", "sfx_volume": "SFX", "
 const STREAMER_ID_MODULO: int = 100      # streamer mode keeps only the last two digits of a peer ID
 const STREAMER_MASK: String = "••"       # streamer mode prefix replacing the hidden peer ID digits
 const SERVER_ID_MASK: String = "••••"    # streamer mode replacement for the server ID number
+const DISPLAY_PREVIEW_MS: int = 15000  # display preview reverts unless kept within this time
 
 # Input bindings
 ## Binding settings whose value can never change (Escape stays hard-coded in Main).
