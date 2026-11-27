@@ -5,6 +5,8 @@ Architecture spec: `docs/BRIEF_core_systems.md`. Scene tree and sync rules: `doc
 Folder structure, lib/utils placement, and reuse rules: `docs/CONVENTIONS.md` (binding for every brief and worker run).
 
 ## Roles
+> **Temporary override (owner, 2026-11-27): dsh is paused.** Until the owner says to switch back, the code worker is a subagent: `Agent` with `model: "sonnet"` (Sonnet 5.5) and `effort: "low"`. Same task cards and rules as dsh. The prompt must tell it to read `AGENTS.md` first (dsh auto-loaded it; a subagent does not), then the card, do exactly its steps, run Done-when, not run git, and report the card's final-answer items. Claude still does not write game code.
+
 - Claude is the supervisor: writes briefs, reviews output, runs checks, commits. Claude does NOT write game code.
 - All code is written by the DeepSeek worker through the `dsh` CLI. Use the `dsh-worker` skill (`.claude/skills/dsh-worker/SKILL.md`).
 - Small non-code files (briefs, docs, config, this file) may be edited by Claude directly.
