@@ -8,6 +8,9 @@ const InstanceScript = preload("res://features/instance/Instance.gd")
 var _server_mode: bool = false
 var _client_view: SubViewportContainer = null
 var _peer: ENetMultiplayerPeer = null
+var _search_items: Dictionary = {}
+var _last_life_state: int = -1
+var _last_bleedout_seconds: int = -1
 
 
 func _ready() -> void:
@@ -53,8 +56,14 @@ func _start_client() -> void:
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
 	multiplayer.multiplayer_peer = peer
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
+	ServerManager.search_contents_received.connect(_on_search_contents)
+	ServerManager.search_closed_received.connect(_on_search_closed)
 	print("[Main] Connecting to 127.0.0.1:%d" % GameConst.PORT)
-	print("[Main] Controls: 1 Motel | 2 LootyBay | 3 House | 4 Center | 5 sell loot | F mask | G cop duty | H surrender | P create party")
+	print(
+		"[Main] Controls: 1 Motel | 2 LootyBay | 3 House | 4 Center | 5 sell loot | "
+		+ "F mask | G cop duty | H surrender | P create party | R revive | X finish | "
+		+ "C cuff | E search | T take | Q close | K attack"
+	)
 
 
 func _create_client_view_container() -> void:
@@ -129,6 +138,92 @@ func _on_viewport_size_changed() -> void:
 		_client_view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 
+# --- Client-side state feedback / action targeting ---------------------------
+
+func _process(_delta: float) -> void:
+	if _server_mode:
+		return
+	var player := _local_player()
+	if player == null:
+		return
+	var state: int = int(player.get("life_state"))
+	if state != _last_life_state:
+		_last_life_state = state
+		print("[Main] Life state: %s" % _life_state_name(state))
+	if state == PlayerRoleController.LifeState.DOWNED:
+		var client_now: int = int(Time.get_unix_time_from_system() * 1000.0)
+		var remaining_ms: int = maxi(0, int(player.get("downed_deadline_ms")) - client_now)
+		var seconds: int = int(remaining_ms / 1000)
+		if seconds != _last_bleedout_seconds:
+			_last_bleedout_seconds = seconds
+			print("[Main] Bleed-out: %d s" % seconds)
+	else:
+		_last_bleedout_seconds = -1
+
+
+func _on_search_contents(target_peer_id: int, items: Array) -> void:
+	_search_items[target_peer_id] = items.duplicate(true)
+	print("[Main] Body %d items: %s" % [target_peer_id, str(items)])
+
+
+func _on_search_closed(target_peer_id: int, reason: String) -> void:
+	_search_items.erase(target_peer_id)
+	print("[Main] Body %d search closed (%s)" % [target_peer_id, reason])
+
+
+func _current_instance() -> GameInstance:
+	if _client_view == null or not is_instance_valid(_client_view):
+		return null
+	for child: Node in _client_view.get_children():
+		if child is GameInstance:
+			return child as GameInstance
+	return null
+
+
+func _local_player() -> PlayerCharacter:
+	var instance := _current_instance()
+	if instance == null:
+		return null
+	return instance.get_player(multiplayer.get_unique_id()) as PlayerCharacter
+
+
+## Every action key targets the nearest other player in the current instance.
+func _nearest_other_player() -> PlayerCharacter:
+	var instance := _current_instance()
+	var local := _local_player()
+	if instance == null or local == null:
+		return null
+	var best: PlayerCharacter = null
+	var best_distance: float = INF
+	for node: Node in instance.get_players():
+		var other := node as PlayerCharacter
+		if other == null or other == local:
+			continue
+		var distance: float = local.global_position.distance_to(other.global_position)
+		if distance < best_distance:
+			best_distance = distance
+			best = other
+	return best
+
+
+func _target_peer_id() -> int:
+	var target := _nearest_other_player()
+	if target == null:
+		print("[Main] No target player in this instance")
+		return 0
+	return int(target.get("peer_id"))
+
+
+func _life_state_name(state: int) -> String:
+	match state:
+		PlayerRoleController.LifeState.DOWNED:
+			return "DOWNED"
+		PlayerRoleController.LifeState.DEAD:
+			return "DEAD"
+		_:
+			return "ALIVE"
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if _server_mode:
 		return
@@ -156,5 +251,39 @@ func _unhandled_input(event: InputEvent) -> void:
 			ServerManager.request_surrender()
 		KEY_P:
 			ServerManager.request_party_create()
+		KEY_R:
+			var revive_target := _target_peer_id()
+			if revive_target > 0:
+				ServerManager.request_revive(revive_target)
+		KEY_X:
+			var finish_target := _target_peer_id()
+			if finish_target > 0:
+				ServerManager.request_finish(finish_target)
+		KEY_C:
+			var cuff_target := _target_peer_id()
+			if cuff_target > 0:
+				ServerManager.request_cuff(cuff_target)
+		KEY_E:
+			var search_target := _target_peer_id()
+			if search_target > 0:
+				ServerManager.request_search_open(search_target)
+		KEY_T:
+			var take_target := _target_peer_id()
+			if take_target <= 0:
+				return
+			var items: Array = _search_items.get(take_target, [])
+			if items.is_empty():
+				print("[Main] No items in the open search")
+				return
+			var first: Dictionary = items[0]
+			ServerManager.request_search_take(take_target, int(first.get("uid", 0)))
+		KEY_Q:
+			var close_target := _target_peer_id()
+			if close_target > 0:
+				ServerManager.request_search_close(close_target)
+		KEY_K:
+			var attack_target := _target_peer_id()
+			if attack_target > 0:
+				ServerManager.request_attack(attack_target)
 		_:
 			pass

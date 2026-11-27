@@ -10,6 +10,12 @@ var _total_failures: int = 0
 
 
 func _initialize() -> void:
+	# Defer to the first idle frame so tests that use real Nodes can add them to
+	# the tree (the root is not inside the tree yet during _initialize).
+	call_deferred("_run_all")
+
+
+func _run_all() -> void:
 	var test_files := _find_test_files()
 	if test_files.is_empty():
 		printerr("No test files found under %s" % TESTS_ROOT)

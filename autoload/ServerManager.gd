@@ -10,6 +10,8 @@ extends Node
 signal notification_received(text: String)
 signal party_invite_received(inviter_id: int)
 signal party_changed_client(party_info: Dictionary)
+signal search_contents_received(target_peer_id: int, items: Array)
+signal search_closed_received(target_peer_id: int, reason: String)
 
 const MAP_SCENES := {
 	GameConst.MAP_MOTEL: preload("res://maps/motel/Motel.tscn"),
@@ -26,12 +28,22 @@ var _instances: InstanceRegistry = InstanceRegistry.new()
 var _parties: PartyService = PartyService.new()
 var _transfers: TransferService = TransferService.new()
 var _players: PlayerService = PlayerService.new()
+var _downed: DownedService = DownedService.new()
+## Smoke-test hook state; only active with the `--smoke` cmdline flag.
+var _smoke_enabled: bool = false
+var _smoke_ready: bool = false
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	set_process(true)
 	_players.configure(self, _instances, _transfers, _parties)
+	_players.set_downed_hooks(
+		Callable(_downed, "on_life_state_changed"),
+		Callable(_downed, "on_disconnect"),
+		Callable(_downed, "on_player_leaving")
+	)
+	_downed.configure(self, _instances, _players, _parties)
 	_parties.configure(
 		Callable(self, "_notify"),
 		Callable(self, "_send_client_rpc"),
@@ -62,6 +74,10 @@ func setup_server(p_instances_root: Node) -> void:
 		Callable(_players, "on_zone_exited")
 	)
 	_running = true
+	_smoke_enabled = (
+		OS.get_cmdline_args().has("--smoke")
+		or OS.get_cmdline_user_args().has("--smoke")
+	)
 	server_id = generate_server_id()
 	for map_name: String in GameConst.SHARED_MAPS:
 		_instances.get_or_create_instance(map_name, 1, get_map_scene(map_name))
@@ -108,21 +124,21 @@ func kick_from_party(leader_id: int, target_id: int) -> bool: return _parties.ki
 @rpc("any_peer", "call_remote", "reliable")
 func server_request_join_map(map_name: String) -> void:
 	var sender: int = multiplayer.get_remote_sender_id()
-	if _can_accept_request(sender):
+	if _can_accept_alive_request(sender):
 		_transfers.handle_join_map(sender, map_name)
 
 
 @rpc("any_peer", "call_remote", "reliable")
 func server_request_party_create() -> void:
 	var sender: int = multiplayer.get_remote_sender_id()
-	if _can_accept_request(sender):
+	if _can_accept_alive_request(sender):
 		_parties.handle_create(sender)
 
 
 @rpc("any_peer", "call_remote", "reliable")
 func server_request_party_invite(target_peer_id: int) -> void:
 	var sender: int = multiplayer.get_remote_sender_id()
-	if not _can_accept_request(sender):
+	if not _can_accept_alive_request(sender):
 		return
 	if not _parties.invite_to_party(sender, target_peer_id):
 		_notify(sender, "Cannot invite that player")
@@ -131,7 +147,7 @@ func server_request_party_invite(target_peer_id: int) -> void:
 @rpc("any_peer", "call_remote", "reliable")
 func server_request_party_accept(inviter_peer_id: int) -> void:
 	var sender: int = multiplayer.get_remote_sender_id()
-	if not _can_accept_request(sender):
+	if not _can_accept_alive_request(sender):
 		return
 	if not _parties.accept_party_invite(sender, inviter_peer_id):
 		_notify(sender, "Invite is no longer valid")
@@ -158,36 +174,80 @@ func server_request_party_kick(target_peer_id: int) -> void:
 @rpc("any_peer", "call_remote", "reliable")
 func server_request_sell_loot() -> void:
 	var sender: int = multiplayer.get_remote_sender_id()
-	if _can_accept_request(sender):
+	if _can_accept_alive_request(sender):
 		_players.sell_loot(sender)
 
 
 @rpc("any_peer", "call_remote", "reliable")
 func server_request_mask() -> void:
 	var sender: int = multiplayer.get_remote_sender_id()
-	if _can_accept_request(sender):
+	if _can_accept_alive_request(sender):
 		_players.mask(sender)
 
 
 @rpc("any_peer", "call_remote", "reliable")
 func server_request_cop_duty() -> void:
 	var sender: int = multiplayer.get_remote_sender_id()
-	if _can_accept_request(sender):
+	if _can_accept_alive_request(sender):
 		_players.cop_duty(sender)
 
 
 @rpc("any_peer", "call_remote", "reliable")
 func server_request_attack(target_peer_id: int) -> void:
 	var sender: int = multiplayer.get_remote_sender_id()
-	if _can_accept_request(sender):
+	if _can_accept_alive_request(sender):
 		_players.attack(sender, target_peer_id)
 
 
 @rpc("any_peer", "call_remote", "reliable")
 func server_request_surrender() -> void:
 	var sender: int = multiplayer.get_remote_sender_id()
-	if _can_accept_request(sender):
+	if _can_accept_alive_request(sender):
 		_players.surrender(sender)
+
+
+# --- Downed actions (client -> server RPCs) ----------------------------------
+
+@rpc("any_peer", "call_remote", "reliable")
+func server_request_revive(target_peer_id: int) -> void:
+	var sender: int = multiplayer.get_remote_sender_id()
+	if _can_accept_alive_request(sender):
+		_downed.request_revive(sender, target_peer_id)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func server_request_finish(target_peer_id: int) -> void:
+	var sender: int = multiplayer.get_remote_sender_id()
+	if _can_accept_alive_request(sender):
+		_downed.request_finish(sender, target_peer_id)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func server_request_cuff(target_peer_id: int) -> void:
+	var sender: int = multiplayer.get_remote_sender_id()
+	if _can_accept_alive_request(sender):
+		_downed.request_cuff(sender, target_peer_id)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func server_request_search_open(target_peer_id: int) -> void:
+	var sender: int = multiplayer.get_remote_sender_id()
+	if _can_accept_alive_request(sender):
+		_downed.request_search_open(sender, target_peer_id)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func server_request_search_take(target_peer_id: int, item_uid: int) -> void:
+	var sender: int = multiplayer.get_remote_sender_id()
+	if _can_accept_alive_request(sender):
+		_downed.request_search_take(sender, target_peer_id, item_uid)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func server_request_search_close(target_peer_id: int) -> void:
+	var sender: int = multiplayer.get_remote_sender_id()
+	if _can_accept_alive_request(sender):
+		_downed.request_search_close(sender, target_peer_id)
 
 
 @rpc("any_peer", "call_remote", "reliable")
@@ -233,6 +293,16 @@ func client_party_state(party_info: Dictionary) -> void:
 	party_changed_client.emit(party_info)
 
 
+@rpc("authority", "call_remote", "reliable")
+func client_search_contents(target_peer_id: int, items: Array) -> void:
+	search_contents_received.emit(target_peer_id, items)
+
+
+@rpc("authority", "call_remote", "reliable")
+func client_search_closed(target_peer_id: int, reason: String) -> void:
+	search_closed_received.emit(target_peer_id, reason)
+
+
 # --- Client request facade (client only) -------------------------------------
 
 func request_join_map(map_name: String) -> void: _send_client_request("server_request_join_map", [map_name])
@@ -246,6 +316,12 @@ func request_mask() -> void: _send_client_request("server_request_mask")
 func request_cop_duty() -> void: _send_client_request("server_request_cop_duty")
 func request_surrender() -> void: _send_client_request("server_request_surrender")
 func request_attack(target_peer_id: int) -> void: _send_client_request("server_request_attack", [target_peer_id])
+func request_revive(target_peer_id: int) -> void: _send_client_request("server_request_revive", [target_peer_id])
+func request_finish(target_peer_id: int) -> void: _send_client_request("server_request_finish", [target_peer_id])
+func request_cuff(target_peer_id: int) -> void: _send_client_request("server_request_cuff", [target_peer_id])
+func request_search_open(target_peer_id: int) -> void: _send_client_request("server_request_search_open", [target_peer_id])
+func request_search_take(target_peer_id: int, item_uid: int) -> void: _send_client_request("server_request_search_take", [target_peer_id, item_uid])
+func request_search_close(target_peer_id: int) -> void: _send_client_request("server_request_search_close", [target_peer_id])
 
 # --- Main/Player hooks -------------------------------------------------------
 
@@ -254,6 +330,11 @@ func handle_peer_left(peer_id: int) -> void: _players.handle_peer_left(peer_id)
 
 ## Public hook used by Player.take_damage() and future combat code.
 func handle_player_death(player: Node) -> void: _players.handle_player_death(player)
+
+## Local server hook: damage cancels the victim's active channels.
+func notify_player_damaged(player: Node) -> void:
+	if _running and multiplayer.is_server():
+		_downed.on_player_damaged(player)
 
 ## Assigns the custom spawn function to an instance spawner (server or client).
 func configure_spawner(spawner: MultiplayerSpawner) -> void: _instances.configure_spawner(spawner)
@@ -266,10 +347,22 @@ func _process(delta: float) -> void:
 		return
 	_transfers.update()
 	_instances.update(delta)
+	_downed.tick(_now_ms())
+	if _smoke_enabled:
+		_tick_smoke()
 
 
 func _can_accept_request(sender_id: int) -> bool:
 	return _running and multiplayer.is_server() and NetUtil.is_valid_sender(sender_id) and is_peer_known(sender_id)
+
+
+## Spec §7 gate: downed and dead players may only keep sending movement.
+func _can_accept_alive_request(sender_id: int) -> bool:
+	return _can_accept_request(sender_id) and _players.is_peer_alive(sender_id)
+
+
+func _now_ms() -> int:
+	return int(Time.get_unix_time_from_system() * 1000.0)
 
 
 func _can_send_client_request() -> bool:
@@ -288,3 +381,42 @@ func _send_client_rpc(peer_id: int, method: StringName, args: Array = []) -> voi
 func _notify(peer_id: int, text: String) -> void:
 	print("[ServerManager] peer %d: %s" % [peer_id, text])
 	NetUtil.rpc_to_peer(self, peer_id, "client_message", [text])
+
+
+## Test hook, active only with `--smoke`. When two masked criminals stand in
+## the same LootyBay instance it equips the victim and teleports the attacker
+## next to them, then notifies both clients that the scripted run may start.
+func _tick_smoke() -> void:
+	if _smoke_ready:
+		return
+	for instance: GameInstance in _instances.get_all_instances():
+		if instance.map_name != GameConst.MAP_LOOTY_BAY:
+			continue
+		var candidates: Array[Node] = []
+		for player: Node in instance.get_players():
+			if int(player.get("peer_id")) <= 0:
+				continue
+			var controller := _players.get_controller(int(player.get("peer_id")))
+			if controller == null or controller.role != PlayerRoleController.Role.CRIMINAL:
+				continue
+			if not controller.is_alive():
+				continue
+			candidates.append(player)
+		if candidates.size() < 2:
+			continue
+		# Instance child order is spawn order: the first client (victim) joined
+		# first, the second client (attacker) joined last.
+		var victim: Node = candidates[0]
+		var attacker: Node = candidates[candidates.size() - 1]
+		var victim_controller := victim.call("get_role_controller") as PlayerRoleController
+		if victim_controller == null:
+			return
+		victim_controller.grant_loot("smoke_bag", 250)
+		victim_controller.grant_gear("smoke_gear", 100)
+		(attacker as Node3D).global_position = (
+			(victim as Node3D).global_position + Vector3(1.0, 0.0, 0.0)
+		)
+		_smoke_ready = true
+		_notify(int(victim.get("peer_id")), "SMOKE READY")
+		_notify(int(attacker.get("peer_id")), "SMOKE READY")
+		return
