@@ -11,12 +11,18 @@ import { CashBox } from './components/CashBox'
 import { PartyPanel } from './components/PartyPanel'
 import { Hotbar } from './components/Hotbar'
 import { InteractCard } from './components/InteractCard'
+import { SafetyLine } from './components/SafetyLine'
+import { HeistAlert } from './components/HeistAlert'
+import { SurrenderHint } from './components/SurrenderHint'
+import { DownedChannels } from './components/DownedChannels'
+import { useHeistToast } from './useHeistToast'
 
 export function HudScreen() {
   const hud = useHudStore((s) => s.hud)
   const showCompass = usePrefs((s) => s.showCompass)
   const minimapRotate = usePrefs((s) => s.minimapRotate)
   const panelOpen = useRouterState({ select: (s) => s.location.pathname !== '/' })
+  const heistToast = useHeistToast(hud?.heistAlert)
   if (!hud) return null
 
   return (
@@ -25,9 +31,12 @@ export function HudScreen() {
       {/* Rotating minimap: Godot turns the map, the arrow stays pointing up. */}
       <MinimapFrame heading={minimapRotate ? 0 : hud.heading} />
       <StatusColumn hud={hud} />
+      {hud.weaponsLocked === true && <SafetyLine />}
       {showCompass && <Compass heading={hud.heading} />}
-      <NotificationStack items={hud.notifications} />
+      {hud.heistAlert?.active && <HeistAlert alert={hud.heistAlert} />}
+      <NotificationStack items={hud.notifications} heistToast={heistToast} />
       {hud.life === 'DOWNED' && hud.timer && <BleedOutBanner seconds={hud.timer.seconds} />}
+      {hud.life === 'DOWNED' && <DownedChannels channels={hud.channels} />}
       <CashBox cash={hud.cash} />
       <PartyPanel
         party={hud.party}
@@ -37,6 +46,7 @@ export function HudScreen() {
       />
       <Hotbar slots={hud.hotbar} active={hud.activeSlot} bag={hud.bag} />
       {hud.interact && !panelOpen && <InteractCard interact={hud.interact} />}
+      {hud.surrenderAvailable === true && <SurrenderHint keyLabel={hud.surrenderKey} />}
     </div>
   )
 }

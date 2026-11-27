@@ -30,6 +30,8 @@ export type HudState = {
   weaponsLocked?: boolean
   heistAlert?: HeistAlertView | null
   surrenderAvailable?: boolean
+  // Label of the bound surrender key from Godot (e.g. "H"); "—" when unbound.
+  surrenderKey?: string
   channels?: DownedChannels | null
 }
 

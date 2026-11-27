@@ -33,4 +33,16 @@ export const DEMO_HUD: HudState = {
   hotbar: [{ label: 'Pistol' }, null, null, null, null, null],
   activeSlot: 0,
   net: { fps: 60, ping: 40 },
+  weaponsLocked: false,
+  heistAlert: {
+    id: 'demo-heist-1',
+    label: 'Heist alert',
+    location: 'Jewelry store',
+    active: true,
+    toastSecondsLeft: 8,
+  },
+  surrenderAvailable: true,
+  surrenderKey: 'H',
+  // Shown only while life is DOWNED.
+  channels: { revive: { secondsLeft: 3, durationSeconds: 5 }, finish: null },
 }
