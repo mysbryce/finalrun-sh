@@ -11,7 +11,9 @@ function make(over: Partial<HudState>): HudState {
 describe('StatusColumn', () => {
   it('shows timer, role and notoriety when alive', () => {
     render(
-      <StatusColumn hud={make({ timer: { label: 'Masking', seconds: 65 }, life: 'ALIVE' })} />,
+      <StatusColumn
+        hud={make({ timer: { label: 'Masking', seconds: 65 }, role: 'CRIMINAL', life: 'ALIVE' })}
+      />,
     )
     expect(screen.getByText('MASKING 1:05')).toBeInTheDocument()
     expect(screen.getByText('CRIMINAL')).toBeInTheDocument()
@@ -23,5 +25,15 @@ describe('StatusColumn', () => {
       <StatusColumn hud={make({ timer: { label: 'Masking', seconds: 65 }, life: 'DOWNED' })} />,
     )
     expect(screen.queryByText('MASKING 1:05')).not.toBeInTheDocument()
+  })
+
+  it('hides notoriety for an alive Citizen', () => {
+    render(<StatusColumn hud={make({ role: 'CITIZEN', life: 'ALIVE' })} />)
+    expect(screen.queryByText(/NOTORIETY/)).not.toBeInTheDocument()
+  })
+
+  it('hides notoriety for a downed Criminal', () => {
+    render(<StatusColumn hud={make({ role: 'CRIMINAL', life: 'DOWNED' })} />)
+    expect(screen.queryByText(/NOTORIETY/)).not.toBeInTheDocument()
   })
 })

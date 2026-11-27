@@ -15,9 +15,10 @@ export interface DropdownProps {
   onChange: (v: string) => void
   disabled?: boolean
   error?: string
+  placeholder?: string
 }
 
-export function Dropdown({ label, value, options, onChange, disabled = false, error }: DropdownProps) {
+export function Dropdown({ label, value, options, onChange, disabled = false, error, placeholder }: DropdownProps) {
   const baseId = useId()
   const labelId = `${baseId}-label`
   const errorId = `${baseId}-error`
@@ -119,8 +120,11 @@ export function Dropdown({ label, value, options, onChange, disabled = false, er
           error ? 'border-red-400' : 'border-zinc-500'
         }`}
       >
-        <span id={`${baseId}-value`} className="truncate">
-          {current?.label ?? ''}
+        <span
+          id={`${baseId}-value`}
+          className={`truncate${current === undefined && placeholder !== undefined ? ' text-zinc-400' : ''}`}
+        >
+          {current?.label ?? placeholder ?? ''}
         </span>
         <span aria-hidden="true" className="text-zinc-300">
           ▾

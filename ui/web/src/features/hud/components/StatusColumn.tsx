@@ -31,7 +31,10 @@ export function StatusColumn({ hud }: { hud: HudState }) {
       <div className={`text-xs font-bold px-2 py-0.5 rounded ${roleColor(hud.role)}`}>
         {hud.role}
       </div>
-      <div className={`${PANEL} text-xs px-2 py-0.5`}>NOTORIETY {hud.notoriety}</div>
+      {/* 04-hud.md visibility matrix: notoriety only for an alive Criminal. */}
+      {hud.role === 'CRIMINAL' && hud.life !== 'DOWNED' && (
+        <div className={`${PANEL} text-xs px-2 py-0.5`}>NOTORIETY {hud.notoriety}</div>
+      )}
     </div>
   )
 }

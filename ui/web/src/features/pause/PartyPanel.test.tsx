@@ -54,9 +54,14 @@ describe('PartyPanel', () => {
     render(<PartyPanel party={LEADER} />)
     expect(screen.getByRole('button', { name: 'Invite' })).toBeDisabled()
     fireEvent.click(screen.getByRole('button', { name: /Invite player/ }))
-    fireEvent.click(screen.getByRole('option', { name: 'Player 9' }))
+    fireEvent.click(screen.getByRole('option', { name: 'Player 9 · 9' }))
     fireEvent.click(screen.getByRole('button', { name: 'Invite' }))
     expect(request).toHaveBeenCalledWith('party.invite', { targetPeerId: 9 })
+  })
+
+  it('picker shows the placeholder when players exist and none is selected', () => {
+    render(<PartyPanel party={LEADER} />)
+    expect(screen.getByRole('button', { name: /Invite player/ })).toHaveTextContent('Choose a player')
   })
 
   it('Kick asks for confirmation, then sends party.kick', () => {

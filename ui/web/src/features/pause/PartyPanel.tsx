@@ -42,7 +42,7 @@ export function PartyPanel({ party }: { party: PartyView }) {
       ? [{ value: '', label: 'No other players', disabled: true }]
       : party.players.map((p) => ({
           value: String(p.peerId),
-          label: p.name,
+          label: `${p.name} · ${p.peerId}`,
           disabled: !p.canInvite,
           reason: p.canInvite ? undefined : 'Party full',
         }))
@@ -100,6 +100,7 @@ export function PartyPanel({ party }: { party: PartyView }) {
           value={target}
           options={options}
           onChange={setSelected}
+          placeholder="Choose a player"
           disabled={party.players.length === 0}
         />
       </div>
