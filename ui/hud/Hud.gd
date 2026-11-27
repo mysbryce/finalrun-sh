@@ -1,7 +1,8 @@
 class_name Hud
 extends CanvasLayer
-## Client HUD built in code. Main feeds it the local player and ServerManager events;
-## it never talks to the network.
+## Client HUD. Main feeds it the local player and ServerManager events;
+## it never talks to the network. Draws the web UI (docs/design/WEB_UI.md)
+## in a CefTexture.
 
 
 static func role_text(role: int) -> String:
@@ -28,14 +29,6 @@ static func life_text(life_state: int) -> String:
 			return "?"
 
 
-static func money_text(state: Dictionary) -> String:
-	return "Cash $%d | Bag $%d | Notoriety %d" % [
-		int(state.get("cash", 0)),
-		int(state.get("bag_value", 0)),
-		int(state.get("notoriety", 0)),
-	]
-
-
 static func seconds_left(deadline_ms: int, now_ms: int) -> int:
 	return maxi(0, ceili(float(deadline_ms - now_ms) / 1000.0))
 
@@ -56,57 +49,68 @@ static func prune_notifications(list: Array, now_ms: int) -> Array:
 	return result
 
 
+## True only on a client with a real display and the CEF addon loaded.
+static func can_use_browser() -> bool:
+	return DisplayServer.get_name() != "headless" and ClassDB.class_exists("CefTexture")
+
+
+## Built page, or the Vite dev server when the client got `-- --ui-dev`.
+static func page_url(user_args: PackedStringArray) -> String:
+	return GameConst.UI_DEV_URL if user_args.has(GameConst.UI_DEV_FLAG) else GameConst.UI_PAGE_URL
+
+
+## HudState for the page. `prompt` shows only while ALIVE.
+static func snapshot(role: int, life: int, downed_deadline_ms: int, mask_end_ms: int,
+		money: Dictionary, prompt: String, notifications: Array, now_ms: int) -> Dictionary:
+	var timer: Variant = null
+	if life == PlayerRoleController.LifeState.DOWNED:
+		timer = {"label": "Bleeding out", "seconds": seconds_left(downed_deadline_ms, now_ms)}
+	elif mask_end_ms > now_ms:
+		timer = {"label": "Masking", "seconds": seconds_left(mask_end_ms, now_ms)}
+	var texts: Array = []
+	for entry: Dictionary in notifications:
+		texts.append(String(entry.get("text", "")))
+	return {
+		"role": role_text(role),
+		"life": life_text(life),
+		"cash": int(money.get("cash", 0)),
+		"bag": int(money.get("bag_value", 0)),
+		"notoriety": int(money.get("notoriety", 0)),
+		"timer": timer,
+		"prompt": prompt if life == PlayerRoleController.LifeState.ALIVE else "",
+		"notifications": texts,
+	}
+
+
+## Reply to one page request.
+static func reply_for(request: Dictionary) -> Dictionary:
+	var id := int(request.get("id", 0))
+	if String(request.get("method", "")) == "ping":
+		return {"type": "reply", "id": id, "ok": true, "data": {"pong": true}}
+	return {"type": "reply", "id": id, "ok": false, "error": "unknown_method"}
+
+
 var _player: Node3D = null
 var _money: Dictionary = {}
 var _mask_end_ms: int = 0
 var _notifications: Array = []
 
-var _status_label: Label = null
-var _money_label: Label = null
-var _timer_label: Label = null
-var _notify_label: Label = null
-var _prompt_label: Label = null
+var _browser: Control = null
+var _page_ready: bool = false
+var _last_hud_json: String = ""
 
 
 func _ready() -> void:
-	_status_label = _make_label()
-	_status_label.position = Vector2(GameConst.HUD_MARGIN, GameConst.HUD_MARGIN)
-	add_child(_status_label)
-
-	_money_label = _make_label()
-	_money_label.position = Vector2(GameConst.HUD_MARGIN, GameConst.HUD_MARGIN + 28)
-	add_child(_money_label)
-
-	_timer_label = _make_label()
-	_timer_label.position = Vector2(GameConst.HUD_MARGIN, GameConst.HUD_MARGIN + 56)
-	add_child(_timer_label)
-
-	_notify_label = _make_label()
-	_notify_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_notify_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	_notify_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	_notify_label.offset_left = -GameConst.HUD_MARGIN
-	_notify_label.offset_top = GameConst.HUD_MARGIN
-	_notify_label.offset_right = -GameConst.HUD_MARGIN
-	_notify_label.offset_bottom = GameConst.HUD_MARGIN
-	add_child(_notify_label)
-
-	_prompt_label = _make_label()
-	_prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_prompt_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_prompt_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_prompt_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	_prompt_label.offset_left = 0.0
-	_prompt_label.offset_top = -GameConst.HUD_MARGIN * 4
-	_prompt_label.offset_right = 0.0
-	_prompt_label.offset_bottom = -GameConst.HUD_MARGIN * 4
-	add_child(_prompt_label)
-
-
-func _make_label() -> Label:
-	var label := Label.new()
-	label.add_theme_font_size_override("font_size", GameConst.HUD_FONT_SIZE)
-	return label
+	if not can_use_browser():
+		return
+	_browser = ClassDB.instantiate("CefTexture") as Control
+	_browser.name = "Browser"
+	_browser.set("url", page_url(OS.get_cmdline_user_args()))
+	_browser.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_browser.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_browser.focus_mode = Control.FOCUS_NONE
+	_browser.connect("ipc_message", _on_ipc_message)
+	add_child(_browser)
 
 
 func set_player(player: Node3D) -> void:
@@ -127,31 +131,42 @@ func add_notification(text: String, now_ms: int) -> void:
 
 func _process(_delta: float) -> void:
 	var now_ms := int(Time.get_unix_time_from_system() * 1000.0)
-	if _player == null or not is_instance_valid(_player):
-		_status_label.text = ""
-		_timer_label.text = ""
-		_prompt_label.text = ""
-		_notifications = prune_notifications(_notifications, now_ms)
-		_notify_label.text = _joined_notifications()
-		return
-	var role := int(_player.get("role"))
-	var life := int(_player.get("life_state"))
-	_status_label.text = "%s | %s" % [role_text(role), life_text(life)]
-	_money_label.text = money_text(_money)
-	if life == PlayerRoleController.LifeState.DOWNED:
-		_timer_label.text = "Bleeding out: %d s" % seconds_left(int(_player.get("downed_deadline_ms")), now_ms)
-	elif _mask_end_ms > now_ms:
-		_timer_label.text = "Masking: %d s" % seconds_left(_mask_end_ms, now_ms)
-	else:
-		_timer_label.text = ""
-	var area := InteractArea.nearest(_player, GameConst.INTERACT_RANGE)
-	_prompt_label.text = area.prompt if area != null and life == PlayerRoleController.LifeState.ALIVE else ""
 	_notifications = prune_notifications(_notifications, now_ms)
-	_notify_label.text = _joined_notifications()
+	if not _page_ready:
+		return
+	var role := -1
+	var life := -1
+	var downed_deadline_ms := 0
+	var prompt := ""
+	if _player != null and is_instance_valid(_player):
+		role = int(_player.get("role"))
+		life = int(_player.get("life_state"))
+		downed_deadline_ms = int(_player.get("downed_deadline_ms"))
+		var area := InteractArea.nearest(_player, GameConst.INTERACT_RANGE)
+		prompt = area.prompt if area != null else ""
+	var json := JSON.stringify({
+		"type": "hud",
+		"data": snapshot(role, life, downed_deadline_ms, _mask_end_ms, _money, prompt,
+				_notifications, now_ms),
+	})
+	if json != _last_hud_json:
+		_last_hud_json = json
+		_send_json(json)
 
 
-func _joined_notifications() -> String:
-	var texts: Array[String] = []
-	for entry: Dictionary in _notifications:
-		texts.append(String(entry.get("text", "")))
-	return "\n".join(texts)
+func _on_ipc_message(message: String) -> void:
+	var parsed: Variant = JSON.parse_string(message)
+	if not parsed is Dictionary:
+		return
+	var type := String((parsed as Dictionary).get("type", ""))
+	if type == "ready":
+		_page_ready = true
+		_last_hud_json = ""
+		_send_json(JSON.stringify({"type": "route", "to": "/"}))
+	elif type == "request":
+		_send_json(JSON.stringify(reply_for(parsed)))
+
+
+func _send_json(json: String) -> void:
+	if _browser != null and is_instance_valid(_browser):
+		_browser.call("send_ipc_message", json)

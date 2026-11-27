@@ -108,5 +108,6 @@ const DOWNED_CHANNEL_MAX_MOVE: float = 0.75
 # HUD
 const HUD_NOTIFICATION_MS: int = 4000   # how long a notification stays on screen
 const HUD_MAX_NOTIFICATIONS: int = 4    # newest kept, oldest dropped
-const HUD_MARGIN: float = 16.0          # px from the screen edge
-const HUD_FONT_SIZE: int = 18
+const UI_PAGE_URL: String = "res://ui/web/index.html"  # built web UI (webui/ -> ui/web/)
+const UI_DEV_URL: String = "http://localhost:5173/"     # Vite dev server
+const UI_DEV_FLAG: String = "--ui-dev"                  # client user arg: load UI_DEV_URL
