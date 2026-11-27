@@ -43,7 +43,7 @@ Rarity thresholds by value are issued at ≤ 0, common below 250, rare below 600
 | Context and alert | 20 | Interaction card, heist alert and toasts |
 | Panel | 30 | Settings, lobby, inventory, search and pause content |
 | Popover | 40 | Dropdowns, picker, item drag preview |
-| State | 50 | Downed, arrest, death and map transfer |
+| State | 50 | Downed, arrest/death receipts and map transfer |
 | Dialog | 60 | Active confirmation, capture and consent |
 | Focus treatment | Local | Render above its control within the owning layer |
 
@@ -52,7 +52,7 @@ Rarity thresholds by value are issued at ≤ 0, common below 250, rare below 600
 | Hover, active and focus | 80 ms | Change border and fill. Show keyboard ring immediately. |
 | Row/state reveal | 120 ms ease-out | Fade from 0.75 to 1 opacity. Optional transform ≤ 4 px. |
 | Panel/route change | 160 ms ease-out | Fade old content then replace within one transition. Focus after the destination can receive it. |
-| Toast | 120 ms in, 100 ms out | Stack updates in place. Ordinary display time is 4 s by default. |
+| Toast | 120 ms in, 100 ms out | Stack updates in place. Ordinary display time is 4 s by default; heist event toast uses 8 s, with its alert line active until server clear. |
 | Numeric progress catch-up | ≤ 100 ms | Interpolate display only. Snap authoritative decreases or stage changes. |
 | Reduced motion | 0 ms | Instant state and static pending text. No oscillation, scroll animation or blur transition. |
 

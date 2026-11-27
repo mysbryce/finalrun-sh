@@ -1,110 +1,203 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="system-ui, sans-serif" role="img" aria-labelledby="title">
   <title id="title">Downed HUD</title>
   <defs>
-    <pattern id="own-cells" x="743" y="128" width="51" height="51" patternUnits="userSpaceOnUse"><rect x="0" y="0" width="50" height="50" fill="none" stroke="#555" stroke-width="0.75"/></pattern>
-    <pattern id="body-cells" x="406" y="128" width="51" height="51" patternUnits="userSpaceOnUse"><rect x="0" y="0" width="50" height="50" fill="none" stroke="#555" stroke-width="0.75"/></pattern>
-    <clipPath id="clip-A01"><rect x="26" y="17" width="196" height="14"/></clipPath>
-    <clipPath id="clip-A02"><rect x="26" y="41" width="196" height="168"/></clipPath>
-    <clipPath id="clip-A03"><rect x="242" y="41" width="108" height="26"/></clipPath>
-    <clipPath id="clip-A04"><rect x="242" y="143" width="108" height="26"/></clipPath>
-    <clipPath id="clip-A05"><rect x="362" y="25" width="556" height="30"/></clipPath>
-    <clipPath id="clip-A06"><rect x="458" y="117" width="364" height="110"/></clipPath>
-    <clipPath id="clip-A07"><rect x="1082" y="25" width="172" height="42"/></clipPath>
-    <clipPath id="clip-A08"><rect x="26" y="535" width="236" height="160"/></clipPath>
-    <clipPath id="clip-A09"><rect x="26" y="535" width="236" height="46"/></clipPath>
-    <clipPath id="clip-A10"><rect x="26" y="589" width="236" height="46"/></clipPath>
-    <clipPath id="clip-A11"><rect x="26" y="643" width="236" height="52"/></clipPath>
-    <clipPath id="clip-A12"><rect x="418" y="261" width="444" height="186"/></clipPath>
-    <clipPath id="clip-A13"><rect x="434" y="273" width="412" height="26"/></clipPath>
-    <clipPath id="clip-A14"><rect x="434" y="309" width="412" height="10"/></clipPath>
-    <clipPath id="clip-A15"><rect x="434" y="333" width="412" height="30"/></clipPath>
-    <clipPath id="clip-A16"><rect x="434" y="373" width="412" height="34"/></clipPath>
-    <clipPath id="clip-A17"><rect x="434" y="417" width="412" height="18"/></clipPath>
+    <clipPath id="clip-A01">
+      <rect x="26" y="17" width="196" height="14" />
+    </clipPath>
+    <clipPath id="clip-A02">
+      <rect x="26" y="41" width="196" height="168" />
+    </clipPath>
+    <clipPath id="clip-A03">
+      <rect x="242" y="41" width="108" height="26" />
+    </clipPath>
+    <clipPath id="clip-A04">
+      <rect x="242" y="143" width="204" height="26" />
+    </clipPath>
+    <clipPath id="clip-A05">
+      <rect x="362" y="25" width="556" height="30" />
+    </clipPath>
+    <clipPath id="clip-A06">
+      <rect x="442" y="65" width="396" height="42" />
+    </clipPath>
+    <clipPath id="clip-A07">
+      <rect x="458" y="117" width="364" height="110" />
+    </clipPath>
+    <clipPath id="clip-A08">
+      <rect x="1082" y="25" width="172" height="42" />
+    </clipPath>
+    <clipPath id="clip-A09">
+      <rect x="26" y="535" width="236" height="160" />
+    </clipPath>
+    <clipPath id="clip-A10">
+      <rect x="26" y="535" width="236" height="46" />
+    </clipPath>
+    <clipPath id="clip-A11">
+      <rect x="26" y="589" width="236" height="46" />
+    </clipPath>
+    <clipPath id="clip-A12">
+      <rect x="26" y="643" width="236" height="52" />
+    </clipPath>
+    <clipPath id="clip-A13">
+      <rect x="418" y="261" width="444" height="186" />
+    </clipPath>
+    <clipPath id="clip-A14">
+      <rect x="434" y="273" width="412" height="26" />
+    </clipPath>
+    <clipPath id="clip-A15">
+      <rect x="434" y="309" width="412" height="10" />
+    </clipPath>
+    <clipPath id="clip-A16">
+      <rect x="434" y="333" width="412" height="30" />
+    </clipPath>
+    <clipPath id="clip-A17">
+      <rect x="434" y="373" width="412" height="34" />
+    </clipPath>
+    <clipPath id="clip-A18">
+      <rect x="434" y="417" width="412" height="18" />
+    </clipPath>
   </defs>
-  <rect width="1280" height="720" fill="#191919"/>
+  <rect width="1280" height="720" fill="#191919" />
   <g>
     <title>Net stats</title>
-    <rect data-layout="A01" x="24" y="16" width="200" height="16" rx="1" fill="#222" stroke="#777"/>
-    <g clip-path="url(#clip-A01)"><text x="32" y="29" font-size="11" font-weight="600" fill="#eee">Net stats</text></g>
+    <rect data-layout="A01" x="24" y="16" width="200" height="16" rx="1" fill="#222" stroke="#777" />
+    <g clip-path="url(#clip-A01)">
+      <text x="32" y="29" font-size="11" font-weight="600" fill="#eee">Net stats</text>
+    </g>
   </g>
   <g>
     <title>Minimap</title>
-    <rect data-layout="A02" x="24" y="40" width="200" height="170" rx="3" fill="#222" stroke="#777"/>
-    <g clip-path="url(#clip-A02)"><text x="32" y="58" font-size="11" font-weight="600" fill="#eee">Minimap</text><text x="32" y="74" font-size="11" fill="#bbb">Godot texture</text><text x="32" y="88" font-size="11" fill="#bbb">N · Arrow</text></g>
+    <rect data-layout="A02" x="24" y="40" width="200" height="170" rx="3" fill="#222" stroke="#777" />
+    <g clip-path="url(#clip-A02)">
+      <text x="32" y="58" font-size="11" font-weight="600" fill="#eee">Minimap</text>
+    </g>
   </g>
   <g>
     <title>Role badge</title>
-    <rect data-layout="A03" x="240" y="40" width="112" height="28" rx="3" fill="#222" stroke="#777"/>
-    <g clip-path="url(#clip-A03)"><text x="248" y="58" font-size="11" font-weight="600" fill="#eee">CITIZEN</text></g>
+    <rect data-layout="A03" x="240" y="40" width="112" height="28" rx="3" fill="#222" stroke="#777" />
+    <g clip-path="url(#clip-A03)">
+      <text x="248" y="58" font-size="11" font-weight="600" fill="#eee">Role badge</text>
+    </g>
   </g>
   <g>
     <title>Safety</title>
-    <rect data-layout="A04" x="240" y="142" width="112" height="28" rx="3" fill="#222" stroke="#777"/>
-    <g clip-path="url(#clip-A04)"><text x="248" y="160" font-size="11" font-weight="600" fill="#eee">Safezone</text></g>
+    <rect data-layout="A04" x="240" y="142" width="208" height="28" rx="3" fill="#222" stroke="#777" />
+    <g clip-path="url(#clip-A04)">
+      <text x="248" y="160" font-size="11" font-weight="600" fill="#eee">SAFE ZONE - weapons locked</text>
+    </g>
   </g>
   <g>
     <title>Compass</title>
-    <rect data-layout="A05" x="360" y="24" width="560" height="32" rx="3" fill="#222" stroke="#777"/>
-    <g clip-path="url(#clip-A05)"><path d="M 444 45 v 5" stroke="#888"/><path d="M 493 45 v 5" stroke="#888"/><path d="M 542 45 v 5" stroke="#888"/><path d="M 591 45 v 5" stroke="#888"/><path d="M 640 45 v 9" stroke="#fbbf24"/><path d="M 689 45 v 5" stroke="#888"/><path d="M 738 45 v 5" stroke="#888"/><path d="M 787 45 v 5" stroke="#888"/><path d="M 836 45 v 5" stroke="#888"/><text x="368" y="42" font-size="14" font-weight="600" fill="#eee">Compass</text></g>
+    <rect data-layout="A05" x="360" y="24" width="560" height="32" rx="3" fill="#222" stroke="#777" />
+    <g clip-path="url(#clip-A05)">
+      <text x="368" y="42" font-size="14" font-weight="600" fill="#eee">Compass</text>
+      <path d="M 444.0 45 v 5" stroke="#888" />
+      <path d="M 493.0 45 v 5" stroke="#888" />
+      <path d="M 542.0 45 v 5" stroke="#888" />
+      <path d="M 591.0 45 v 5" stroke="#888" />
+      <path d="M 640.0 45 v 9" stroke="#fbbf24" />
+      <path d="M 689.0 45 v 5" stroke="#888" />
+      <path d="M 738.0 45 v 5" stroke="#888" />
+      <path d="M 787.0 45 v 5" stroke="#888" />
+      <path d="M 836.0 45 v 5" stroke="#888" />
+    </g>
+  </g>
+  <g>
+    <title>Heist alert</title>
+    <rect data-layout="A06" x="440" y="64" width="400" height="44" rx="3" fill="#222" stroke="#777" />
+    <g clip-path="url(#clip-A06)">
+      <text x="448" y="82" font-size="14" font-weight="600" fill="#eee">Heist active · location</text>
+    </g>
   </g>
   <g>
     <title>Notifications</title>
-    <rect data-layout="A06" x="456" y="116" width="368" height="112" rx="3" fill="#222" stroke="#777"/>
-    <g clip-path="url(#clip-A06)"><text x="464" y="134" font-size="14" font-weight="600" fill="#eee">Notifications</text><text x="464" y="150" font-size="11" fill="#bbb">4 × 24 px · 4 px gap</text><text x="464" y="164" font-size="11" fill="#bbb">Oldest above newest</text></g>
+    <rect data-layout="A07" x="456" y="116" width="368" height="112" rx="3" fill="#222" stroke="#777" />
+    <g clip-path="url(#clip-A07)">
+      <text x="464" y="134" font-size="14" font-weight="600" fill="#eee">Notifications</text>
+    </g>
   </g>
   <g>
     <title>Cash</title>
-    <rect data-layout="A07" x="1080" y="24" width="176" height="44" rx="3" fill="#222" stroke="#777"/>
-    <g clip-path="url(#clip-A07)"><text x="1088" y="42" font-size="11" font-weight="600" fill="#eee">Cash</text><text x="1088" y="58" font-size="11" fill="#bbb">$1,250</text></g>
+    <rect data-layout="A08" x="1080" y="24" width="176" height="44" rx="3" fill="#222" stroke="#777" />
+    <g clip-path="url(#clip-A08)">
+      <text x="1088" y="42" font-size="11" font-weight="600" fill="#eee">Cash</text>
+    </g>
   </g>
   <g>
     <title>Party and self</title>
-    <rect data-layout="A08" x="24" y="534" width="240" height="162" rx="3" fill="#222" stroke="#777"/>
-    <g clip-path="url(#clip-A08)"></g>
+    <rect data-layout="A09" x="24" y="534" width="240" height="162" rx="3" fill="#222" stroke="#777" />
+    <g clip-path="url(#clip-A09)" />
   </g>
   <g>
     <title>Party member 1</title>
-    <rect data-layout="A09" x="24" y="534" width="240" height="48" rx="3" fill="#292929" stroke="#777"/>
-    <g clip-path="url(#clip-A09)"><rect x="32" y="573" width="52" height="4" fill="#bbb"/><rect x="89" y="573" width="52" height="4" fill="#bbb"/><rect x="146" y="573" width="52" height="4" fill="#bbb"/><rect x="203" y="573" width="52" height="4" fill="#555"/><text x="32" y="552" font-size="11" font-weight="600" fill="#eee">Party member 1</text><text x="32" y="568" font-size="11" fill="#bbb">Leader · 75 / 100</text></g>
+    <rect data-layout="A10" x="24" y="534" width="240" height="48" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A10)">
+      <text x="32" y="552" font-size="11" font-weight="600" fill="#eee">Party member 1</text>
+      <rect x="32" y="573" width="52" height="4" fill="#bbb" />
+      <rect x="89" y="573" width="52" height="4" fill="#bbb" />
+      <rect x="146" y="573" width="52" height="4" fill="#bbb" />
+      <rect x="203" y="573" width="52" height="4" fill="#555" />
+    </g>
   </g>
   <g>
     <title>Party member 2</title>
-    <rect data-layout="A10" x="24" y="588" width="240" height="48" rx="3" fill="#292929" stroke="#777"/>
-    <g clip-path="url(#clip-A10)"><rect x="32" y="627" width="52" height="4" fill="#555"/><rect x="89" y="627" width="52" height="4" fill="#555"/><rect x="146" y="627" width="52" height="4" fill="#555"/><rect x="203" y="627" width="52" height="4" fill="#555"/><text x="32" y="606" font-size="11" font-weight="600" fill="#eee">Party member 2</text><text x="32" y="622" font-size="11" fill="#bbb">Away</text></g>
+    <rect data-layout="A11" x="24" y="588" width="240" height="48" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A11)">
+      <text x="32" y="606" font-size="11" font-weight="600" fill="#eee">Party member 2</text>
+      <rect x="32" y="627" width="52" height="4" fill="#bbb" />
+      <rect x="89" y="627" width="52" height="4" fill="#bbb" />
+      <rect x="146" y="627" width="52" height="4" fill="#bbb" />
+      <rect x="203" y="627" width="52" height="4" fill="#555" />
+    </g>
   </g>
   <g>
     <title>Self health</title>
-    <rect data-layout="A11" x="24" y="642" width="240" height="54" rx="3" fill="#292929" stroke="#777"/>
-    <g clip-path="url(#clip-A11)"><rect x="32" y="687" width="52" height="4" fill="#bbb"/><rect x="89" y="687" width="52" height="4" fill="#bbb"/><rect x="146" y="687" width="52" height="4" fill="#bbb"/><rect x="203" y="687" width="52" height="4" fill="#bbb"/><text x="32" y="660" font-size="11" font-weight="600" fill="#eee">Self health</text><text x="32" y="676" font-size="11" fill="#bbb">You · 100 / 100</text></g>
+    <rect data-layout="A12" x="24" y="642" width="240" height="54" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A12)">
+      <text x="32" y="660" font-size="11" font-weight="600" fill="#eee">Self health</text>
+      <rect x="32" y="687" width="52" height="4" fill="#bbb" />
+      <rect x="89" y="687" width="52" height="4" fill="#bbb" />
+      <rect x="146" y="687" width="52" height="4" fill="#bbb" />
+      <rect x="203" y="687" width="52" height="4" fill="#555" />
+    </g>
   </g>
   <g>
     <title>Downed panel</title>
-    <rect data-layout="A12" x="416" y="260" width="448" height="188" rx="3" fill="#222" stroke="#777"/>
-    <g clip-path="url(#clip-A12)"></g>
+    <rect data-layout="A13" x="416" y="260" width="448" height="188" rx="3" fill="#222" stroke="#777" />
+    <g clip-path="url(#clip-A13)" />
   </g>
   <g>
     <title>Downed title</title>
-    <rect data-layout="A13" x="432" y="272" width="416" height="28" rx="3" fill="#292929" stroke="#777"/>
-    <g clip-path="url(#clip-A13)"><text x="440" y="290" font-size="14" font-weight="600" fill="#eee">DOWNED · Bleed-out 0:46</text></g>
+    <rect data-layout="A14" x="432" y="272" width="416" height="28" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A14)">
+      <text x="440" y="290" font-size="14" font-weight="600" fill="#eee">Downed title</text>
+    </g>
   </g>
   <g>
     <title>Bleed-out progress</title>
-    <rect data-layout="A14" x="432" y="308" width="416" height="12" rx="1" fill="#292929" stroke="#fbbf24"/>
-    <g clip-path="url(#clip-A14)"><rect x="434" y="311" width="255" height="6" fill="#fbbf24"/></g>
+    <rect data-layout="A15" x="432" y="308" width="416" height="12" rx="1" fill="#292929" stroke="#fbbf24" />
+    <g clip-path="url(#clip-A15)">
+      <rect x="434" y="311" width="255" height="6" fill="#fbbf24" />
+    </g>
   </g>
   <g>
     <title>Revive progress</title>
-    <rect data-layout="A15" x="432" y="332" width="416" height="32" rx="3" fill="#292929" stroke="#777"/>
-    <g clip-path="url(#clip-A15)"><text x="440" y="350" font-size="14" font-weight="600" fill="#eee">Reviving · 2.1 s</text></g>
+    <rect data-layout="A16" x="432" y="332" width="416" height="32" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A16)">
+      <text x="440" y="350" font-size="14" font-weight="600" fill="#eee">Revive progress</text>
+    </g>
   </g>
   <g>
     <title>Finish warning</title>
-    <rect data-layout="A16" x="432" y="372" width="416" height="36" rx="3" fill="#292929" stroke="#777"/>
-    <g clip-path="url(#clip-A16)"><text x="440" y="390" font-size="14" font-weight="600" fill="#eee">Finish in progress / At risk</text></g>
+    <rect data-layout="A17" x="432" y="372" width="416" height="36" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A17)">
+      <text x="440" y="390" font-size="14" font-weight="600" fill="#eee">Finish warning</text>
+    </g>
   </g>
   <g>
     <title>Downed controls</title>
-    <rect data-layout="A17" x="432" y="416" width="416" height="20" rx="1" fill="#292929" stroke="#777"/>
-    <g clip-path="url(#clip-A17)"><text x="440" y="429" font-size="11" font-weight="600" fill="#eee">Downed controls</text></g>
+    <rect data-layout="A18" x="432" y="416" width="416" height="20" rx="1" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A18)">
+      <text x="440" y="429" font-size="11" font-weight="600" fill="#eee">Downed controls</text>
+    </g>
   </g>
 </svg>

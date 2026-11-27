@@ -2,7 +2,7 @@
 
 ## 1. Purpose and entry/exit
 
-Use `/` for a read-only live or downed HUD. Host opens `/inventory`, `/search`, `/pause`, `/death`, `/arrest` or `/transfer` and owns return routing. Surrender is an input-taking prompt within `/`. The active game keeps running behind interactive panels. Godot clears incompatible panels when life, transfer or connection changes. See [flow](flow.md) for input mode and route ownership.
+Use `/` for live and downed HUD. The host opens `/inventory`, `/search`, `/pause`, `/death`, `/arrest` and `/transfer` and owns return routing. The bound H action sends surrender directly through Godot. Pause contains in-game party management and incoming invitations while the session continues. An authoritative outcome receipt can remain above a newly spawned HUD for the remainder of its 900 ms lifetime. Godot clears stale panels on life, transfer or connection changes.
 
 ## 2. ASCII wireframes
 
@@ -16,8 +16,8 @@ Use `/` for a read-only live or downed HUD. Host opens `/inventory`, `/search`, 
 | |Minimap       |+-------++-----+-----------------------------+-----+           +------------+ |
 | |              |+A04----+      |Heist alert                  |                                |
 | |              |+A05----+      ++---------------------------++                                |
-| |              |+Safety-+       |Notifications              |                                 |
-| |              |+-------+       |                           |                                 |
+| |              |+Safety---------|Notifications              |                                 |
+| |              |+---------------|                           |                                 |
 | +--------------+                |                           |                                 |
 |                                 +---------------------------+                                 |
 |                                                                                               |
@@ -71,11 +71,11 @@ Use `/` for a read-only live or downed HUD. Host opens `/inventory`, `/search`, 
 ```text
 +-----------------------------------------------------------------------------------------------+
 | +--------------++A03----++Compass----------------------------------+           +Cash--------+ |
-| |Minimap       |+-------++-----------------------------------------+           +------------+ |
-| |              |                                                                              |
-| |              |                +---------------------------+                                 |
-| |              |+Safety-+       |Notifications              |                                 |
-| |              |+-------+       |                           |                                 |
+| |Minimap       |+-------++-----+-----------------------------+-----+           +------------+ |
+| |              |               |Heist alert                  |                                |
+| |              |               ++---------------------------++                                |
+| |              |+Safety---------|Notifications              |                                 |
+| |              |+---------------|                           |                                 |
 | +--------------+                |                           |                                 |
 |                                 +---------------------------+                                 |
 |                              ++Downed title-------------------++                              |
@@ -101,18 +101,19 @@ Use `/` for a read-only live or downed HUD. Host opens `/inventory`, `/search`, 
 [A03 Role badge]
 [A04 Safety]
 [A05 Compass]
-[A06 Notifications]
-[A07 Cash]
-[A08 Party and self]
-  [A09 Party member 1]
-  [A10 Party member 2]
-  [A11 Self health]
-[A12 Downed panel]
-  [A13 Downed title]
-  [A14 Bleed-out progress]
-  [A15 Revive progress]
-  [A16 Finish warning]
-  [A17 Downed controls]
+[A06 Heist alert]
+[A07 Notifications]
+[A08 Cash]
+[A09 Party and self]
+  [A10 Party member 1]
+  [A11 Party member 2]
+  [A12 Self health]
+[A13 Downed panel]
+  [A14 Downed title]
+  [A15 Bleed-out progress]
+  [A16 Revive progress]
+  [A17 Finish warning]
+  [A18 Downed controls]
 ```
 
 ### Body search with owner inventory
@@ -123,7 +124,7 @@ Use `/` for a read-only live or downed HUD. Host opens `/inventory`, `/search`, 
 +-----------------------------------------------------------------------------------------------+
 |                                                                                               |
 |                                                                                               |
-|                             +Search title----++A04-++++A12-+---------+A13----++A14---------++ |
+|                             +Search title----++A04-++++A13-+---------+A14----++A15---------++ |
 |                             +----------------------++++----------------------++------------++ |
 |                             |Body grid             ||||Bag grid              ||Primary     || |
 |                             |                      ||||                      ||            || |
@@ -132,17 +133,17 @@ Use `/` for a read-only live or downed HUD. Host opens `/inventory`, `/search`, 
 |                             |                      ||||                      ||Secondary   || |
 |                             |                      ||||                      ||            || |
 |                             |                      ||||                      |+-----++-----+| |
-|                             |                      ||||                      ||A19  ||A20  || |
+|                             |                      ||||                      ||A20  ||A21  || |
 |                             |                      ||||                      ||     ||     || |
-|                             |                      ||||                      |+A21-+++-----+| |
+|                             |                      ||||                      |+A22-+++-----+| |
 |                             |                      ||||                      |+----++--+---+| |
-|                             |                      ||||                      ||A22 ||  |A24|| |
+|                             |                      ||||                      ||A23 ||  |A25|| |
 |                             |                      ||||                      ||    |+--+---+| |
-|                             |                      ||||                      |+----+|  |A26|| |
+|                             |                      ||||                      |+----+|  |A27|| |
 |                             |                      ||||                      |+-----+--+---+| |
 |                             +----------------------+||+----------------------+              | |
-|                             +A07-------+A08--+A09--++++Selected item-++Back-+A30---++A31---++ |
-|                             +----------+-----+-----++++--------------++-----+------++------++ |
+|                             +A08-------+A09-++A10--++++Selected item-++Back-+A31---++A32---++ |
+|                             +----------+----++-----++++--------------++-----+------++------++ |
 |                                                                                               |
 |                                                                                               |
 +-----------------------------------------------------------------------------------------------+
@@ -152,32 +153,33 @@ Use `/` for a read-only live or downed HUD. Host opens `/inventory`, `/search`, 
     [A03 Search title]
     [A04 Item count]
   [A05 Body grid]
-  [A06 Search footer]
-    [A07 Search error]
-    [A08 Search close]
-    [A09 Take hint]
-[A10 Inventory panel]
-  [A11 Inventory header]
-    [A12 Bag title]
-    [A13 Bag value]
-    [A14 Equipment title]
-  [A15 Bag grid]
-  [A16 Equipment column]
-    [A17 Primary]
-    [A18 Secondary]
-    [A19 Armor]
-    [A20 Bag slot]
-    [A21 Pouch label]
-    [A22 Pouch]
-    [A23 Pocket 1]
-    [A24 Pocket 2]
-    [A25 Pocket 3]
-    [A26 Pocket 4]
-  [A27 Inventory footer]
-    [A28 Selected item]
-    [A29 Back]
-    [A30 Close hint]
-    [A31 Select hint]
+  [A06 Body scrollbar]
+  [A07 Search footer]
+    [A08 Search error]
+    [A09 Search close]
+    [A10 Take hint]
+[A11 Inventory panel]
+  [A12 Inventory header]
+    [A13 Bag title]
+    [A14 Bag value]
+    [A15 Equipment title]
+  [A16 Bag grid]
+  [A17 Equipment column]
+    [A18 Primary]
+    [A19 Secondary]
+    [A20 Armor]
+    [A21 Bag slot]
+    [A22 Pouch label]
+    [A23 Pouch]
+    [A24 Pocket 1]
+    [A25 Pocket 2]
+    [A26 Pocket 3]
+    [A27 Pocket 4]
+  [A28 Inventory footer]
+    [A29 Selected item]
+    [A30 Back]
+    [A31 Close hint]
+    [A32 Select hint]
 ```
 
 ### Owner inventory
@@ -245,25 +247,25 @@ Use `/` for a read-only live or downed HUD. Host opens `/inventory`, `/search`, 
 |                                                                                               |
 |                                                                                               |
 |                                                                                               |
-|                                                                                               |
-|                                                                                               |
-|                                  ++-----------------------+-+                                 |
-|                                  ||Pause title            | |                                 |
-|                                  |+Pause context----------+ |                                 |
-|                                  |+-----------------------+ |                                 |
-|                                  |+Resume-----------------+ |                                 |
-|                                  |+-----------------------+ |                                 |
-|                                  |+Settings---------------+ |                                 |
-|                                  |+-----------------------+ |                                 |
-|                                  ||Leave to Lobby         | |                                 |
-|                                  |+-----------------------+ |                                 |
-|                                  ||Quit                   | |                                 |
-|                                  |+-----------------------+ |                                 |
-|                                  ||Pause feedback         | |                                 |
-|                                  ++-----------------------+-+                                 |
-|                                                                                               |
-|                                                                                               |
-|                                                                                               |
+|                                             ++Party title----------------++                   |
+|                                             |+---------------------------+|                   |
+|                +-+-----------------------++ |+Party feedback-------------+|                   |
+|                | |Pause title            || |+---------------------------+|                   |
+|                | +Pause context----------+| |++A15--------------++A16---++|                   |
+|                | +-----------------------+| |++-----------------++------++|                   |
+|                | +Resume-----------------+| |||A18              ||A19   |||                   |
+|                | +-----------------------+| |++A21--------------++A22---++|                   |
+|                | +Settings---------------+| ||+-----------------++------+||                   |
+|                | +-----------------------+| |+Server player picker-------+|                   |
+|                | |Leave to Lobby         || |+---------------------------+|                   |
+|                | +-----------------------+| |++Invite sender------------++|                   |
+|                | |Quit                   || ||+A26----++A27----+--------+||                   |
+|                | +-----------------------+| ||+-------++-------+         ||                   |
+|                | |Pause feedback         || |+A29----------+Leave party--+|                   |
+|                +-+-----------------------++ |+-------------+-------------+|                   |
+|                                             |+Party action feedback------+|                   |
+|                                             |+---------------------------+|                   |
+|                                             +-----------------------------+                   |
 |                                                                                               |
 |                                                                                               |
 +-----------------------------------------------------------------------------------------------+
@@ -277,9 +279,31 @@ Use `/` for a read-only live or downed HUD. Host opens `/inventory`, `/search`, 
     [A07 Leave to Lobby]
     [A08 Quit]
     [A09 Pause feedback]
+  [A10 Party panel]
+    [A11 Party title]
+    [A12 Party feedback]
+    [A13 Party slots]
+      [A14 Member 1]
+        [A15 Member 1 identity]
+        [A16 Member 1 kick]
+      [A17 Member 2]
+        [A18 Member 2 identity]
+        [A19 Member 2 kick]
+      [A20 Member 3]
+        [A21 Member 3 identity]
+        [A22 Member 3 kick]
+    [A23 Server player picker]
+    [A24 Incoming invite]
+      [A25 Invite sender]
+      [A26 Accept invite]
+      [A27 Decline invite]
+    [A28 Party actions]
+      [A29 Create or invite]
+      [A30 Leave party]
+      [A31 Party action feedback]
 ```
 
-### Surrender prompt
+### Direct surrender availability
 
 [Open SVG](wireframes/04-surrender.svg)
 
@@ -289,8 +313,8 @@ Use `/` for a read-only live or downed HUD. Host opens `/inventory`, `/search`, 
 | |Minimap       |+-------++-----+-----------------------------+-----+           +------------+ |
 | |              |+A04----+      |Heist alert                  |                                |
 | |              |+A05----+      ++---------------------------++                                |
-| |              |+Safety-+       |Notifications              |                                 |
-| |              |+-------+       |                           |                                 |
+| |              |+Safety---------|Notifications              |                                 |
+| |              |+---------------|                           |                                 |
 | +--------------+                |                           |                                 |
 |                                 +---------------------------+                                 |
 |                                                                                               |
@@ -298,16 +322,16 @@ Use `/` for a read-only live or downed HUD. Host opens `/inventory`, `/search`, 
 |                                                                                               |
 |                                                                                               |
 |                                                                                               |
-|                              +---------------------------------+                              |
-|                              |+Surrender title----------------+|                              |
-|                              |+-------------------------------+|                              |
-|                              ||Surrender terms                ||                              |
-|                              |+-------------------------------+|                              |
-| +Party member 1---+          |+A26-------+       +A27---------+|                              |
-| +-----------------+          |+----------+       +------------+|                              |
-| |Party member 2   |          +---------------------------------+                              |
-| +-----------------+                                        +-----+-----+--++--+---+--++-----+ |
-| |Self health      |                                        |A16  |A17  |  ||  |A20|  ||A22  | |
+|                                                                                               |
+|                                                                                               |
+|                                    +---------------------+                                    |
+|                                    |Interact card        |                                    |
+|                                    |                     |                                    |
+| +Party member 1---+                |                     |                                    |
+| +-----------------+                +---------------------+                                    |
+| |Party member 2   |                +Surrender hint-------+                                    |
+| +-----------------+                +---------------------+ +-----+-----+--++--+---+--++-----+ |
+| |Self health      |                                        |A18  |A19  |  ||  |A22|  ||A24  | |
 | +-----------------+                                        +-----+-----+--++--+---+--++-----+ |
 +-----------------------------------------------------------------------------------------------+
 
@@ -325,19 +349,78 @@ Use `/` for a read-only live or downed HUD. Host opens `/inventory`, `/search`, 
   [A12 Party member 1]
   [A13 Party member 2]
   [A14 Self health]
-[A15 Hotbar]
-  [A16 Slot 1]
-  [A17 Slot 2]
-  [A18 Slot 3]
-  [A19 Slot 4]
-  [A20 Slot 5]
-  [A21 Slot 6]
-  [A22 Bag value and hint]
-[A23 Surrender panel]
-  [A24 Surrender title]
-  [A25 Surrender terms]
-  [A26 Cancel surrender]
-  [A27 Confirm surrender]
+[A15 Interact card]
+[A16 Surrender hint]
+[A17 Hotbar]
+  [A18 Slot 1]
+  [A19 Slot 2]
+  [A20 Slot 3]
+  [A21 Slot 4]
+  [A22 Slot 5]
+  [A23 Slot 6]
+  [A24 Bag value and hint]
+```
+
+### Outcome receipt over the new HUD
+
+[Open SVG](wireframes/04-hud-receipt.svg)
+
+```text
++-----------------------------------------------------------------------------------------------+
+| +--------------++A03----++Compass----------------------------------+           +Cash--------+ |
+| |Minimap       |+-------++-----+-----------------------------+-----+           +------------+ |
+| |              |+A04----+      |Heist alert                  |                                |
+| |              |+A05----+      ++---------------------------++                                |
+| |              |+Safety---------|Notifications              |                                 |
+| |              |+---------------|                           |                                 |
+| +--------------+                |                           |                                 |
+|                                 +---------------------------+                                 |
+|                              ++Receipt title------------------++                              |
+|                              |+-------------------------------+|                              |
+|                              |+Receipt summary----------------+|                              |
+|                              |+-------------------------------+|                              |
+|                              |+Receipt dismiss----------------+|                              |
+|                              |+-------------------------------+|                              |
+|                              +---------------------------------+                              |
+|                                    +---------------------+                                    |
+|                                    |Interact card        |                                    |
+|                                    |                     |                                    |
+| +Party member 1---+                |                     |                                    |
+| +-----------------+                +---------------------+                                    |
+| |Party member 2   |                +Surrender hint-------+                                    |
+| +-----------------+                +---------------------+ +-----+-----+--++--+---+--++-----+ |
+| |Self health      |                                        |A18  |A19  |  ||  |A22|  ||A24  | |
+| +-----------------+                                        +-----+-----+--++--+---+--++-----+ |
++-----------------------------------------------------------------------------------------------+
+
+[A01 Net stats]
+[A02 Minimap]
+[A03 Role badge]
+[A04 Mask timer]
+[A05 Notoriety]
+[A06 Safety]
+[A07 Compass]
+[A08 Heist alert]
+[A09 Notifications]
+[A10 Cash]
+[A11 Party and self]
+  [A12 Party member 1]
+  [A13 Party member 2]
+  [A14 Self health]
+[A15 Interact card]
+[A16 Surrender hint]
+[A17 Hotbar]
+  [A18 Slot 1]
+  [A19 Slot 2]
+  [A20 Slot 3]
+  [A21 Slot 4]
+  [A22 Slot 5]
+  [A23 Slot 6]
+  [A24 Bag value and hint]
+[A25 Receipt card]
+  [A26 Receipt title]
+  [A27 Receipt summary]
+  [A28 Receipt dismiss]
 ```
 
 ### Death and respawn
@@ -360,7 +443,7 @@ Use `/` for a read-only live or downed HUD. Host opens `/inventory`, `/search`, 
 |                              |+-------------------------------+|                              |
 |                              |+Overlay status-----------------+|                              |
 |                              |+-------------------------------+|                              |
-|                              |+Overlay footer-----------------+|                              |
+|                              |+Receipt dismiss----------------+|                              |
 |                              |+-------------------------------+|                              |
 |                              +---------------------------------+                              |
 |                                                                                               |
@@ -377,7 +460,7 @@ Use `/` for a read-only live or downed HUD. Host opens `/inventory`, `/search`, 
     [A03 Overlay title]
     [A04 Outcome summary]
     [A05 Overlay status]
-    [A06 Overlay footer]
+    [A06 Receipt dismiss]
 ```
 
 ### Arrest receipt
@@ -400,7 +483,7 @@ Use `/` for a read-only live or downed HUD. Host opens `/inventory`, `/search`, 
 |                              |+-------------------------------+|                              |
 |                              |+Overlay status-----------------+|                              |
 |                              |+-------------------------------+|                              |
-|                              |+Overlay footer-----------------+|                              |
+|                              |+Receipt dismiss----------------+|                              |
 |                              |+-------------------------------+|                              |
 |                              +---------------------------------+                              |
 |                                                                                               |
@@ -417,7 +500,7 @@ Use `/` for a read-only live or downed HUD. Host opens `/inventory`, `/search`, 
     [A03 Overlay title]
     [A04 Outcome summary]
     [A05 Overlay status]
-    [A06 Overlay footer]
+    [A06 Receipt dismiss]
 ```
 
 ### Map transfer
@@ -462,7 +545,7 @@ Use `/` for a read-only live or downed HUD. Host opens `/inventory`, `/search`, 
 
 ## 3. Layout
 
-Right and bottom give offsets to the base-frame edges. Group bounds intentionally contain their children. Rows and regions use base CSS pixels.
+Right and bottom are insets from the 1280 × 720 frame. Parent bounds contain their children. Each drawing is a separate state.
 
 ### Live HUD
 
@@ -473,7 +556,7 @@ Right and bottom give offsets to the base-frame edges. Group bounds intentionall
 | A03 | Role badge | 240 | 40 | 928 | 652 | 112 | 28 | Frame |
 | A04 | Mask timer | 240 | 74 | 928 | 618 | 112 | 28 | Frame |
 | A05 | Notoriety | 240 | 108 | 928 | 584 | 112 | 28 | Frame |
-| A06 | Safety | 240 | 142 | 928 | 550 | 112 | 28 | Frame |
+| A06 | Safety | 240 | 142 | 832 | 550 | 208 | 28 | Frame |
 | A07 | Compass | 360 | 24 | 360 | 664 | 560 | 32 | Frame |
 | A08 | Heist alert | 440 | 64 | 440 | 612 | 400 | 44 | Frame |
 | A09 | Notifications | 456 | 116 | 456 | 492 | 368 | 112 | Frame |
@@ -500,20 +583,21 @@ Right and bottom give offsets to the base-frame edges. Group bounds intentionall
 | A01 | Net stats | 24 | 16 | 1056 | 688 | 200 | 16 | Frame |
 | A02 | Minimap | 24 | 40 | 1056 | 510 | 200 | 170 | Frame |
 | A03 | Role badge | 240 | 40 | 928 | 652 | 112 | 28 | Frame |
-| A04 | Safety | 240 | 142 | 928 | 550 | 112 | 28 | Frame |
+| A04 | Safety | 240 | 142 | 832 | 550 | 208 | 28 | Frame |
 | A05 | Compass | 360 | 24 | 360 | 664 | 560 | 32 | Frame |
-| A06 | Notifications | 456 | 116 | 456 | 492 | 368 | 112 | Frame |
-| A07 | Cash | 1080 | 24 | 24 | 652 | 176 | 44 | Frame |
-| A08 | Party and self | 24 | 534 | 1016 | 24 | 240 | 162 | Frame |
-| A09 | Party member 1 | 24 | 534 | 1016 | 138 | 240 | 48 | Party and self |
-| A10 | Party member 2 | 24 | 588 | 1016 | 84 | 240 | 48 | Party and self |
-| A11 | Self health | 24 | 642 | 1016 | 24 | 240 | 54 | Party and self |
-| A12 | Downed panel | 416 | 260 | 416 | 272 | 448 | 188 | Frame |
-| A13 | Downed title | 432 | 272 | 432 | 420 | 416 | 28 | Downed panel |
-| A14 | Bleed-out progress | 432 | 308 | 432 | 400 | 416 | 12 | Downed panel |
-| A15 | Revive progress | 432 | 332 | 432 | 356 | 416 | 32 | Downed panel |
-| A16 | Finish warning | 432 | 372 | 432 | 312 | 416 | 36 | Downed panel |
-| A17 | Downed controls | 432 | 416 | 432 | 284 | 416 | 20 | Downed panel |
+| A06 | Heist alert | 440 | 64 | 440 | 612 | 400 | 44 | Frame |
+| A07 | Notifications | 456 | 116 | 456 | 492 | 368 | 112 | Frame |
+| A08 | Cash | 1080 | 24 | 24 | 652 | 176 | 44 | Frame |
+| A09 | Party and self | 24 | 534 | 1016 | 24 | 240 | 162 | Frame |
+| A10 | Party member 1 | 24 | 534 | 1016 | 138 | 240 | 48 | Party and self |
+| A11 | Party member 2 | 24 | 588 | 1016 | 84 | 240 | 48 | Party and self |
+| A12 | Self health | 24 | 642 | 1016 | 24 | 240 | 54 | Party and self |
+| A13 | Downed panel | 416 | 260 | 416 | 272 | 448 | 188 | Frame |
+| A14 | Downed title | 432 | 272 | 432 | 420 | 416 | 28 | Downed panel |
+| A15 | Bleed-out progress | 432 | 308 | 432 | 400 | 416 | 12 | Downed panel |
+| A16 | Revive progress | 432 | 332 | 432 | 356 | 416 | 32 | Downed panel |
+| A17 | Finish warning | 432 | 372 | 432 | 312 | 416 | 36 | Downed panel |
+| A18 | Downed controls | 432 | 416 | 432 | 284 | 416 | 20 | Downed panel |
 
 ### Body search with owner inventory
 
@@ -524,32 +608,33 @@ Right and bottom give offsets to the base-frame edges. Group bounds intentionall
 | A03 | Search title | 406 | 92 | 648 | 592 | 226 | 36 | Search header |
 | A04 | Item count | 638 | 92 | 569 | 592 | 73 | 36 | Search header |
 | A05 | Body grid | 406 | 128 | 569 | 134 | 305 | 458 | Body search panel |
-| A06 | Search footer | 395 | 592 | 558 | 92 | 327 | 36 | Body search panel |
-| A07 | Search error | 406 | 599 | 739 | 99 | 135 | 22 | Search footer |
-| A08 | Search close | 548 | 599 | 660 | 99 | 72 | 22 | Search footer |
-| A09 | Take hint | 627 | 599 | 569 | 99 | 84 | 22 | Search footer |
-| A10 | Inventory panel | 731 | 92 | 25 | 92 | 524 | 536 | Frame |
-| A11 | Inventory header | 731 | 92 | 25 | 592 | 524 | 36 | Inventory panel |
-| A12 | Bag title | 743 | 92 | 461 | 592 | 76 | 36 | Inventory header |
-| A13 | Bag value | 943 | 92 | 232 | 592 | 105 | 36 | Inventory header |
-| A14 | Equipment title | 1060 | 92 | 37 | 592 | 183 | 36 | Inventory header |
-| A15 | Bag grid | 743 | 128 | 232 | 134 | 305 | 458 | Inventory panel |
-| A16 | Equipment column | 1060 | 128 | 37 | 187 | 183 | 405 | Inventory panel |
-| A17 | Primary | 1060 | 128 | 37 | 504 | 183 | 88 | Equipment column |
-| A18 | Secondary | 1060 | 223 | 37 | 409 | 183 | 88 | Equipment column |
-| A19 | Armor | 1060 | 318 | 132 | 314 | 88 | 88 | Equipment column |
-| A20 | Bag slot | 1155 | 318 | 37 | 314 | 88 | 88 | Equipment column |
-| A21 | Pouch label | 1060 | 412 | 148 | 292 | 72 | 16 | Equipment column |
-| A22 | Pouch | 1060 | 432 | 148 | 188 | 72 | 100 | Equipment column |
-| A23 | Pocket 1 | 1142 | 432 | 88 | 238 | 50 | 50 | Equipment column |
-| A24 | Pocket 2 | 1193 | 432 | 37 | 238 | 50 | 50 | Equipment column |
-| A25 | Pocket 3 | 1142 | 483 | 88 | 187 | 50 | 50 | Equipment column |
-| A26 | Pocket 4 | 1193 | 483 | 37 | 187 | 50 | 50 | Equipment column |
-| A27 | Inventory footer | 731 | 592 | 25 | 92 | 524 | 36 | Inventory panel |
-| A28 | Selected item | 743 | 599 | 333 | 99 | 204 | 22 | Inventory footer |
-| A29 | Back | 956 | 599 | 244 | 99 | 80 | 22 | Inventory footer |
-| A30 | Close hint | 1044 | 599 | 148 | 99 | 88 | 22 | Inventory footer |
-| A31 | Select hint | 1140 | 599 | 37 | 99 | 103 | 22 | Inventory footer |
+| A06 | Body scrollbar | 714 | 128 | 562 | 134 | 4 | 458 | Body search panel |
+| A07 | Search footer | 395 | 592 | 558 | 92 | 327 | 36 | Body search panel |
+| A08 | Search error | 406 | 599 | 739 | 99 | 135 | 22 | Search footer |
+| A09 | Search close | 548 | 599 | 660 | 99 | 72 | 22 | Search footer |
+| A10 | Take hint | 627 | 599 | 569 | 99 | 84 | 22 | Search footer |
+| A11 | Inventory panel | 731 | 92 | 25 | 92 | 524 | 536 | Frame |
+| A12 | Inventory header | 731 | 92 | 25 | 592 | 524 | 36 | Inventory panel |
+| A13 | Bag title | 743 | 92 | 461 | 592 | 76 | 36 | Inventory header |
+| A14 | Bag value | 943 | 92 | 232 | 592 | 105 | 36 | Inventory header |
+| A15 | Equipment title | 1060 | 92 | 37 | 592 | 183 | 36 | Inventory header |
+| A16 | Bag grid | 743 | 128 | 232 | 134 | 305 | 458 | Inventory panel |
+| A17 | Equipment column | 1060 | 128 | 37 | 187 | 183 | 405 | Inventory panel |
+| A18 | Primary | 1060 | 128 | 37 | 504 | 183 | 88 | Equipment column |
+| A19 | Secondary | 1060 | 223 | 37 | 409 | 183 | 88 | Equipment column |
+| A20 | Armor | 1060 | 318 | 132 | 314 | 88 | 88 | Equipment column |
+| A21 | Bag slot | 1155 | 318 | 37 | 314 | 88 | 88 | Equipment column |
+| A22 | Pouch label | 1060 | 412 | 148 | 292 | 72 | 16 | Equipment column |
+| A23 | Pouch | 1060 | 432 | 148 | 188 | 72 | 100 | Equipment column |
+| A24 | Pocket 1 | 1142 | 432 | 88 | 238 | 50 | 50 | Equipment column |
+| A25 | Pocket 2 | 1193 | 432 | 37 | 238 | 50 | 50 | Equipment column |
+| A26 | Pocket 3 | 1142 | 483 | 88 | 187 | 50 | 50 | Equipment column |
+| A27 | Pocket 4 | 1193 | 483 | 37 | 187 | 50 | 50 | Equipment column |
+| A28 | Inventory footer | 731 | 592 | 25 | 92 | 524 | 36 | Inventory panel |
+| A29 | Selected item | 743 | 599 | 333 | 99 | 204 | 22 | Inventory footer |
+| A30 | Back | 956 | 599 | 244 | 99 | 80 | 22 | Inventory footer |
+| A31 | Close hint | 1044 | 599 | 148 | 99 | 88 | 22 | Inventory footer |
+| A32 | Select hint | 1140 | 599 | 37 | 99 | 103 | 22 | Inventory footer |
 
 ### Owner inventory
 
@@ -583,16 +668,38 @@ Right and bottom give offsets to the base-frame edges. Group bounds intentionall
 | ID | Element | Left | Top | Right | Bottom | Width | Height | Parent |
 |---|---|---:|---:|---:|---:|---:|---:|---|
 | A01 | Pause dim | 0 | 0 | 0 | 0 | 1280 | 720 | Frame |
-| A02 | Pause panel | 460 | 160 | 460 | 160 | 360 | 400 | Pause dim |
-| A03 | Pause title | 484 | 184 | 484 | 500 | 312 | 36 | Pause panel |
-| A04 | Pause context | 484 | 228 | 484 | 452 | 312 | 40 | Pause panel |
-| A05 | Resume | 484 | 280 | 484 | 400 | 312 | 40 | Pause panel |
-| A06 | Settings | 484 | 332 | 484 | 348 | 312 | 40 | Pause panel |
-| A07 | Leave to Lobby | 484 | 384 | 484 | 296 | 312 | 40 | Pause panel |
-| A08 | Quit | 484 | 436 | 484 | 244 | 312 | 40 | Pause panel |
-| A09 | Pause feedback | 484 | 488 | 484 | 184 | 312 | 48 | Pause panel |
+| A02 | Pause panel | 232 | 160 | 688 | 160 | 360 | 400 | Pause dim |
+| A03 | Pause title | 256 | 184 | 712 | 500 | 312 | 36 | Pause panel |
+| A04 | Pause context | 256 | 228 | 712 | 452 | 312 | 40 | Pause panel |
+| A05 | Resume | 256 | 280 | 712 | 400 | 312 | 40 | Pause panel |
+| A06 | Settings | 256 | 332 | 712 | 348 | 312 | 40 | Pause panel |
+| A07 | Leave to Lobby | 256 | 384 | 712 | 296 | 312 | 40 | Pause panel |
+| A08 | Quit | 256 | 436 | 712 | 244 | 312 | 40 | Pause panel |
+| A09 | Pause feedback | 256 | 488 | 712 | 184 | 312 | 48 | Pause panel |
+| A10 | Party panel | 616 | 112 | 264 | 80 | 400 | 528 | Pause dim |
+| A11 | Party title | 632 | 128 | 280 | 564 | 368 | 28 | Party panel |
+| A12 | Party feedback | 632 | 164 | 280 | 516 | 368 | 40 | Party panel |
+| A13 | Party slots | 632 | 216 | 280 | 356 | 368 | 148 | Party panel |
+| A14 | Member 1 | 632 | 216 | 280 | 460 | 368 | 44 | Party slots |
+| A15 | Member 1 identity | 640 | 220 | 394 | 464 | 246 | 36 | Member 1 |
+| A16 | Member 1 kick | 894 | 220 | 288 | 464 | 98 | 36 | Member 1 |
+| A17 | Member 2 | 632 | 268 | 280 | 408 | 368 | 44 | Party slots |
+| A18 | Member 2 identity | 640 | 272 | 394 | 412 | 246 | 36 | Member 2 |
+| A19 | Member 2 kick | 894 | 272 | 288 | 412 | 98 | 36 | Member 2 |
+| A20 | Member 3 | 632 | 320 | 280 | 356 | 368 | 44 | Party slots |
+| A21 | Member 3 identity | 640 | 324 | 394 | 360 | 246 | 36 | Member 3 |
+| A22 | Member 3 kick | 894 | 324 | 288 | 360 | 98 | 36 | Member 3 |
+| A23 | Server player picker | 632 | 376 | 280 | 308 | 368 | 36 | Party panel |
+| A24 | Incoming invite | 632 | 424 | 280 | 216 | 368 | 80 | Party panel |
+| A25 | Invite sender | 640 | 430 | 288 | 266 | 352 | 24 | Incoming invite |
+| A26 | Accept invite | 640 | 460 | 528 | 224 | 112 | 36 | Incoming invite |
+| A27 | Decline invite | 760 | 460 | 408 | 224 | 112 | 36 | Incoming invite |
+| A28 | Party actions | 632 | 520 | 280 | 104 | 368 | 96 | Party panel |
+| A29 | Create or invite | 632 | 520 | 472 | 160 | 176 | 40 | Party actions |
+| A30 | Leave party | 816 | 520 | 280 | 160 | 184 | 40 | Party actions |
+| A31 | Party action feedback | 632 | 568 | 280 | 104 | 368 | 48 | Party actions |
 
-### Surrender prompt
+### Direct surrender availability
 
 | ID | Element | Left | Top | Right | Bottom | Width | Height | Parent |
 |---|---|---:|---:|---:|---:|---:|---:|---|
@@ -601,7 +708,7 @@ Right and bottom give offsets to the base-frame edges. Group bounds intentionall
 | A03 | Role badge | 240 | 40 | 928 | 652 | 112 | 28 | Frame |
 | A04 | Mask timer | 240 | 74 | 928 | 618 | 112 | 28 | Frame |
 | A05 | Notoriety | 240 | 108 | 928 | 584 | 112 | 28 | Frame |
-| A06 | Safety | 240 | 142 | 928 | 550 | 112 | 28 | Frame |
+| A06 | Safety | 240 | 142 | 832 | 550 | 208 | 28 | Frame |
 | A07 | Compass | 360 | 24 | 360 | 664 | 560 | 32 | Frame |
 | A08 | Heist alert | 440 | 64 | 440 | 612 | 400 | 44 | Frame |
 | A09 | Notifications | 456 | 116 | 456 | 492 | 368 | 112 | Frame |
@@ -610,19 +717,49 @@ Right and bottom give offsets to the base-frame edges. Group bounds intentionall
 | A12 | Party member 1 | 24 | 534 | 1016 | 138 | 240 | 48 | Party and self |
 | A13 | Party member 2 | 24 | 588 | 1016 | 84 | 240 | 48 | Party and self |
 | A14 | Self health | 24 | 642 | 1016 | 24 | 240 | 54 | Party and self |
-| A15 | Hotbar | 812 | 630 | 24 | 24 | 444 | 66 | Frame |
-| A16 | Slot 1 | 812 | 630 | 392 | 24 | 76 | 66 | Hotbar |
-| A17 | Slot 2 | 894 | 630 | 310 | 24 | 76 | 66 | Hotbar |
-| A18 | Slot 3 | 976 | 630 | 262 | 24 | 42 | 66 | Hotbar |
-| A19 | Slot 4 | 1024 | 630 | 214 | 24 | 42 | 66 | Hotbar |
-| A20 | Slot 5 | 1072 | 630 | 166 | 24 | 42 | 66 | Hotbar |
-| A21 | Slot 6 | 1120 | 630 | 118 | 24 | 42 | 66 | Hotbar |
-| A22 | Bag value and hint | 1168 | 630 | 24 | 24 | 88 | 66 | Hotbar |
-| A23 | Surrender panel | 416 | 414 | 416 | 122 | 448 | 184 | Frame |
-| A24 | Surrender title | 432 | 430 | 432 | 262 | 416 | 28 | Surrender panel |
-| A25 | Surrender terms | 432 | 466 | 432 | 206 | 416 | 48 | Surrender panel |
-| A26 | Cancel surrender | 432 | 534 | 704 | 146 | 144 | 40 | Surrender panel |
-| A27 | Confirm surrender | 680 | 534 | 432 | 146 | 168 | 40 | Surrender panel |
+| A15 | Interact card | 496 | 450 | 496 | 134 | 288 | 136 | Frame |
+| A16 | Surrender hint | 496 | 594 | 496 | 94 | 288 | 32 | Frame |
+| A17 | Hotbar | 812 | 630 | 24 | 24 | 444 | 66 | Frame |
+| A18 | Slot 1 | 812 | 630 | 392 | 24 | 76 | 66 | Hotbar |
+| A19 | Slot 2 | 894 | 630 | 310 | 24 | 76 | 66 | Hotbar |
+| A20 | Slot 3 | 976 | 630 | 262 | 24 | 42 | 66 | Hotbar |
+| A21 | Slot 4 | 1024 | 630 | 214 | 24 | 42 | 66 | Hotbar |
+| A22 | Slot 5 | 1072 | 630 | 166 | 24 | 42 | 66 | Hotbar |
+| A23 | Slot 6 | 1120 | 630 | 118 | 24 | 42 | 66 | Hotbar |
+| A24 | Bag value and hint | 1168 | 630 | 24 | 24 | 88 | 66 | Hotbar |
+
+### Outcome receipt over the new HUD
+
+| ID | Element | Left | Top | Right | Bottom | Width | Height | Parent |
+|---|---|---:|---:|---:|---:|---:|---:|---|
+| A01 | Net stats | 24 | 16 | 1056 | 688 | 200 | 16 | Frame |
+| A02 | Minimap | 24 | 40 | 1056 | 510 | 200 | 170 | Frame |
+| A03 | Role badge | 240 | 40 | 928 | 652 | 112 | 28 | Frame |
+| A04 | Mask timer | 240 | 74 | 928 | 618 | 112 | 28 | Frame |
+| A05 | Notoriety | 240 | 108 | 928 | 584 | 112 | 28 | Frame |
+| A06 | Safety | 240 | 142 | 832 | 550 | 208 | 28 | Frame |
+| A07 | Compass | 360 | 24 | 360 | 664 | 560 | 32 | Frame |
+| A08 | Heist alert | 440 | 64 | 440 | 612 | 400 | 44 | Frame |
+| A09 | Notifications | 456 | 116 | 456 | 492 | 368 | 112 | Frame |
+| A10 | Cash | 1080 | 24 | 24 | 652 | 176 | 44 | Frame |
+| A11 | Party and self | 24 | 534 | 1016 | 24 | 240 | 162 | Frame |
+| A12 | Party member 1 | 24 | 534 | 1016 | 138 | 240 | 48 | Party and self |
+| A13 | Party member 2 | 24 | 588 | 1016 | 84 | 240 | 48 | Party and self |
+| A14 | Self health | 24 | 642 | 1016 | 24 | 240 | 54 | Party and self |
+| A15 | Interact card | 496 | 450 | 496 | 134 | 288 | 136 | Frame |
+| A16 | Surrender hint | 496 | 594 | 496 | 94 | 288 | 32 | Frame |
+| A17 | Hotbar | 812 | 630 | 24 | 24 | 444 | 66 | Frame |
+| A18 | Slot 1 | 812 | 630 | 392 | 24 | 76 | 66 | Hotbar |
+| A19 | Slot 2 | 894 | 630 | 310 | 24 | 76 | 66 | Hotbar |
+| A20 | Slot 3 | 976 | 630 | 262 | 24 | 42 | 66 | Hotbar |
+| A21 | Slot 4 | 1024 | 630 | 214 | 24 | 42 | 66 | Hotbar |
+| A22 | Slot 5 | 1072 | 630 | 166 | 24 | 42 | 66 | Hotbar |
+| A23 | Slot 6 | 1120 | 630 | 118 | 24 | 42 | 66 | Hotbar |
+| A24 | Bag value and hint | 1168 | 630 | 24 | 24 | 88 | 66 | Hotbar |
+| A25 | Receipt card | 416 | 260 | 416 | 296 | 448 | 164 | Frame |
+| A26 | Receipt title | 432 | 272 | 432 | 420 | 416 | 28 | Receipt card |
+| A27 | Receipt summary | 432 | 308 | 432 | 368 | 416 | 44 | Receipt card |
+| A28 | Receipt dismiss | 432 | 368 | 432 | 312 | 416 | 40 | Receipt card |
 
 ### Death and respawn
 
@@ -633,7 +770,7 @@ Right and bottom give offsets to the base-frame edges. Group bounds intentionall
 | A03 | Overlay title | 432 | 262 | 432 | 426 | 416 | 32 | Death panel |
 | A04 | Outcome summary | 432 | 306 | 432 | 370 | 416 | 44 | Death panel |
 | A05 | Overlay status | 432 | 362 | 432 | 326 | 416 | 32 | Death panel |
-| A06 | Overlay footer | 432 | 418 | 432 | 262 | 416 | 40 | Death panel |
+| A06 | Receipt dismiss | 432 | 418 | 432 | 262 | 416 | 40 | Death panel |
 
 ### Arrest receipt
 
@@ -644,7 +781,7 @@ Right and bottom give offsets to the base-frame edges. Group bounds intentionall
 | A03 | Overlay title | 432 | 262 | 432 | 426 | 416 | 32 | Arrest panel |
 | A04 | Outcome summary | 432 | 306 | 432 | 370 | 416 | 44 | Arrest panel |
 | A05 | Overlay status | 432 | 362 | 432 | 326 | 416 | 32 | Arrest panel |
-| A06 | Overlay footer | 432 | 418 | 432 | 262 | 416 | 40 | Arrest panel |
+| A06 | Receipt dismiss | 432 | 418 | 432 | 262 | 416 | 40 | Arrest panel |
 
 ### Map transfer
 
@@ -657,9 +794,11 @@ Right and bottom give offsets to the base-frame edges. Group bounds intentionall
 | A05 | Overlay status | 432 | 362 | 432 | 326 | 416 | 32 | Transfer panel |
 | A06 | Overlay footer | 432 | 418 | 432 | 262 | 416 | 40 | Transfer panel |
 
-The HUD holds the minimap at (24,40), matching Godot's 200 × 170 texture. Strip labels at 45° and ticks at 15° move at 4 px per degree beneath the fixed center tick. Reserve the 44 px heist alert band. Notification tray accepts four 24 px lines with 4 px gaps, ordering oldest above newest. Each notification uses a single display line and a full accessible name. Position self health consistently at y=642. Occupied party rows start at y=534. Do not move self when party members are missing or away.
+Keep minimap (24,40,200,170) tied to Godot. Compass uses 4 px per degree, 15° ticks and 45° labels. Heist alert line keeps its dedicated band, while the four-row toast tray uses 24 px rows and 4 px gaps. The heist toast occupies one tray row for 8 s. Self stays at y=642 with two party frames above.
 
-The interact card is a fixed screen prompt, four possible 24 px action rows with a 24 px title and 8 px insets. Body-search uses the active task's proposed external panel geometry at right 558 alongside the unchanged owner panel at right 25, giving a 9 px gap. Current release candidate centered search stays usable until the external panel task lands. A bag cell at column c and row r begins at `(743 + 51c, 128 + 51r)`; body cell substitutes x origin 406. Use c=0–5, r=0–8, 50 × 50 cells and 1 px gaps. Item footprints use `(51w − 1) × (51h − 1)`. Gear slots and footer anchors follow the existing inventory design. Intentional group containment is shown in each table. Surrender and pause confirmations reuse button sizes and modal hierarchy from [components](components.md). Pause confirmations use the [settings dialog geometry](03-settings.md#settings-confirmation).
+Safety expands to 208 × 28 for the approved copy. Body-search panel remains right 558 and owner inventory right 25, with a 9 px gap. Bag cell origin is `(743 + 51c, 128 + 51r)`, c=0–5 and r=0–8, each 50 × 50. Footprint is `(51w − 1) × (51h − 1)`. Body uses x=406 and its independent scrolling geometry in section 4.
+
+Pause places its existing menu at (232,160,360,400) and current in-game party panel at (616,112,400,528). The standalone death/arrest receipt uses its center panel. On spawn-first, switch to the compact receipt drawing at (416,260,448,164) above the fresh live HUD for the remaining lifetime. Each is a separate drawing. The direct-surrender drawing shows only the read-only H hint in the live HUD. Confirmations for session or party Leave/Kick reuse the shared settings-dialog bounds.
 
 ## 4. States
 
@@ -671,27 +810,27 @@ The interact card is a fixed screen prompt, four possible 24 px action rows with
 | Minimap | Godot world texture, thin frame, orientation marker and arrow. Default north-up and an arrow based on `heading`. Optional rotating minimap rotates in Godot and fixes the arrow up. | Show frame with “Map unavailable” after usable local spawn if texture is absent. Clear on transfer. |
 | Compass | Cardinal labels and current heading with center tick. | Hide when preference is off. Without heading show dash; no inferred direction. |
 | Role / timer | Citizen, Criminal · Masked, Cop · On duty. During the 3 s masking channel show mm:ss with ceil rounding and “Masking.” Once masked, hide channel timer and retain masked role. | Unknown role uses “Role unavailable.” No permanent countdown after masking. |
-| Safety | “Safezone” if true, “Weapons locked” in other locked instances where supplied. | Hidden in combat or when field absent. Server still rejects disallowed fire. |
+| Safety | Show exactly “SAFE ZONE - weapons locked” whenever `HudState.weaponsLocked` is true. Applies to Motel, House and Center. | Hide when false or absent in an older snapshot. Server owns all weapon restrictions. |
 | Cash / notoriety / bag | Format integer currency for cash and bag. Notoriety displays raw score while Criminal. | Currency zero shows $0, empty bag $0. During missing snapshot use dash, not zero. |
 | Party and self | Up to two other members and self. Four health segments represent each 25% band; fill partial segment proportionally. Include current and max HP. Label leader, Away, Downed or Dead. | Empty slots disappear. Away uses no meter; self missing snapshot uses dash. Optional low-health tint below 30% plus “Low health.” |
-| Hotbar | Always six regions, 1 and 2 wider. Selected via amber edge and selection marker. Include quantity when present. Show BAG value beside `TAB` or live binding chip. | Empty entries show slot key and empty pattern. Existing slot 1 stays active until switching is supported. |
+| Hotbar | Always six regions, 1 and 2 wider. Selected via amber edge and selection marker. Include quantity when present. Show BAG value beside `TAB` or live binding chip. | Empty entries show slot key and empty pattern. Number keys 1–6 select the corresponding hotbar slot. Unavailable slot actions remain server-validated. |
 | Interaction | Context from Godot. Label each key/action. Clear prompt when no authorized action or input goes to panel. | Unavailable action reason appears when host supplies one. Older snapshots with no prompt show nothing. |
-| Heist alert | Server-scoped recipient receives location label and seconds left when supplied. Use inset edge and “Heist alert.” | Hide when empty or expired. Retain ordinary toasts separately. |
-| Notifications | Authoritative snapshot up to four short messages. Default 4 s, honor supported preference. | Busy updates replace snapshot. Error toast includes action outcome. Empty tray is hidden. |
+| Heist alert | Keep the existing same-instance Cop/Criminal audience. Show the event as an 8 s toast and retain the separate alert line while `heistAlert.active` is true. | Deduplicate by alert ID. Toast ends after 8 s while the active line remains until server clear. Host supplies remaining toast time on replay. |
+| Notifications | Authoritative snapshot up to four short messages. Default 4 s for ordinary messages, honoring the preference. Heist event toast is fixed at 8 s. | Busy updates replace snapshot. Error toast includes action outcome. Empty tray is hidden. |
 
 ### Life and outcome surfaces
 
 - **Downed.** Available in LootyBay under current rules. Overlay keeps movement view and shows server-derived bleed-out from 60 s, a 5 s penalty per hit, revive progress when supplied and an explicit “Finish in progress” warning when server reports an active channel. Show “At risk of being finished” if no active finish is announced. Revive duration 5 s, finish 2 s, cuff 3 s. When event is unknown show dash and await current snapshot. Hide weapon, inventory and world interaction. Crawl is the only movement mode. Server can route a second down within 30 s of revive directly to death. No local bleed-out transition at zero.
-- **Death.** Show “You died,” available cause, and automatic Motel respawn status. Show any precise setback only from authoritative outcome data. Criminal death drops remaining inventory and ends Criminal role. Cop death ends duty and clears issued kit. Host can show receipt for up to 900 ms while load already starts. Do not gate actual respawn on a UI timer. If the spawn arrives sooner, keep receipt as a normal notification after transfer.
-- **Surrender.** Show hint only if Godot can provide current eligibility to an ALIVE Criminal in range of an ALIVE Cop. Proposed 6 m and LOS preflight is presentation only; server validates. Confirmation gives bag loss, gear retained and return to Motel. Cancel ends prompt. On confirmation lock buttons until server result. Denial restores movement and displays concise reason. If eligibility changes before confirmation, cancel and recapture.
-- **Arrest.** Show cuff or surrender receipt only on server outcome. Explain bag forfeited, gear retained, Citizen at Motel. Cuff skips the surrender prompt. Show receipt up to 900 ms within loading. No jail duration is assumed. Cop-side payout feedback uses existing notifications.
+- **Death.** Show “You died,” known cause and automatic Motel respawn. Criminal death drops remaining inventory and ends Criminal role. Cop death ends duty and clears issued kit. Start the receipt lifetime at the host-observed authoritative event, lasting 900 ms. Continue loading independently. If spawn arrives first, keep the same receipt above the new HUD for its remaining time, as drawn below. Escape or click dismisses it early. Host remaining time prevents replay from restarting the receipt.
+- **Surrender.** The hint depends only on server-supplied `HudState.surrenderAvailable` for an ALIVE Criminal. H sends the existing server surrender request directly. Show final success or rejection from the existing notification event. Server validates life, role, Cop range and LOS at execution. Clear the hint when the snapshot revokes eligibility. Success can produce the arrest receipt through the host notification adapter.
+- **Arrest.** A successful cuff or surrender notification starts a 900 ms receipt. Show bag forfeited, gear retained and return as Citizen to Motel. Apply the same spawn-first carry-over and Escape/click dismissal as death. Cop-side payout feedback uses existing notifications. Receipt dismissal only changes presentation.
 - **Transfer.** Display target map, reason and loading/waiting status. Use loader progress from Godot when available. Keep stage changes discrete. Client load + server ack remains authoritative, with 10 s server timeout. Await local spawn and matching state. Timeout, failure or disconnect yields terminal feedback with Return to Lobby when the host can offer it. There is no client-side automatic transfer retry.
-- **Pause.** Pause opens over the world with the hint “Session continues.” Resume, Settings, Leave to Lobby, Quit. For leave or quit open a confirmation with Cancel as default. A failed leave retains the menu if still connected and shows one error. While paused, the server continues play and state changes can close the menu. Settings opened from pause keeps the same game input gate.
+- **Pause.** Keep “Session continues,” Resume, Settings, Leave to Lobby and Quit. The adjoining Party panel is current in-game UI. It shows up to three members, leader and allowed Kick actions, a current-server player picker, Create/Invite, Leave and incoming Accept/Decline. Match display names to peer IDs, including duplicate-name disambiguation. The server supplies invite expiry. An invite notification directs the user to Escape/Pause for review. Leave/Quit and party Leave/Kick use the shared confirmation dialog. Requests lock only the affected action while pending. A downed player retains valid read-only party state and allowed Leave/Kick; current server life gates disable Create/Invite/Accept. Server life/transfer updates can evict Pause.
 
 ### Inventory and body search
 
 - **Owner inventory.** Existing header, gear order, 6 × 9 bag, footer and transparent outer surface. Show neutral tiles for empty cells. On loading retain panel with empty tile skeleton and no input. If inventory data becomes unavailable while open, leave Close enabled and show unavailable in footer. Select any existing tile to update details. Item rarity comes from its value. Drag within the bag only using pointer events with 4 px activation, valid target marker, checked footprint and optimistic movement. Swap with one other item only if both resulting footprints fit, clear each other and clear all remaining items. Use original w/h and grab offset. Reconcile with next server snapshot. On immediate IPC error revert to committed snapshot; on no refresh after 5 s return to last confirmed inventory and show “Move could not be confirmed.” No rotate, equip, drop, use or cross-panel drag.
-- **Body search.** Open only after server grants session. Criminals may search downed bodies; Cops may search downed Criminals and take through seizure. Citizens cannot search. Server excludes issued gear. Use the existing search request and per-UID pending state. Body items pack row-first with their sizes. Activate tile to take or seize. Empty text inside body grid, failure in footer. On “Bag full,” keep search open and preserve items. If another viewer takes the item, authoritative removal wins. Close on target change, range/LOS failure, life change or transfer. Pending states never prove ownership.
+- **Body search.** Open only after server grants session. Criminals may search downed bodies; Cops may search downed Criminals and take through seizure. Citizens cannot search. Server excludes issued gear. Use the existing search request and per-UID pending state. Body items pack row-first into six columns with their sizes. Grow rows past nine to fit all footprints, then scroll vertically inside the fixed 305 × 458 body viewport. Preserve item UID and anchored scroll position when items change. Scroll focused items fully into view. Own bag stays six by nine. Activate tile to take or seize. Empty text inside body grid, failure in footer. On “Bag full,” keep search open and preserve items. If another viewer takes the item, authoritative removal wins. Close on target change, range/LOS failure, life change or transfer. Pending states never prove ownership.
 - **Availability.** Inventory is alive-gated in the proposed input policy. Search uses server validation and remains visually distinct from normal bag move. If two panel snapshots arrive apart, show placeholder for the missing half and lock its actions.
 
 ### Role and life visibility matrix
@@ -707,42 +846,64 @@ The interact card is a fixed screen prompt, four possible 24 px action rows with
 | Safety | C | C | C | C | C | — | — | — |
 | Hotbar and bag value | ✓ | ✓ | ✓ | — | — | — | — | — |
 | Context card | C | C | C | — | — | — | — | — |
-| Heist alert | — | C | C | — | — | — | — | — |
+| Heist alert line and event toast | — | C | C | C | C | — | — | — |
 | ordinary toasts | C | C | C | C | C | — | — | — |
 | Downed bleed-out, revive, finish | — | — | — | ✓ / C / C | ✓ / C / C | — | — | — |
-| Surrender prompt | — | C | — | — | — | — | — | — |
+| Direct surrender hint | — | C | — | — | — | — | — | — |
 | Body search | — | C | C | — | — | — | — | — |
 | Inventory | C | C | C | — | — | — | — | — |
 | Pause | C | C | C | C | C | — | — | — |
-| Outcome or transfer | — | — | — | — | — | ✓ | ✓ | ✓ |
+| Outcome receipt | C | C | C | — | — | ✓ | ✓ | C |
+| Transfer surface | — | — | — | — | — | — | — | ✓ |
 
-Compass, texture readiness and display preferences can suppress persistent elements. Current rules do not normally produce a downed Citizen. If that state arrives, use the same downed visibility and no search or surrender. Panels override live elements: inventory and combined search hide HUD, pause dims underlying HUD and suppresses contextual hints and toasts, surrender keeps stable read-only HUD and hides duplicate interact/surrender hints. Transfer supersedes competing prompts and keeps valid queued outcome summary inside transfer status.
+Compass, texture readiness and display preferences can suppress persistent elements. Current rules do not normally produce a downed Citizen. If that state arrives, use the same downed visibility and no search or surrender. Panels override live elements: inventory and combined search hide HUD, pause dims underlying HUD and suppresses contextual hints and toasts, a server-eligible surrender hint remains read-only. An outcome receipt can remain over the fresh HUD until its existing deadline. Transfer supersedes interactive prompts and retains a current receipt above loading.
+
+
+
+### Channel activation
+
+Pressing an eligible action starts its server-timed channel. Moving, being hit or pressing the same key again cancels it. Keep the server as owner of completion and cancellation. [DOWNED_STATE.md](../design/DOWNED_STATE.md) describes hold-interact. Current code behavior takes precedence until an owner decision changes it. Any missing same-key cancellation path must be added in implementation, preserving the press-start interaction.
+
+### Body scrolling geometry
+
+The body grid has six columns and `rowCount = max(9, lastOccupiedRow + 1)` after row-first packing. Add rows until every item footprint fits. Its content height is `51 × rowCount − 1`. Viewport is always (406,128,305,458). A content cell begins at `(406 + 51c, 128 + 51r − scrollTop)` and is clipped to the viewport. Scrollbar occupies (714,128,4,458), outside the cell geometry. Owner-grid content and footprint rules stay fixed.
+
+### In-game party state
+
+Use the `party` push on Pause and invalidate it on disconnect. The player picker lists only current peers, displaying name plus peer ID and current eligibility. Incoming invite shows inviter, host-provided remaining seconds and Accept/Decline. Local countdown reaching zero hides its actions while the server enforces expiration. Repeated requests never extend expiry. On full party or role conflict retain the picker and show the authoritative issue. Party invite permission uses the current-session Social setting. Lobby uses the same component only after staging capability exists.
 
 ## 5. Interactions
 
-Gameplay HUD does not receive mouse input. Godot handles movement, look, gate checks, hotbar and world actions. Use existing key hints on interact rows and replace their displayed text with current bindings when available. Fields like cash and HP have no click target. Page panels take cursor focus. For owner inventory focus route root first, then bag items by slot order, equipment by slot order, footer Back. With default Tab, Shift+Tab from root enters focus targets, and Tab moves between targets once focus is inside; bound inventory key or Esc close according to [flow](flow.md). Enter or Space selects focused item. Keep drag pointer based with native HTML5 drag disabled; geometry cancels CSS zoom on the pointer-positioned drag overlay. Esc cancels active drag before close. Pointer cancellation clears tentative tile state.
+Live HUD is read-only. Godot handles movement, look, hotbar 1–6, direct H surrender and world actions. While an outcome receipt remains above an active HUD, Godot consumes Escape or left click once to dismiss it, preventing that press from opening Pause or firing. Other movement input stays available. With a visible cursor, clicking the receipt's dismissal area sends `overlay.dismiss`. Host validates the receipt ID and clears the same deadline-owned presentation. Gamepad later.
 
-For body search, focus title then item tiles in row order, footer Close, owner's inventory controls. Bound search-close key and Esc close search. Enter or Space takes selected body tile. T can take first item in developer builds if enabled and always uses the active session. For surrender, focus Cancel, then Confirm; H confirms only on second press after key release. In pause, focus Resume, Settings, Leave to Lobby, Quit. In confirmation, focus Cancel before destructive action. Transfer error focuses Return to Lobby. Restore gameplay capture only after Godot clears active route. Gamepad later.
+Interactive panels take the cursor. Inventory focus is route root, bag by slot, gear by slot, Back. Default Tab toggles from the root and traverses when already inside, with Shift+Tab reversed as [flow](flow.md) specifies. Escape cancels drag before close. Drag remains pointer based, with physical-pointer overlays compensating for page zoom.
+
+For body search, title precedes body tiles in row-first order, footer Close and owner inventory controls. Wheel/Page keys scroll the body viewport. Enter/Space activates a focused body tile, auto-scrolling it into view. Q or its binding and Escape close search. T takes the first active-session item only in supported developer builds.
+
+Pause focus visits Resume, Settings, Leave to Lobby, Quit, then available party actions by reading order. Party picker supports arrows, typing by display name and Enter selection, keeping peer identity stable. Accept/Decline use the current inviter peer. Show expiry through text and announce expiration once. Confirm Party Leave/Kick and session Leave/Quit with Cancel as safe focus. Server state controls action availability. Transfer error focuses Return to Lobby. Host restores capture only after all panels close.
 
 ## 6. Data
 
-Read `hud` → `HudState` including `net`, `heading`, `role`, `life`, `timer`, `safety`, `cash`, `bag`, `notoriety`, `health`, `maxHealth`, `self`, `party`, `interact`, `hotbar`, `activeSlot`, `notifications`, `surrenderAvailable`, `heistAlert` and `channels`. Read `inventory` → `InventoryView` and `search` → `SearchView`. A null search clears target and UI. Read `game_overlay` → `GameOverlayView` and `transfer` → `TransferView`. Send `inventory.move`, `inventory.close`, `search.take`, `search.close`, `surrender.confirm`, `surrender.cancel`, `pause.resume`, `settings.open`, `session.leave`, `app.quit` and `transfer.return_to_lobby`. Observe host `route`. View-only roles or overlays produce no gameplay requests. Existing host key actions stay outside page IPC.
+Read `hud` → `HudState.net`, `heading`, `role`, `life`, `timer`, `weaponsLocked`, `cash`, `bag`, `notoriety`, `health`, `maxHealth`, `self`, `party`, `interact`, `hotbar`, `activeSlot`, `notifications`, `surrenderAvailable`, `heistAlert` and `channels`. Read `party` → `PartyView` for Pause, `inventory` → `InventoryView`, `search` → `SearchView`, `game_overlay` → `GameOverlayView` and `transfer` → `TransferView`. A null search clears its target. Send `inventory.move`, `inventory.close`, `search.take`, `search.close`, `pause.resume`, `settings.open`, `session.leave`, `app.quit`, `transfer.return_to_lobby`, `overlay.dismiss`, `party.create`, `party.invite`, `party.accept`, `party.decline`, `party.leave` and `party.kick`. Observe `route`. H uses the existing Godot input request. Its authoritative outcome arrives through the existing notification event and is reflected in `HudState.notifications`, with an optional host-produced arrest receipt.
 
 ## 7. Godot side
 
-[Hud.gd](../../ui/hud/Hud.gd) builds owner snapshots, item views and panel routes; [Minimap.gd](../../ui/hud/Minimap.gd) renders real world geometry; [Main.gd](../../main/Main.gd) supplies ping, targeting, connection and panel wiring. [Player.gd](../../features/player/Player.gd) and [PlayerRoleController.gd](../../features/player/PlayerRoleController.gd) supply health, life and role. [PlayerService.gd](../../features/player/PlayerService.gd) owns money, death, surrender and transfer initiation. [DownedService.gd](../../features/downed/DownedService.gd) owns body/search rules and channels. [ItemUtils.gd](../../lib/utils/ItemUtils.gd) supplies item footprints. [PartyService.gd](../../features/party/PartyService.gd) owns membership. [TransferService.gd](../../features/transfer/TransferService.gd) owns reservations and timeout. [Lootable.gd](../../features/heist/Lootable.gd) emits loud alert to scoped recipients and [Instance.gd](../../features/instance/Instance.gd) currently prints it. **NEW** Main and Hud adapt existing signals and authorized outcomes into structured life/transfer/safety/alert display. **NEW** Publish channel presentation to the affected player without extending gameplay authority to the browser.
+[Hud.gd](../../ui/hud/Hud.gd) builds owner snapshots, item views and panel routes; [Minimap.gd](../../ui/hud/Minimap.gd) renders real world geometry; [Main.gd](../../main/Main.gd) supplies ping, targeting, connection and panel wiring. [Player.gd](../../features/player/Player.gd) and [PlayerRoleController.gd](../../features/player/PlayerRoleController.gd) supply health, life and role. [PlayerService.gd](../../features/player/PlayerService.gd) owns money, death, surrender and transfer initiation. [DownedService.gd](../../features/downed/DownedService.gd) owns body/search rules and channels. [ItemUtils.gd](../../lib/utils/ItemUtils.gd) supplies item footprints. [PartyService.gd](../../features/party/PartyService.gd) owns membership. [TransferService.gd](../../features/transfer/TransferService.gd) owns reservations and timeout. [Lootable.gd](../../features/heist/Lootable.gd) emits loud alert to scoped recipients and [Instance.gd](../../features/instance/Instance.gd) currently prints it. **CHANGED** Main and Hud add the single `weaponsLocked` flag and server-supplied `surrenderAvailable`. **NEW** Adapt existing outcome notifications into timed receipts and publish structured active-heist presentation while preserving scoped transport. [PartyService.gd](../../features/party/PartyService.gd) publishes the current roster, expiring invites and action eligibility for Pause. **NEW** Publish channel presentation to the affected player without extending gameplay authority to the browser.
 
 ## 8. Accessibility
 
 Body text ≥4.5:1 against local backing. Smallest label ≥11 px, common 14 px. Explain severity with text plus shape. Four numeric health segments, role names, masking labels, and countdown captions remain legible across colorblind modes. Announce downed, revive start, finishing warning, arrest, transfer failure and death once. Do not announce HP, heading, FPS or countdown every frame. Critical visual states use stable shapes and text, no flash. Active items show a border and explicit selected state. Item buttons include action, name, and rarity when meaningful. Shared focus ring and reasonable focus recovery for every interactive overlay.
 
-## 9. Open questions
+## 9. Decisions
 
-1. Confirm “Masking” means the 3 s channel only. Decide whether any future mask expiry needs a separate field. Current Criminal role has no countdown.
-2. Confirm safety copy for House and Center. They lock weapons under combat logic while the instance safezone flag currently describes Motel.
-3. Confirm the authorized Cop/Criminal heist alert audience and presentation lifetime. Keep current scoped transport and approach pending gameplay decision.
-4. Decide whether release channels require physically holding the binding. Current key handlers begin a server-timed channel on press; the downed design describes hold-interact.
-5. Approve optional arrest/death receipt timing and precise client display priority if spawn arrives first. Keep server transfer independent.
-6. Confirm the external search task lands before this design ships. Decide how to handle body items whose footprints overflow the 6 × 9 body grid and what status to announce. Owner inventory changes, such as a future keyboard placement mode or equipment rule, require separate approval.
-7. Confirm surrender prompt eligibility snapshot source and server outcome event. Existing surrender requests directly on H and error feedback is text.
-8. Confirm focus and captured input on Windows CEF in a two-client smoke. Verify that Tab, Escape, drag and panel dismissal never leak movement or fire.
+1. Decided 2026-11-27: Masking is only the 3 s channel. Criminal role has no mask expiry.
+2. Decided 2026-11-27: Use one `HudState.weaponsLocked` flag and the exact copy “SAFE ZONE - weapons locked” in Motel, House and Center.
+3. Decided 2026-11-27: Preserve the current scoped Cop/Criminal transport. Show an 8 s event toast plus the alert line while the heist remains active.
+4. Decided 2026-11-27: Press starts the server-timed channel. Movement, damage or pressing the same key again cancels. Current code takes precedence over hold-interact wording in the downed design.
+5. Decided 2026-11-27: Receipt lasts 900 ms. If spawn arrives first, preserve its remaining lifetime above the new HUD and allow Escape/click dismissal.
+6. Decided 2026-11-27: External search lands before this design ships. Extend the body grid with vertically scrolling rows beyond 6 × 9. Owner inventory changes require separate approval.
+7. Decided 2026-11-27: Server `HudState` supplies surrender eligibility. H stays a direct request and the existing notification event supplies the outcome.
+
+### Still open
+
+8. Verification during implementation: run the two-client Windows CEF smoke for focus, capture, Tab, Escape, drag and panel dismissal, including 90–110% UI scale. Confirm movement and fire stay gated while panels own input.

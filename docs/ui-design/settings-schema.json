@@ -13,7 +13,10 @@
       "fullscreen"
     ],
     "restart": false,
-    "label": "Display mode"
+    "label": "Display mode",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "resolution",
@@ -32,7 +35,10 @@
       "3840x2160"
     ],
     "restart": false,
-    "label": "Resolution"
+    "label": "Resolution",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "vsync",
@@ -44,7 +50,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "VSync"
+    "label": "VSync",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "frame_cap",
@@ -65,7 +74,10 @@
       "unlimited"
     ],
     "restart": false,
-    "label": "Frame cap"
+    "label": "Frame cap",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "render_scale",
@@ -77,7 +89,10 @@
     "step": 5,
     "options": [],
     "restart": false,
-    "label": "Render scale"
+    "label": "Render scale",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "quality_preset",
@@ -94,7 +109,10 @@
       "custom"
     ],
     "restart": false,
-    "label": "Quality preset"
+    "label": "Quality preset",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "shadows",
@@ -111,7 +129,10 @@
       "high"
     ],
     "restart": false,
-    "label": "Shadows"
+    "label": "Shadows",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "textures",
@@ -127,7 +148,10 @@
       "high"
     ],
     "restart": true,
-    "label": "Textures"
+    "label": "Textures",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "anti_aliasing",
@@ -144,7 +168,10 @@
       "msaa_4x"
     ],
     "restart": false,
-    "label": "Anti-aliasing"
+    "label": "Anti-aliasing",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "view_distance",
@@ -160,7 +187,10 @@
       "high"
     ],
     "restart": false,
-    "label": "View distance"
+    "label": "View distance",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "gamma",
@@ -172,7 +202,10 @@
     "step": 0.05,
     "options": [],
     "restart": false,
-    "label": "Brightness / gamma"
+    "label": "Brightness / gamma",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "fov",
@@ -184,7 +217,10 @@
     "step": 1,
     "options": [],
     "restart": false,
-    "label": "Field of view"
+    "label": "Field of view",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "ui_scale",
@@ -196,7 +232,10 @@
     "step": 5,
     "options": [],
     "restart": false,
-    "label": "UI scale"
+    "label": "UI scale",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "colorblind_mode",
@@ -213,7 +252,10 @@
       "tritanopia"
     ],
     "restart": false,
-    "label": "Colorblind mode"
+    "label": "Colorblind mode",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "mouse_sensitivity",
@@ -225,7 +267,10 @@
     "step": 0.0001,
     "options": [],
     "restart": false,
-    "label": "Mouse sensitivity"
+    "label": "Mouse sensitivity",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "ads_sensitivity",
@@ -237,7 +282,10 @@
     "step": 0.05,
     "options": [],
     "restart": false,
-    "label": "ADS sensitivity"
+    "label": "ADS sensitivity",
+    "storage": "config_file",
+    "capability": "aim",
+    "unavailable": "coming_later"
   },
   {
     "key": "invert_y",
@@ -249,7 +297,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Invert Y"
+    "label": "Invert Y",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "aim_mode",
@@ -264,7 +315,10 @@
       "toggle"
     ],
     "restart": false,
-    "label": "Aim behavior"
+    "label": "Aim behavior",
+    "storage": "config_file",
+    "capability": "aim",
+    "unavailable": "coming_later"
   },
   {
     "key": "crouch_mode",
@@ -279,7 +333,10 @@
       "toggle"
     ],
     "restart": false,
-    "label": "Crouch behavior"
+    "label": "Crouch behavior",
+    "storage": "config_file",
+    "capability": "crouch",
+    "unavailable": "coming_later"
   },
   {
     "key": "sprint_mode",
@@ -294,7 +351,10 @@
       "toggle"
     ],
     "restart": false,
-    "label": "Sprint behavior"
+    "label": "Sprint behavior",
+    "storage": "config_file",
+    "capability": "sprint",
+    "unavailable": "coming_later"
   },
   {
     "key": "bind_move_forward",
@@ -306,7 +366,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Move forward"
+    "label": "Move forward",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "bind_move_left",
@@ -318,7 +381,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Move left"
+    "label": "Move left",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "bind_move_back",
@@ -330,7 +396,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Move backward"
+    "label": "Move backward",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "bind_move_right",
@@ -342,7 +411,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Move right"
+    "label": "Move right",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "bind_jump",
@@ -354,7 +426,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Jump"
+    "label": "Jump",
+    "storage": "config_file",
+    "capability": "jump",
+    "unavailable": "coming_later"
   },
   {
     "key": "bind_sprint",
@@ -366,7 +441,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Sprint"
+    "label": "Sprint",
+    "storage": "config_file",
+    "capability": "sprint",
+    "unavailable": "coming_later"
   },
   {
     "key": "bind_crouch",
@@ -378,7 +456,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Crouch"
+    "label": "Crouch",
+    "storage": "config_file",
+    "capability": "crouch",
+    "unavailable": "coming_later"
   },
   {
     "key": "bind_look",
@@ -390,7 +471,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Look"
+    "label": "Look",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "bind_aim",
@@ -402,7 +486,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Aim / ADS"
+    "label": "Aim / ADS",
+    "storage": "config_file",
+    "capability": "aim",
+    "unavailable": "coming_later"
   },
   {
     "key": "bind_fire",
@@ -414,7 +501,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Fire"
+    "label": "Fire",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "bind_reload",
@@ -426,7 +516,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Reload"
+    "label": "Reload",
+    "storage": "config_file",
+    "capability": "reload",
+    "unavailable": "coming_later"
   },
   {
     "key": "bind_mask",
@@ -438,7 +531,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Put on mask"
+    "label": "Put on mask",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "bind_cop_duty",
@@ -450,7 +546,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Go on duty"
+    "label": "Go on duty",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "bind_surrender",
@@ -462,7 +561,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Surrender"
+    "label": "Surrender",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "bind_interact",
@@ -474,7 +576,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Interact / lockpick / search"
+    "label": "Interact / lockpick / search",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "bind_smash",
@@ -486,7 +591,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Smash"
+    "label": "Smash",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "bind_revive",
@@ -498,7 +606,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Revive"
+    "label": "Revive",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "bind_finish",
@@ -510,7 +621,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Finish off"
+    "label": "Finish off",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "bind_cuff",
@@ -522,7 +636,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Cuff"
+    "label": "Cuff",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "bind_search_take",
@@ -534,7 +651,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Take first search item"
+    "label": "Take first search item",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "bind_search_close",
@@ -546,7 +666,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Close body search"
+    "label": "Close body search",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "bind_sell_loot",
@@ -558,7 +681,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Sell loot"
+    "label": "Sell loot",
+    "storage": "config_file",
+    "capability": "debug_shortcuts",
+    "unavailable": "hidden"
   },
   {
     "key": "bind_inventory",
@@ -570,7 +696,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Inventory"
+    "label": "Inventory",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "bind_hotbar_1",
@@ -582,7 +711,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Hotbar slot 1"
+    "label": "Hotbar slot 1",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "bind_hotbar_2",
@@ -594,7 +726,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Hotbar slot 2"
+    "label": "Hotbar slot 2",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "bind_hotbar_3",
@@ -606,7 +741,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Hotbar slot 3"
+    "label": "Hotbar slot 3",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "bind_hotbar_4",
@@ -618,7 +756,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Hotbar slot 4"
+    "label": "Hotbar slot 4",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "bind_hotbar_5",
@@ -630,7 +771,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Hotbar slot 5"
+    "label": "Hotbar slot 5",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "bind_hotbar_6",
@@ -642,7 +786,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Hotbar slot 6"
+    "label": "Hotbar slot 6",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "bind_map",
@@ -654,7 +801,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "World map"
+    "label": "World map",
+    "storage": "config_file",
+    "capability": "map",
+    "unavailable": "coming_later"
   },
   {
     "key": "bind_ping",
@@ -666,7 +816,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Place ping"
+    "label": "Place ping",
+    "storage": "config_file",
+    "capability": "ping",
+    "unavailable": "coming_later"
   },
   {
     "key": "bind_push_to_talk",
@@ -678,7 +831,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Push to talk"
+    "label": "Push to talk",
+    "storage": "config_file",
+    "capability": "voice_chat",
+    "unavailable": "coming_later"
   },
   {
     "key": "bind_chat",
@@ -690,7 +846,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Text chat"
+    "label": "Text chat",
+    "storage": "config_file",
+    "capability": "chat",
+    "unavailable": "coming_later"
   },
   {
     "key": "bind_emote",
@@ -702,7 +861,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Emote wheel"
+    "label": "Emote wheel",
+    "storage": "config_file",
+    "capability": "emotes",
+    "unavailable": "coming_later"
   },
   {
     "key": "bind_help",
@@ -714,7 +876,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Help"
+    "label": "Help",
+    "storage": "config_file",
+    "capability": "help",
+    "unavailable": "coming_later"
   },
   {
     "key": "bind_party_create",
@@ -726,7 +891,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Create party"
+    "label": "Create party",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "bind_join_motel",
@@ -738,7 +906,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Travel to Motel"
+    "label": "Travel to Motel",
+    "storage": "config_file",
+    "capability": "debug_shortcuts",
+    "unavailable": "hidden"
   },
   {
     "key": "bind_join_lootybay",
@@ -750,7 +921,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Travel to LootyBay"
+    "label": "Travel to LootyBay",
+    "storage": "config_file",
+    "capability": "debug_shortcuts",
+    "unavailable": "hidden"
   },
   {
     "key": "bind_join_house",
@@ -762,7 +936,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Travel to House"
+    "label": "Travel to House",
+    "storage": "config_file",
+    "capability": "debug_shortcuts",
+    "unavailable": "hidden"
   },
   {
     "key": "bind_join_center",
@@ -774,7 +951,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Travel to Center"
+    "label": "Travel to Center",
+    "storage": "config_file",
+    "capability": "debug_shortcuts",
+    "unavailable": "hidden"
   },
   {
     "key": "bind_pause",
@@ -786,7 +966,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Pause / back"
+    "label": "Pause / back",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "reset_controls",
@@ -798,7 +981,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Reset Controls"
+    "label": "Reset Controls",
+    "storage": "none",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "party_invites",
@@ -810,11 +996,13 @@
     "step": null,
     "options": [
       "everyone",
-      "friends",
       "nobody"
     ],
     "restart": false,
-    "label": "Party invites"
+    "label": "Party invites",
+    "storage": "session",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "show_player_names",
@@ -826,7 +1014,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Show player names"
+    "label": "Show player names",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "chat_filter",
@@ -838,7 +1029,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Chat filter"
+    "label": "Chat filter",
+    "storage": "config_file",
+    "capability": "chat",
+    "unavailable": "coming_later"
   },
   {
     "key": "voice_chat",
@@ -850,7 +1044,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Voice chat"
+    "label": "Voice chat",
+    "storage": "config_file",
+    "capability": "voice_chat",
+    "unavailable": "hidden"
   },
   {
     "key": "voice_mode",
@@ -865,7 +1062,25 @@
       "open_mic"
     ],
     "restart": false,
-    "label": "Voice activation"
+    "label": "Voice activation",
+    "storage": "config_file",
+    "capability": "voice_chat",
+    "unavailable": "hidden"
+  },
+  {
+    "key": "voice_input_threshold",
+    "tab": "social",
+    "type": "integer",
+    "default": -40,
+    "min": -60,
+    "max": 0,
+    "step": 1,
+    "options": [],
+    "restart": false,
+    "label": "Open mic threshold",
+    "storage": "config_file",
+    "capability": "voice_chat",
+    "unavailable": "hidden"
   },
   {
     "key": "voice_input_device",
@@ -879,7 +1094,10 @@
       "system_default"
     ],
     "restart": false,
-    "label": "Input device"
+    "label": "Input device",
+    "storage": "config_file",
+    "capability": "voice_chat",
+    "unavailable": "hidden"
   },
   {
     "key": "voice_output_device",
@@ -893,7 +1111,10 @@
       "system_default"
     ],
     "restart": false,
-    "label": "Output device"
+    "label": "Output device",
+    "storage": "config_file",
+    "capability": "voice_chat",
+    "unavailable": "hidden"
   },
   {
     "key": "voice_receive_volume",
@@ -905,19 +1126,25 @@
     "step": 1,
     "options": [],
     "restart": false,
-    "label": "Voice receive volume"
+    "label": "Voice receive volume",
+    "storage": "config_file",
+    "capability": "voice_chat",
+    "unavailable": "hidden"
   },
   {
     "key": "muted_players",
     "tab": "social",
-    "type": "string_array",
+    "type": "integer_array",
     "default": [],
     "min": null,
     "max": null,
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Muted players"
+    "label": "Muted players",
+    "storage": "session",
+    "capability": "voice_chat",
+    "unavailable": "hidden"
   },
   {
     "key": "streamer_mode",
@@ -929,7 +1156,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Streamer mode"
+    "label": "Streamer mode",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "master_volume",
@@ -941,7 +1171,10 @@
     "step": 1,
     "options": [],
     "restart": false,
-    "label": "Master volume"
+    "label": "Master volume",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "music_volume",
@@ -953,7 +1186,10 @@
     "step": 1,
     "options": [],
     "restart": false,
-    "label": "Music volume"
+    "label": "Music volume",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "sfx_volume",
@@ -965,7 +1201,10 @@
     "step": 1,
     "options": [],
     "restart": false,
-    "label": "Sound effects volume"
+    "label": "Sound effects volume",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "ui_volume",
@@ -977,7 +1216,10 @@
     "step": 1,
     "options": [],
     "restart": false,
-    "label": "Interface sound volume"
+    "label": "Interface sound volume",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "voice_volume",
@@ -989,7 +1231,10 @@
     "step": 1,
     "options": [],
     "restart": false,
-    "label": "Voice bus volume"
+    "label": "Voice bus volume",
+    "storage": "config_file",
+    "capability": "voice_chat",
+    "unavailable": "hidden"
   },
   {
     "key": "language",
@@ -1003,7 +1248,10 @@
       "en"
     ],
     "restart": false,
-    "label": "Language"
+    "label": "Language",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "minimap_rotate",
@@ -1015,7 +1263,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Rotate minimap"
+    "label": "Rotate minimap",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "show_compass",
@@ -1027,7 +1278,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Show compass"
+    "label": "Show compass",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "show_damage_numbers",
@@ -1039,7 +1293,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Show damage numbers"
+    "label": "Show damage numbers",
+    "storage": "config_file",
+    "capability": "damage_numbers",
+    "unavailable": "coming_later"
   },
   {
     "key": "notifications_duration",
@@ -1051,7 +1308,10 @@
     "step": 1,
     "options": [],
     "restart": false,
-    "label": "Notification duration"
+    "label": "Notification duration",
+    "storage": "config_file",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "telemetry",
@@ -1063,7 +1323,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Share telemetry"
+    "label": "Share telemetry",
+    "storage": "config_file",
+    "capability": "telemetry_backend",
+    "unavailable": "hidden"
   },
   {
     "key": "crash_reports",
@@ -1075,7 +1338,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Share crash reports"
+    "label": "Share crash reports",
+    "storage": "config_file",
+    "capability": "crash_reports_backend",
+    "unavailable": "hidden"
   },
   {
     "key": "credits",
@@ -1087,7 +1353,10 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Credits"
+    "label": "Credits",
+    "storage": "none",
+    "capability": null,
+    "unavailable": null
   },
   {
     "key": "reset_all",
@@ -1099,6 +1368,9 @@
     "step": null,
     "options": [],
     "restart": false,
-    "label": "Reset all settings"
+    "label": "Reset all settings",
+    "storage": "none",
+    "capability": null,
+    "unavailable": null
   }
 ]

@@ -1,152 +1,263 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="system-ui, sans-serif" role="img" aria-labelledby="title">
   <title id="title">Live HUD</title>
   <defs>
-    <pattern id="own-cells" x="743" y="128" width="51" height="51" patternUnits="userSpaceOnUse"><rect x="0" y="0" width="50" height="50" fill="none" stroke="#555" stroke-width="0.75"/></pattern>
-    <pattern id="body-cells" x="406" y="128" width="51" height="51" patternUnits="userSpaceOnUse"><rect x="0" y="0" width="50" height="50" fill="none" stroke="#555" stroke-width="0.75"/></pattern>
-    <clipPath id="clip-A01"><rect x="26" y="17" width="196" height="14"/></clipPath>
-    <clipPath id="clip-A02"><rect x="26" y="41" width="196" height="168"/></clipPath>
-    <clipPath id="clip-A03"><rect x="242" y="41" width="108" height="26"/></clipPath>
-    <clipPath id="clip-A04"><rect x="242" y="75" width="108" height="26"/></clipPath>
-    <clipPath id="clip-A05"><rect x="242" y="109" width="108" height="26"/></clipPath>
-    <clipPath id="clip-A06"><rect x="242" y="143" width="108" height="26"/></clipPath>
-    <clipPath id="clip-A07"><rect x="362" y="25" width="556" height="30"/></clipPath>
-    <clipPath id="clip-A08"><rect x="442" y="65" width="396" height="42"/></clipPath>
-    <clipPath id="clip-A09"><rect x="458" y="117" width="364" height="110"/></clipPath>
-    <clipPath id="clip-A10"><rect x="1082" y="25" width="172" height="42"/></clipPath>
-    <clipPath id="clip-A11"><rect x="26" y="535" width="236" height="160"/></clipPath>
-    <clipPath id="clip-A12"><rect x="26" y="535" width="236" height="46"/></clipPath>
-    <clipPath id="clip-A13"><rect x="26" y="589" width="236" height="46"/></clipPath>
-    <clipPath id="clip-A14"><rect x="26" y="643" width="236" height="52"/></clipPath>
-    <clipPath id="clip-A15"><rect x="498" y="451" width="284" height="134"/></clipPath>
-    <clipPath id="clip-A16"><rect x="498" y="595" width="284" height="30"/></clipPath>
-    <clipPath id="clip-A17"><rect x="814" y="631" width="440" height="64"/></clipPath>
-    <clipPath id="clip-A18"><rect x="814" y="631" width="72" height="64"/></clipPath>
-    <clipPath id="clip-A19"><rect x="896" y="631" width="72" height="64"/></clipPath>
-    <clipPath id="clip-A20"><rect x="978" y="631" width="38" height="64"/></clipPath>
-    <clipPath id="clip-A21"><rect x="1026" y="631" width="38" height="64"/></clipPath>
-    <clipPath id="clip-A22"><rect x="1074" y="631" width="38" height="64"/></clipPath>
-    <clipPath id="clip-A23"><rect x="1122" y="631" width="38" height="64"/></clipPath>
-    <clipPath id="clip-A24"><rect x="1170" y="631" width="84" height="64"/></clipPath>
+    <clipPath id="clip-A01">
+      <rect x="26" y="17" width="196" height="14" />
+    </clipPath>
+    <clipPath id="clip-A02">
+      <rect x="26" y="41" width="196" height="168" />
+    </clipPath>
+    <clipPath id="clip-A03">
+      <rect x="242" y="41" width="108" height="26" />
+    </clipPath>
+    <clipPath id="clip-A04">
+      <rect x="242" y="75" width="108" height="26" />
+    </clipPath>
+    <clipPath id="clip-A05">
+      <rect x="242" y="109" width="108" height="26" />
+    </clipPath>
+    <clipPath id="clip-A06">
+      <rect x="242" y="143" width="204" height="26" />
+    </clipPath>
+    <clipPath id="clip-A07">
+      <rect x="362" y="25" width="556" height="30" />
+    </clipPath>
+    <clipPath id="clip-A08">
+      <rect x="442" y="65" width="396" height="42" />
+    </clipPath>
+    <clipPath id="clip-A09">
+      <rect x="458" y="117" width="364" height="110" />
+    </clipPath>
+    <clipPath id="clip-A10">
+      <rect x="1082" y="25" width="172" height="42" />
+    </clipPath>
+    <clipPath id="clip-A11">
+      <rect x="26" y="535" width="236" height="160" />
+    </clipPath>
+    <clipPath id="clip-A12">
+      <rect x="26" y="535" width="236" height="46" />
+    </clipPath>
+    <clipPath id="clip-A13">
+      <rect x="26" y="589" width="236" height="46" />
+    </clipPath>
+    <clipPath id="clip-A14">
+      <rect x="26" y="643" width="236" height="52" />
+    </clipPath>
+    <clipPath id="clip-A15">
+      <rect x="498" y="451" width="284" height="134" />
+    </clipPath>
+    <clipPath id="clip-A16">
+      <rect x="498" y="595" width="284" height="30" />
+    </clipPath>
+    <clipPath id="clip-A17">
+      <rect x="814" y="631" width="440" height="64" />
+    </clipPath>
+    <clipPath id="clip-A18">
+      <rect x="814" y="631" width="72" height="64" />
+    </clipPath>
+    <clipPath id="clip-A19">
+      <rect x="896" y="631" width="72" height="64" />
+    </clipPath>
+    <clipPath id="clip-A20">
+      <rect x="978" y="631" width="38" height="64" />
+    </clipPath>
+    <clipPath id="clip-A21">
+      <rect x="1026" y="631" width="38" height="64" />
+    </clipPath>
+    <clipPath id="clip-A22">
+      <rect x="1074" y="631" width="38" height="64" />
+    </clipPath>
+    <clipPath id="clip-A23">
+      <rect x="1122" y="631" width="38" height="64" />
+    </clipPath>
+    <clipPath id="clip-A24">
+      <rect x="1170" y="631" width="84" height="64" />
+    </clipPath>
   </defs>
-  <rect width="1280" height="720" fill="#191919"/>
+  <rect width="1280" height="720" fill="#191919" />
   <g>
     <title>Net stats</title>
-    <rect data-layout="A01" x="24" y="16" width="200" height="16" rx="1" fill="#222" stroke="#777"/>
-    <g clip-path="url(#clip-A01)"><text x="32" y="29" font-size="11" font-weight="600" fill="#eee">Net stats</text></g>
+    <rect data-layout="A01" x="24" y="16" width="200" height="16" rx="1" fill="#222" stroke="#777" />
+    <g clip-path="url(#clip-A01)">
+      <text x="32" y="29" font-size="11" font-weight="600" fill="#eee">Net stats</text>
+    </g>
   </g>
   <g>
     <title>Minimap</title>
-    <rect data-layout="A02" x="24" y="40" width="200" height="170" rx="3" fill="#222" stroke="#777"/>
-    <g clip-path="url(#clip-A02)"><text x="32" y="58" font-size="11" font-weight="600" fill="#eee">Minimap</text><text x="32" y="74" font-size="11" fill="#bbb">Godot texture</text><text x="32" y="88" font-size="11" fill="#bbb">N · Arrow</text></g>
+    <rect data-layout="A02" x="24" y="40" width="200" height="170" rx="3" fill="#222" stroke="#777" />
+    <g clip-path="url(#clip-A02)">
+      <text x="32" y="58" font-size="11" font-weight="600" fill="#eee">Minimap</text>
+    </g>
   </g>
   <g>
     <title>Role badge</title>
-    <rect data-layout="A03" x="240" y="40" width="112" height="28" rx="3" fill="#222" stroke="#777"/>
-    <g clip-path="url(#clip-A03)"><text x="248" y="58" font-size="11" font-weight="600" fill="#eee">CITIZEN</text></g>
+    <rect data-layout="A03" x="240" y="40" width="112" height="28" rx="3" fill="#222" stroke="#777" />
+    <g clip-path="url(#clip-A03)">
+      <text x="248" y="58" font-size="11" font-weight="600" fill="#eee">Role badge</text>
+    </g>
   </g>
   <g>
     <title>Mask timer</title>
-    <rect data-layout="A04" x="240" y="74" width="112" height="28" rx="3" fill="#222" stroke="#777"/>
-    <g clip-path="url(#clip-A04)"><text x="248" y="92" font-size="11" font-weight="600" fill="#eee">Masking 0:02</text></g>
+    <rect data-layout="A04" x="240" y="74" width="112" height="28" rx="3" fill="#222" stroke="#777" />
+    <g clip-path="url(#clip-A04)">
+      <text x="248" y="92" font-size="11" font-weight="600" fill="#eee">Masking 0:02</text>
+    </g>
   </g>
   <g>
     <title>Notoriety</title>
-    <rect data-layout="A05" x="240" y="108" width="112" height="28" rx="3" fill="#222" stroke="#777"/>
-    <g clip-path="url(#clip-A05)"><text x="248" y="126" font-size="11" font-weight="600" fill="#eee">Score 500</text></g>
+    <rect data-layout="A05" x="240" y="108" width="112" height="28" rx="3" fill="#222" stroke="#777" />
+    <g clip-path="url(#clip-A05)">
+      <text x="248" y="126" font-size="11" font-weight="600" fill="#eee">Notoriety</text>
+    </g>
   </g>
   <g>
     <title>Safety</title>
-    <rect data-layout="A06" x="240" y="142" width="112" height="28" rx="3" fill="#222" stroke="#777"/>
-    <g clip-path="url(#clip-A06)"><text x="248" y="160" font-size="11" font-weight="600" fill="#eee">Safezone</text></g>
+    <rect data-layout="A06" x="240" y="142" width="208" height="28" rx="3" fill="#222" stroke="#777" />
+    <g clip-path="url(#clip-A06)">
+      <text x="248" y="160" font-size="11" font-weight="600" fill="#eee">SAFE ZONE - weapons locked</text>
+    </g>
   </g>
   <g>
     <title>Compass</title>
-    <rect data-layout="A07" x="360" y="24" width="560" height="32" rx="3" fill="#222" stroke="#fbbf24"/>
-    <g clip-path="url(#clip-A07)"><path d="M 444 45 v 5" stroke="#888"/><path d="M 493 45 v 5" stroke="#888"/><path d="M 542 45 v 5" stroke="#888"/><path d="M 591 45 v 5" stroke="#888"/><path d="M 640 45 v 9" stroke="#fbbf24"/><path d="M 689 45 v 5" stroke="#888"/><path d="M 738 45 v 5" stroke="#888"/><path d="M 787 45 v 5" stroke="#888"/><path d="M 836 45 v 5" stroke="#888"/><text x="368" y="42" font-size="14" font-weight="600" fill="#fbbf24">Compass</text></g>
+    <rect data-layout="A07" x="360" y="24" width="560" height="32" rx="3" fill="#222" stroke="#777" />
+    <g clip-path="url(#clip-A07)">
+      <text x="368" y="42" font-size="14" font-weight="600" fill="#eee">Compass</text>
+      <path d="M 444.0 45 v 5" stroke="#888" />
+      <path d="M 493.0 45 v 5" stroke="#888" />
+      <path d="M 542.0 45 v 5" stroke="#888" />
+      <path d="M 591.0 45 v 5" stroke="#888" />
+      <path d="M 640.0 45 v 9" stroke="#fbbf24" />
+      <path d="M 689.0 45 v 5" stroke="#888" />
+      <path d="M 738.0 45 v 5" stroke="#888" />
+      <path d="M 787.0 45 v 5" stroke="#888" />
+      <path d="M 836.0 45 v 5" stroke="#888" />
+    </g>
   </g>
   <g>
     <title>Heist alert</title>
-    <rect data-layout="A08" x="440" y="64" width="400" height="44" rx="3" fill="#222" stroke="#777"/>
-    <g clip-path="url(#clip-A08)"><text x="448" y="82" font-size="14" font-weight="600" fill="#eee">Heist alert</text><text x="448" y="98" font-size="11" fill="#bbb">Heist alert · Location</text></g>
+    <rect data-layout="A08" x="440" y="64" width="400" height="44" rx="3" fill="#222" stroke="#777" />
+    <g clip-path="url(#clip-A08)">
+      <text x="448" y="82" font-size="14" font-weight="600" fill="#eee">Heist active · location</text>
+    </g>
   </g>
   <g>
     <title>Notifications</title>
-    <rect data-layout="A09" x="456" y="116" width="368" height="112" rx="3" fill="#222" stroke="#777"/>
-    <g clip-path="url(#clip-A09)"><text x="464" y="134" font-size="14" font-weight="600" fill="#eee">Notifications</text><text x="464" y="150" font-size="11" fill="#bbb">4 × 24 px · 4 px gap</text><text x="464" y="164" font-size="11" fill="#bbb">Oldest above newest</text></g>
+    <rect data-layout="A09" x="456" y="116" width="368" height="112" rx="3" fill="#222" stroke="#777" />
+    <g clip-path="url(#clip-A09)">
+      <text x="464" y="134" font-size="14" font-weight="600" fill="#eee">Notifications</text>
+    </g>
   </g>
   <g>
     <title>Cash</title>
-    <rect data-layout="A10" x="1080" y="24" width="176" height="44" rx="3" fill="#222" stroke="#777"/>
-    <g clip-path="url(#clip-A10)"><text x="1088" y="42" font-size="11" font-weight="600" fill="#eee">Cash</text><text x="1088" y="58" font-size="11" fill="#bbb">$1,250</text></g>
+    <rect data-layout="A10" x="1080" y="24" width="176" height="44" rx="3" fill="#222" stroke="#777" />
+    <g clip-path="url(#clip-A10)">
+      <text x="1088" y="42" font-size="11" font-weight="600" fill="#eee">Cash</text>
+    </g>
   </g>
   <g>
     <title>Party and self</title>
-    <rect data-layout="A11" x="24" y="534" width="240" height="162" rx="3" fill="#222" stroke="#777"/>
-    <g clip-path="url(#clip-A11)"></g>
+    <rect data-layout="A11" x="24" y="534" width="240" height="162" rx="3" fill="#222" stroke="#777" />
+    <g clip-path="url(#clip-A11)" />
   </g>
   <g>
     <title>Party member 1</title>
-    <rect data-layout="A12" x="24" y="534" width="240" height="48" rx="3" fill="#292929" stroke="#777"/>
-    <g clip-path="url(#clip-A12)"><rect x="32" y="573" width="52" height="4" fill="#bbb"/><rect x="89" y="573" width="52" height="4" fill="#bbb"/><rect x="146" y="573" width="52" height="4" fill="#bbb"/><rect x="203" y="573" width="52" height="4" fill="#555"/><text x="32" y="552" font-size="11" font-weight="600" fill="#eee">Party member 1</text><text x="32" y="568" font-size="11" fill="#bbb">Leader · 75 / 100</text></g>
+    <rect data-layout="A12" x="24" y="534" width="240" height="48" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A12)">
+      <text x="32" y="552" font-size="11" font-weight="600" fill="#eee">Party member 1</text>
+      <rect x="32" y="573" width="52" height="4" fill="#bbb" />
+      <rect x="89" y="573" width="52" height="4" fill="#bbb" />
+      <rect x="146" y="573" width="52" height="4" fill="#bbb" />
+      <rect x="203" y="573" width="52" height="4" fill="#555" />
+    </g>
   </g>
   <g>
     <title>Party member 2</title>
-    <rect data-layout="A13" x="24" y="588" width="240" height="48" rx="3" fill="#292929" stroke="#777"/>
-    <g clip-path="url(#clip-A13)"><rect x="32" y="627" width="52" height="4" fill="#555"/><rect x="89" y="627" width="52" height="4" fill="#555"/><rect x="146" y="627" width="52" height="4" fill="#555"/><rect x="203" y="627" width="52" height="4" fill="#555"/><text x="32" y="606" font-size="11" font-weight="600" fill="#eee">Party member 2</text><text x="32" y="622" font-size="11" fill="#bbb">Away</text></g>
+    <rect data-layout="A13" x="24" y="588" width="240" height="48" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A13)">
+      <text x="32" y="606" font-size="11" font-weight="600" fill="#eee">Party member 2</text>
+      <rect x="32" y="627" width="52" height="4" fill="#bbb" />
+      <rect x="89" y="627" width="52" height="4" fill="#bbb" />
+      <rect x="146" y="627" width="52" height="4" fill="#bbb" />
+      <rect x="203" y="627" width="52" height="4" fill="#555" />
+    </g>
   </g>
   <g>
     <title>Self health</title>
-    <rect data-layout="A14" x="24" y="642" width="240" height="54" rx="3" fill="#292929" stroke="#777"/>
-    <g clip-path="url(#clip-A14)"><rect x="32" y="687" width="52" height="4" fill="#bbb"/><rect x="89" y="687" width="52" height="4" fill="#bbb"/><rect x="146" y="687" width="52" height="4" fill="#bbb"/><rect x="203" y="687" width="52" height="4" fill="#bbb"/><text x="32" y="660" font-size="11" font-weight="600" fill="#eee">Self health</text><text x="32" y="676" font-size="11" fill="#bbb">You · 100 / 100</text></g>
+    <rect data-layout="A14" x="24" y="642" width="240" height="54" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A14)">
+      <text x="32" y="660" font-size="11" font-weight="600" fill="#eee">Self health</text>
+      <rect x="32" y="687" width="52" height="4" fill="#bbb" />
+      <rect x="89" y="687" width="52" height="4" fill="#bbb" />
+      <rect x="146" y="687" width="52" height="4" fill="#bbb" />
+      <rect x="203" y="687" width="52" height="4" fill="#555" />
+    </g>
   </g>
   <g>
     <title>Interact card</title>
-    <rect data-layout="A15" x="496" y="450" width="288" height="136" rx="3" fill="#222" stroke="#777"/>
-    <g clip-path="url(#clip-A15)"><text x="504" y="468" font-size="14" font-weight="600" fill="#eee">Interact card</text><text x="504" y="484" font-size="11" fill="#bbb">Target</text><text x="504" y="498" font-size="11" fill="#bbb">[E] Lockpick</text><text x="504" y="512" font-size="11" fill="#bbb">[V] Smash</text><text x="504" y="526" font-size="11" fill="#bbb">Up to four rows</text></g>
+    <rect data-layout="A15" x="496" y="450" width="288" height="136" rx="3" fill="#222" stroke="#777" />
+    <g clip-path="url(#clip-A15)">
+      <text x="504" y="468" font-size="14" font-weight="600" fill="#eee">Interact card</text>
+    </g>
   </g>
   <g>
     <title>Surrender hint</title>
-    <rect data-layout="A16" x="496" y="594" width="288" height="32" rx="3" fill="#222" stroke="#777"/>
-    <g clip-path="url(#clip-A16)"><text x="504" y="612" font-size="14" font-weight="600" fill="#eee">[H] Surrender</text></g>
+    <rect data-layout="A16" x="496" y="594" width="288" height="32" rx="3" fill="#222" stroke="#777" />
+    <g clip-path="url(#clip-A16)">
+      <text x="504" y="612" font-size="14" font-weight="600" fill="#eee">[H] Surrender · direct request</text>
+    </g>
   </g>
   <g>
     <title>Hotbar</title>
-    <rect data-layout="A17" x="812" y="630" width="444" height="66" rx="3" fill="#222" stroke="#777"/>
-    <g clip-path="url(#clip-A17)"></g>
+    <rect data-layout="A17" x="812" y="630" width="444" height="66" rx="3" fill="#222" stroke="#777" />
+    <g clip-path="url(#clip-A17)" />
   </g>
   <g>
     <title>Slot 1</title>
-    <rect data-layout="A18" x="812" y="630" width="76" height="66" rx="3" fill="#292929" stroke="#fbbf24"/>
-    <g clip-path="url(#clip-A18)"><text x="820" y="648" font-size="11" font-weight="600" fill="#fbbf24">Slot 1</text><text x="820" y="664" font-size="11" fill="#bbb">1 · Pistol</text></g>
+    <rect data-layout="A18" x="812" y="630" width="76" height="66" rx="3" fill="#292929" stroke="#fbbf24" />
+    <g clip-path="url(#clip-A18)">
+      <text x="820" y="648" font-size="11" font-weight="600" fill="#fbbf24">Slot 1</text>
+    </g>
   </g>
   <g>
     <title>Slot 2</title>
-    <rect data-layout="A19" x="894" y="630" width="76" height="66" rx="3" fill="#292929" stroke="#777"/>
-    <g clip-path="url(#clip-A19)"><text x="902" y="648" font-size="11" font-weight="600" fill="#eee">Slot 2</text><text x="902" y="664" font-size="11" fill="#bbb">2</text></g>
+    <rect data-layout="A19" x="894" y="630" width="76" height="66" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A19)">
+      <text x="902" y="648" font-size="11" font-weight="600" fill="#eee">Slot 2</text>
+    </g>
   </g>
   <g>
     <title>Slot 3</title>
-    <rect data-layout="A20" x="976" y="630" width="42" height="66" rx="3" fill="#292929" stroke="#777"/>
-    <g clip-path="url(#clip-A20)"><text x="980" y="648" font-size="11" font-weight="600" fill="#eee">3</text><text x="980" y="664" font-size="11" fill="#bbb">3</text></g>
+    <rect data-layout="A20" x="976" y="630" width="42" height="66" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A20)">
+      <text x="980" y="648" font-size="11" font-weight="600" fill="#eee">Slo…</text>
+    </g>
   </g>
   <g>
     <title>Slot 4</title>
-    <rect data-layout="A21" x="1024" y="630" width="42" height="66" rx="3" fill="#292929" stroke="#777"/>
-    <g clip-path="url(#clip-A21)"><text x="1028" y="648" font-size="11" font-weight="600" fill="#eee">4</text><text x="1028" y="664" font-size="11" fill="#bbb">4</text></g>
+    <rect data-layout="A21" x="1024" y="630" width="42" height="66" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A21)">
+      <text x="1028" y="648" font-size="11" font-weight="600" fill="#eee">Slo…</text>
+    </g>
   </g>
   <g>
     <title>Slot 5</title>
-    <rect data-layout="A22" x="1072" y="630" width="42" height="66" rx="3" fill="#292929" stroke="#777"/>
-    <g clip-path="url(#clip-A22)"><text x="1076" y="648" font-size="11" font-weight="600" fill="#eee">5</text><text x="1076" y="664" font-size="11" fill="#bbb">5</text></g>
+    <rect data-layout="A22" x="1072" y="630" width="42" height="66" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A22)">
+      <text x="1076" y="648" font-size="11" font-weight="600" fill="#eee">Slo…</text>
+    </g>
   </g>
   <g>
     <title>Slot 6</title>
-    <rect data-layout="A23" x="1120" y="630" width="42" height="66" rx="3" fill="#292929" stroke="#777"/>
-    <g clip-path="url(#clip-A23)"><text x="1124" y="648" font-size="11" font-weight="600" fill="#eee">6</text><text x="1124" y="664" font-size="11" fill="#bbb">6</text></g>
+    <rect data-layout="A23" x="1120" y="630" width="42" height="66" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A23)">
+      <text x="1124" y="648" font-size="11" font-weight="600" fill="#eee">Slo…</text>
+    </g>
   </g>
   <g>
     <title>Bag value and hint</title>
-    <rect data-layout="A24" x="1168" y="630" width="88" height="66" rx="3" fill="#292929" stroke="#777"/>
-    <g clip-path="url(#clip-A24)"><text x="1176" y="648" font-size="11" font-weight="600" fill="#eee">TAB · $500</text></g>
+    <rect data-layout="A24" x="1168" y="630" width="88" height="66" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A24)">
+      <text x="1176" y="648" font-size="11" font-weight="600" fill="#eee">Bag value …</text>
+    </g>
   </g>
 </svg>

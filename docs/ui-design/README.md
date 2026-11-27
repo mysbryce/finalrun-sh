@@ -23,12 +23,13 @@ Implementation-ready UI handoff for the Godot client and the in-game browser. **
 
 ```mermaid
 flowchart LR
-  Boot["Native boot / CEF splash"] --> Lobby["Lobby"]
+  Boot["Native boot / CEF splash"] -->|configured connection| Transfer["Map transfer"]
+  Lobby["Lobby"] -->|configured Play| Transfer
   Boot -->|retry| Boot
-  Lobby -->|join and enter| Transfer["Map transfer"]
+  HUD["Live HUD"] -->|leave or later disconnect| Lobby
   Lobby --> Settings["Settings"]
   Settings -->|back to origin| Lobby
-  Transfer -->|spawn observed| HUD["Live HUD"]
+  Transfer -->|spawn observed| HUD
   Transfer -->|failure| Lobby
   HUD <-->|inventory| Inventory["Inventory"]
   HUD <-->|server search session| Search["Body search + inventory"]
@@ -40,7 +41,7 @@ flowchart LR
   Downed -->|revived| HUD
   Downed -->|bleed-out / finish| Death["Death / respawn"]
   Downed -->|cuffed| Arrest["Arrest receipt"]
-  HUD -->|surrender| Arrest
+  HUD -->|direct H, success notification| Arrest
   Death --> Transfer
   Arrest --> Transfer
   HUD -->|travel / extract| Transfer
@@ -50,7 +51,9 @@ flowchart LR
 
 The linked SVGs are the geometry reference. Each has a matching ASCII frame and layout table. Right and bottom columns are insets from the 1280 × 720 frame. Parent entries identify intentional containment. Blank states use the same component bounds. Settings rows extend below their viewport in a scroller.
 
-**EXISTS** records behavior observed in the working tree. **CHANGED** extends an existing contract. **NEW** is proposed. Open questions mark decisions that still need owner approval. The ImageGen concept pass informed the stage rail, layered surfaces, slider feedback, segmented health and compass treatment. Repo contracts and layout tables govern exact copy, counts and coordinates. See [Web UI](../design/WEB_UI.md), [HUD layout](../design/HUD_LAYOUT.md), [inventory](../design/INVENTORY_UI.md), [roadmap](../ROADMAP.md) and [architecture](../ARCHITECTURE.md).
+**EXISTS** records behavior observed in the working tree. **CHANGED** extends an existing contract. **NEW** is proposed. Section 9 in each screen records the supervisor decisions dated 2026-11-27. One remaining verification item covers the implementation two-client CEF smoke. The ImageGen concept pass informed the stage rail, layered surfaces, slider feedback, segmented health and compass treatment. Repo contracts and layout tables govern exact copy, counts and coordinates. See [Web UI](../design/WEB_UI.md), [HUD layout](../design/HUD_LAYOUT.md), [inventory](../design/INVENTORY_UI.md), [roadmap](../ROADMAP.md) and [architecture](../ARCHITECTURE.md).
+
+Supervisor decisions retain direct boot-to-Motel connection, one configured Play action, in-game parties, session peer preferences, direct H surrender, scoped 8 s heist toast plus active line, scrollable external body rows and 900 ms receipt carry-over. Character preview follows [semi-realistic art direction](../design/ART_DIRECTION.md). The new Open Mic threshold uses design default −40 dBFS (−60–0, step 1). The implementation smoke remains open.
 
 ## Implementation order
 
@@ -58,13 +61,13 @@ The linked SVGs are the geometry reference. Each has a matching ASCII frame and 
 2. Add shared controls and a focus-managed modal in `ui/web/src/lib/ui/`. Reuse existing key-hint and grid behavior where it is already shared.
 3. Extend typed IPC and snapshot replay in `ui/web/src/lib/ipc/protocol.ts`, `ui/web/src/lib/ipc/bridge.ts` and `ui/hud/Hud.gd`.
 4. Add the native fallback and splash in `main/Main.gd`, `ui/hud/Hud.gd`, `ui/web/src/features/splash/` and `ui/web/src/app/router.tsx`.
-5. Add join and reconnect in `main/Main.gd`, `ui/web/src/features/lobby/` and `ui/web/src/app/router.tsx`. Gate discovery on the selected service.
-6. Add lobby party, news and preview in `features/party/PartyService.gd`, `autoload/ServerManager.gd` and `ui/web/src/features/lobby/`.
+5. Add configured-endpoint boot/Play and reconnect in `main/Main.gd`, `ui/web/src/features/lobby/` and `ui/web/src/app/router.tsx`. Resolve `--connect host:port` in every build and keep discovery/staging flags false.
+6. Add bundled news and lazy view-only preview in `ui/web/public/news.json`, `main/Main.gd` and `ui/web/src/features/lobby/`. Keep the lobby party component behind its staging capability.
 7. Add settings persistence and Graphics in proposed `ui/settings/SettingsService.gd`, `main/Main.gd`, `ui/web/src/features/settings/` and `ui/web/src/app/router.tsx`.
-8. Add Controls capture and action routing in `main/Main.gd`, `features/player/Player.gd`, `features/player/PlayerCamera.gd` and `ui/web/src/features/settings/`.
-9. Add Social and Others in `ui/settings/SettingsService.gd`, `ui/hud/Minimap.gd` and `ui/web/src/features/settings/`. Gate unavailable integrations at capability level.
+8. Add Controls capture and approved normal hotbar 1–6/debug Ctrl+1–4/Y mapping in `main/Main.gd`, `features/player/Player.gd`, `features/player/PlayerCamera.gd` and `ui/web/src/features/settings/`. Keep B Reload and R Revive.
+9. Add Social/Others session peer preferences, capability gates and English dropdown in `ui/settings/SettingsService.gd`, `ui/hud/Minimap.gd` and `ui/web/src/features/settings/`. Use the approved schema availability rule.
 10. Refine live HUD in `ui/hud/Hud.gd`, `ui/hud/Minimap.gd` and `ui/web/src/features/hud/`.
 11. Add life, arrest and transfer presentation in `features/downed/DownedService.gd`, `features/player/PlayerService.gd`, `features/transfer/TransferService.gd`, `main/Main.gd` and `ui/web/src/features/hud/`.
 12. Finish inventory and body-search states in `ui/web/src/features/inventory/`, `ui/web/src/features/search/`, `ui/web/src/lib/grid/` and `ui/web/src/app/router.tsx`.
-13. Add pause, return routing and native fallback recovery in `main/Main.gd`, `ui/hud/Hud.gd`, `ui/web/src/app/router.tsx` and proposed `ui/web/src/features/pause/`.
+13. Add Pause with current in-game party roster, expiring Accept/Decline and session preferences in `features/party/PartyService.gd`, `autoload/ServerManager.gd`, `main/Main.gd`, `ui/hud/Hud.gd` and proposed `ui/web/src/features/pause/`. Reuse this component for future capability-enabled lobby staging.
 14. Build web bundle using `ui/web/package.json`, then run the desktop input smoke and the existing verification suite through `tests/run_tests.gd`. Treat `ui/dist/` as generated output.

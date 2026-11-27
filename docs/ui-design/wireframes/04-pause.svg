@@ -1,62 +1,300 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="system-ui, sans-serif" role="img" aria-labelledby="title">
   <title id="title">Pause menu</title>
   <defs>
-    <pattern id="own-cells" x="743" y="128" width="51" height="51" patternUnits="userSpaceOnUse"><rect x="0" y="0" width="50" height="50" fill="none" stroke="#555" stroke-width="0.75"/></pattern>
-    <pattern id="body-cells" x="406" y="128" width="51" height="51" patternUnits="userSpaceOnUse"><rect x="0" y="0" width="50" height="50" fill="none" stroke="#555" stroke-width="0.75"/></pattern>
-    <clipPath id="clip-A01"><rect x="2" y="1" width="1276" height="718"/></clipPath>
-    <clipPath id="clip-A02"><rect x="462" y="161" width="356" height="398"/></clipPath>
-    <clipPath id="clip-A03"><rect x="486" y="185" width="308" height="34"/></clipPath>
-    <clipPath id="clip-A04"><rect x="486" y="229" width="308" height="38"/></clipPath>
-    <clipPath id="clip-A05"><rect x="486" y="281" width="308" height="38"/></clipPath>
-    <clipPath id="clip-A06"><rect x="486" y="333" width="308" height="38"/></clipPath>
-    <clipPath id="clip-A07"><rect x="486" y="385" width="308" height="38"/></clipPath>
-    <clipPath id="clip-A08"><rect x="486" y="437" width="308" height="38"/></clipPath>
-    <clipPath id="clip-A09"><rect x="486" y="489" width="308" height="46"/></clipPath>
+    <clipPath id="clip-A01">
+      <rect x="2" y="1" width="1276" height="718" />
+    </clipPath>
+    <clipPath id="clip-A02">
+      <rect x="234" y="161" width="356" height="398" />
+    </clipPath>
+    <clipPath id="clip-A03">
+      <rect x="258" y="185" width="308" height="34" />
+    </clipPath>
+    <clipPath id="clip-A04">
+      <rect x="258" y="229" width="308" height="38" />
+    </clipPath>
+    <clipPath id="clip-A05">
+      <rect x="258" y="281" width="308" height="38" />
+    </clipPath>
+    <clipPath id="clip-A06">
+      <rect x="258" y="333" width="308" height="38" />
+    </clipPath>
+    <clipPath id="clip-A07">
+      <rect x="258" y="385" width="308" height="38" />
+    </clipPath>
+    <clipPath id="clip-A08">
+      <rect x="258" y="437" width="308" height="38" />
+    </clipPath>
+    <clipPath id="clip-A09">
+      <rect x="258" y="489" width="308" height="46" />
+    </clipPath>
+    <clipPath id="clip-A10">
+      <rect x="618" y="113" width="396" height="526" />
+    </clipPath>
+    <clipPath id="clip-A11">
+      <rect x="634" y="129" width="364" height="26" />
+    </clipPath>
+    <clipPath id="clip-A12">
+      <rect x="634" y="165" width="364" height="38" />
+    </clipPath>
+    <clipPath id="clip-A13">
+      <rect x="634" y="217" width="364" height="146" />
+    </clipPath>
+    <clipPath id="clip-A14">
+      <rect x="634" y="217" width="364" height="42" />
+    </clipPath>
+    <clipPath id="clip-A15">
+      <rect x="642" y="221" width="242" height="34" />
+    </clipPath>
+    <clipPath id="clip-A16">
+      <rect x="896" y="221" width="94" height="34" />
+    </clipPath>
+    <clipPath id="clip-A17">
+      <rect x="634" y="269" width="364" height="42" />
+    </clipPath>
+    <clipPath id="clip-A18">
+      <rect x="642" y="273" width="242" height="34" />
+    </clipPath>
+    <clipPath id="clip-A19">
+      <rect x="896" y="273" width="94" height="34" />
+    </clipPath>
+    <clipPath id="clip-A20">
+      <rect x="634" y="321" width="364" height="42" />
+    </clipPath>
+    <clipPath id="clip-A21">
+      <rect x="642" y="325" width="242" height="34" />
+    </clipPath>
+    <clipPath id="clip-A22">
+      <rect x="896" y="325" width="94" height="34" />
+    </clipPath>
+    <clipPath id="clip-A23">
+      <rect x="634" y="377" width="364" height="34" />
+    </clipPath>
+    <clipPath id="clip-A24">
+      <rect x="634" y="425" width="364" height="78" />
+    </clipPath>
+    <clipPath id="clip-A25">
+      <rect x="642" y="431" width="348" height="22" />
+    </clipPath>
+    <clipPath id="clip-A26">
+      <rect x="642" y="461" width="108" height="34" />
+    </clipPath>
+    <clipPath id="clip-A27">
+      <rect x="762" y="461" width="108" height="34" />
+    </clipPath>
+    <clipPath id="clip-A28">
+      <rect x="634" y="521" width="364" height="94" />
+    </clipPath>
+    <clipPath id="clip-A29">
+      <rect x="634" y="521" width="172" height="38" />
+    </clipPath>
+    <clipPath id="clip-A30">
+      <rect x="818" y="521" width="180" height="38" />
+    </clipPath>
+    <clipPath id="clip-A31">
+      <rect x="634" y="569" width="364" height="46" />
+    </clipPath>
   </defs>
-  <rect width="1280" height="720" fill="#191919"/>
+  <rect width="1280" height="720" fill="#191919" />
   <g>
     <title>Pause dim</title>
-    <rect data-layout="A01" x="0" y="0" width="1280" height="720" rx="3" fill="#111" stroke="#777"/>
-    <g clip-path="url(#clip-A01)"><text x="8" y="18" font-size="14" font-weight="600" fill="#eee">Pause dim</text></g>
+    <rect data-layout="A01" x="0" y="0" width="1280" height="720" rx="3" fill="#111" stroke="#777" />
+    <g clip-path="url(#clip-A01)">
+      <text x="8" y="18" font-size="14" font-weight="600" fill="#eee">Pause dim</text>
+    </g>
   </g>
   <g>
     <title>Pause panel</title>
-    <rect data-layout="A02" x="460" y="160" width="360" height="400" rx="3" fill="#292929" stroke="#777"/>
-    <g clip-path="url(#clip-A02)"></g>
+    <rect data-layout="A02" x="232" y="160" width="360" height="400" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A02)" />
   </g>
   <g>
     <title>Pause title</title>
-    <rect data-layout="A03" x="484" y="184" width="312" height="36" rx="3" fill="#333" stroke="#666"/>
-    <g clip-path="url(#clip-A03)"><text x="492" y="202" font-size="14" font-weight="600" fill="#eee">Pause title</text></g>
+    <rect data-layout="A03" x="256" y="184" width="312" height="36" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A03)">
+      <text x="264" y="202" font-size="14" font-weight="600" fill="#eee">Pause title</text>
+    </g>
   </g>
   <g>
     <title>Pause context</title>
-    <rect data-layout="A04" x="484" y="228" width="312" height="40" rx="3" fill="#333" stroke="#666"/>
-    <g clip-path="url(#clip-A04)"><text x="492" y="246" font-size="14" font-weight="600" fill="#eee">Pause context</text></g>
+    <rect data-layout="A04" x="256" y="228" width="312" height="40" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A04)">
+      <text x="264" y="246" font-size="14" font-weight="600" fill="#eee">Pause context</text>
+    </g>
   </g>
   <g>
     <title>Resume</title>
-    <rect data-layout="A05" x="484" y="280" width="312" height="40" rx="3" fill="#333" stroke="#fbbf24"/>
-    <g clip-path="url(#clip-A05)"><text x="492" y="298" font-size="14" font-weight="600" fill="#fbbf24">Resume</text></g>
+    <rect data-layout="A05" x="256" y="280" width="312" height="40" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A05)">
+      <text x="264" y="298" font-size="14" font-weight="600" fill="#eee">Resume</text>
+    </g>
   </g>
   <g>
     <title>Settings</title>
-    <rect data-layout="A06" x="484" y="332" width="312" height="40" rx="3" fill="#333" stroke="#666"/>
-    <g clip-path="url(#clip-A06)"><text x="492" y="350" font-size="14" font-weight="600" fill="#eee">Settings</text></g>
+    <rect data-layout="A06" x="256" y="332" width="312" height="40" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A06)">
+      <text x="264" y="350" font-size="14" font-weight="600" fill="#eee">Settings</text>
+    </g>
   </g>
   <g>
     <title>Leave to Lobby</title>
-    <rect data-layout="A07" x="484" y="384" width="312" height="40" rx="3" fill="#333" stroke="#666"/>
-    <g clip-path="url(#clip-A07)"><text x="492" y="402" font-size="14" font-weight="600" fill="#eee">Leave to Lobby</text></g>
+    <rect data-layout="A07" x="256" y="384" width="312" height="40" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A07)">
+      <text x="264" y="402" font-size="14" font-weight="600" fill="#eee">Leave to Lobby</text>
+    </g>
   </g>
   <g>
     <title>Quit</title>
-    <rect data-layout="A08" x="484" y="436" width="312" height="40" rx="3" fill="#333" stroke="#666"/>
-    <g clip-path="url(#clip-A08)"><text x="492" y="454" font-size="14" font-weight="600" fill="#eee">Quit</text></g>
+    <rect data-layout="A08" x="256" y="436" width="312" height="40" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A08)">
+      <text x="264" y="454" font-size="14" font-weight="600" fill="#eee">Quit</text>
+    </g>
   </g>
   <g>
     <title>Pause feedback</title>
-    <rect data-layout="A09" x="484" y="488" width="312" height="48" rx="3" fill="#333" stroke="#666"/>
-    <g clip-path="url(#clip-A09)"><text x="492" y="506" font-size="14" font-weight="600" fill="#eee">Pause feedback</text></g>
+    <rect data-layout="A09" x="256" y="488" width="312" height="48" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A09)">
+      <text x="264" y="506" font-size="14" font-weight="600" fill="#eee">Pause feedback</text>
+    </g>
+  </g>
+  <g>
+    <title>Party panel</title>
+    <rect data-layout="A10" x="616" y="112" width="400" height="528" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A10)" />
+  </g>
+  <g>
+    <title>Party title</title>
+    <rect data-layout="A11" x="632" y="128" width="368" height="28" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A11)">
+      <text x="640" y="146" font-size="14" font-weight="600" fill="#eee">Party 1 / 3</text>
+    </g>
+  </g>
+  <g>
+    <title>Party feedback</title>
+    <rect data-layout="A12" x="632" y="164" width="368" height="40" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A12)">
+      <text x="640" y="182" font-size="14" font-weight="600" fill="#eee">Current server · session peers</text>
+    </g>
+  </g>
+  <g>
+    <title>Party slots</title>
+    <rect data-layout="A13" x="632" y="216" width="368" height="148" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A13)" />
+  </g>
+  <g>
+    <title>Member 1</title>
+    <rect data-layout="A14" x="632" y="216" width="368" height="44" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A14)" />
+  </g>
+  <g>
+    <title>Member 1 identity</title>
+    <rect data-layout="A15" x="640" y="220" width="246" height="36" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A15)">
+      <text x="648" y="238" font-size="11" font-weight="600" fill="#eee">Member 1 identity</text>
+    </g>
+  </g>
+  <g>
+    <title>Member 1 kick</title>
+    <rect data-layout="A16" x="894" y="220" width="98" height="36" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A16)">
+      <text x="902" y="238" font-size="11" font-weight="600" fill="#eee">Member 1 kick</text>
+    </g>
+  </g>
+  <g>
+    <title>Member 2</title>
+    <rect data-layout="A17" x="632" y="268" width="368" height="44" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A17)" />
+  </g>
+  <g>
+    <title>Member 2 identity</title>
+    <rect data-layout="A18" x="640" y="272" width="246" height="36" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A18)">
+      <text x="648" y="290" font-size="11" font-weight="600" fill="#eee">Member 2 identity</text>
+    </g>
+  </g>
+  <g>
+    <title>Member 2 kick</title>
+    <rect data-layout="A19" x="894" y="272" width="98" height="36" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A19)">
+      <text x="902" y="290" font-size="11" font-weight="600" fill="#eee">Member 2 kick</text>
+    </g>
+  </g>
+  <g>
+    <title>Member 3</title>
+    <rect data-layout="A20" x="632" y="320" width="368" height="44" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A20)" />
+  </g>
+  <g>
+    <title>Member 3 identity</title>
+    <rect data-layout="A21" x="640" y="324" width="246" height="36" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A21)">
+      <text x="648" y="342" font-size="11" font-weight="600" fill="#eee">Member 3 identity</text>
+    </g>
+  </g>
+  <g>
+    <title>Member 3 kick</title>
+    <rect data-layout="A22" x="894" y="324" width="98" height="36" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A22)">
+      <text x="902" y="342" font-size="11" font-weight="600" fill="#eee">Member 3 kick</text>
+    </g>
+  </g>
+  <g>
+    <title>Server player picker</title>
+    <rect data-layout="A23" x="632" y="376" width="368" height="36" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A23)">
+      <text x="640" y="394" font-size="14" font-weight="600" fill="#eee">Display name · peer ID</text>
+    </g>
+  </g>
+  <g>
+    <title>Incoming invite</title>
+    <rect data-layout="A24" x="632" y="424" width="368" height="80" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A24)" />
+  </g>
+  <g>
+    <title>Invite sender</title>
+    <rect data-layout="A25" x="640" y="430" width="352" height="24" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A25)">
+      <text x="648" y="448" font-size="14" font-weight="600" fill="#eee">Invite sender</text>
+    </g>
+  </g>
+  <g>
+    <title>Accept invite</title>
+    <rect data-layout="A26" x="640" y="460" width="112" height="36" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A26)">
+      <text x="648" y="478" font-size="11" font-weight="600" fill="#eee">Accept invite</text>
+    </g>
+  </g>
+  <g>
+    <title>Decline invite</title>
+    <rect data-layout="A27" x="760" y="460" width="112" height="36" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A27)">
+      <text x="768" y="478" font-size="11" font-weight="600" fill="#eee">Decline invite</text>
+    </g>
+  </g>
+  <g>
+    <title>Party actions</title>
+    <rect data-layout="A28" x="632" y="520" width="368" height="96" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A28)" />
+  </g>
+  <g>
+    <title>Create or invite</title>
+    <rect data-layout="A29" x="632" y="520" width="176" height="40" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A29)">
+      <text x="640" y="538" font-size="11" font-weight="600" fill="#eee">Create or invite</text>
+    </g>
+  </g>
+  <g>
+    <title>Leave party</title>
+    <rect data-layout="A30" x="816" y="520" width="184" height="40" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A30)">
+      <text x="824" y="538" font-size="11" font-weight="600" fill="#eee">Leave party</text>
+    </g>
+  </g>
+  <g>
+    <title>Party action feedback</title>
+    <rect data-layout="A31" x="632" y="568" width="368" height="48" rx="3" fill="#292929" stroke="#777" />
+    <g clip-path="url(#clip-A31)">
+      <text x="640" y="586" font-size="14" font-weight="600" fill="#eee">Server validates each action</text>
+    </g>
   </g>
 </svg>
