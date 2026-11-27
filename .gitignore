@@ -9,6 +9,7 @@ mono_crash.*.json
 
 # Local
 logs/
+.smoke/
 .claude/settings.local.json
 
 # Godot CEF binaries (~430 MB per platform). Install with tools/install_godot_cef.ps1

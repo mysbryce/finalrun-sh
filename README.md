@@ -29,6 +29,8 @@ godot_console --path .               # client
 godot_console --headless --path . -s res://tests/run_tests.gd   # tests
 ```
 
+Local smoke test (1 server + 3 clients): pwsh tools/smoke_local.ps1 (stop with -Stop).
+
 ## Docs
 
 - [Architecture](docs/ARCHITECTURE.md): instancing, sync isolation, transfer flow
