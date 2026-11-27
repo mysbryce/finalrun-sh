@@ -29,6 +29,7 @@ Status: `[x]` done · `[~]` in progress · `[ ]` planned. Each item ships as one
 - [x] Fix: criminal death respawns as Citizen
 - [x] Interact system (`lib/components/InteractArea`), basic HUD (role, mask timer, bag value)
 - [x] Web UI: HUD rendered by Godot CEF from React + Zustand + Tailwind + TanStack (`ui/web/` → `ui/dist/`, [design](design/WEB_UI.md))
+- [x] HUD in the reference layout: net stats, minimap, compass, status, cash, party health, hotbar, interact card ([design](design/HUD_LAYOUT.md))
 - [ ] Body search panel on the web UI (route + virtualized item list + take request), mouse freed while open
 - [ ] Base character: CC0 low-poly modular humanoid + animations, male/female on one skeleton ([art direction](design/ART_DIRECTION.md))
 - [ ] Appearance foundation: `AppearanceData` Resource (body type, slot → item id), synced once on spawn, modular character rig with swappable slots. Built now so later cosmetics are data only, no code changes.
