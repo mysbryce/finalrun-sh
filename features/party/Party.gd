@@ -3,7 +3,7 @@ extends RefCounted
 ## A small server-side party. Parties are pure data so they can be unit tested
 ## without a SceneTree or a live network connection.
 
-const MAX_MEMBERS: int = 3
+const MAX_MEMBERS: int = GameConst.PARTY_MAX_MEMBERS
 
 var id: int = 0
 var leader_id: int = 0

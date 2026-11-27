@@ -23,9 +23,9 @@ const PLAYERS_NODE_NAME: String = "Players"
 const SPAWNER_NODE_NAME: String = "Spawner"
 const DROPS_NODE_NAME: String = "Drops"
 const CLIENT_CAMERA_NAME: String = "ClientCamera"
-const ZONE_NAMES: Array[String] = ["ExtractZone", "PoliceStation"]
+const ZONE_NAMES: Array[String] = GameConst.ZONE_NAMES
 
-const LootDropScript = preload("res://world/LootDrop.gd")
+const LootDropScript = preload("res://features/heist/LootDrop.gd")
 
 var instance_id: String = ""
 var map_name: String = ""
@@ -180,55 +180,23 @@ func get_spawn_transform(peer_id: int) -> Transform3D:
 
 ## Sends an RPC only to the given member peers of this instance.
 ##
-## `callable_name` must be an @rpc method available on this same node path on the
-## clients. `only_peers` restricts the recipients; when empty every member is
-## targeted. RPC args are dispatched with a small arity switch because GDScript
-## has no spread syntax for built-in RPC calls.
+## Thin wrapper over `NetUtil.rpc_to_members`; the instance owns the member list
+## that decides who may receive the call.
 func rpc_to_members(callable_name: StringName, args: Array, only_peers: Array = []) -> void:
-	if not multiplayer.has_multiplayer_peer():
-		return
-	var connected: PackedInt32Array = multiplayer.get_peers()
-	var targets: Array = only_peers if not only_peers.is_empty() else members
-	for peer_value: Variant in targets:
-		var peer: int = int(peer_value)
-		if not members.has(peer):
-			continue
-		if not connected.has(peer):
-			continue
-		match args.size():
-			0:
-				rpc_id(peer, callable_name)
-			1:
-				rpc_id(peer, callable_name, args[0])
-			2:
-				rpc_id(peer, callable_name, args[0], args[1])
-			3:
-				rpc_id(peer, callable_name, args[0], args[1], args[2])
-			4:
-				rpc_id(peer, callable_name, args[0], args[1], args[2], args[3])
-			_:
-				push_error("rpc_to_members: unsupported argument count %d" % args.size())
+	NetUtil.rpc_to_members(self, members, callable_name, args, only_peers)
 
 
 ## Like rpc_to_members but never falls back to "everyone" for an empty peer list.
 func rpc_to_specific_members(callable_name: StringName, args: Array, peers: Array) -> void:
-	if peers.is_empty():
-		return
-	rpc_to_members(callable_name, args, peers)
+	NetUtil.rpc_to_specific_members(self, members, callable_name, args, peers)
 
 
 ## Grants synchronizer visibility to every member of this instance and revokes
 ## it from every other connected peer. Called on spawn, join, leave and transfer.
 func refresh_visibility() -> void:
-	if not is_server_side or not multiplayer.has_multiplayer_peer():
+	if not is_server_side:
 		return
-	var connected: PackedInt32Array = multiplayer.get_peers()
-	for player: Node in get_players():
-		var sync := player.get_node_or_null("MultiplayerSynchronizer") as MultiplayerSynchronizer
-		if sync == null:
-			continue
-		for peer: int in connected:
-			sync.set_visibility_for(peer, members.has(peer))
+	NetUtil.refresh_visibility(get_players(), members)
 
 
 ## Returns the member peer ids whose controller currently has one of `roles`.
@@ -262,12 +230,12 @@ func spawn_loot_drop(
 	var drop := LootDropScript.new() as Node3D
 	drop.name = drop_id
 	drop.set("drop_id", drop_id)
-	drop.call("setup_server", owner_peer, duplicate_items(loot_items), duplicate_items(gear_items))
+	drop.call("setup_server", owner_peer, ItemUtils.duplicate_items(loot_items), ItemUtils.duplicate_items(gear_items))
 	drops_root.add_child(drop)
 	drop.global_position = world_position
 	rpc_to_members(
 		"client_add_loot_drop",
-		[drop_id, world_position, duplicate_items(loot_items), duplicate_items(gear_items)]
+		[drop_id, world_position, ItemUtils.duplicate_items(loot_items), ItemUtils.duplicate_items(gear_items)]
 	)
 	return drop
 
@@ -302,14 +270,6 @@ func set_police_vehicle_active(active: bool) -> void:
 	rpc_to_members("client_set_police_vehicle", [active])
 
 
-func duplicate_items(items: Array) -> Array:
-	var result: Array = []
-	for item: Variant in items:
-		if item is Dictionary:
-			result.append((item as Dictionary).duplicate(true))
-	return result
-
-
 # --- Client-bound RPCs -------------------------------------------------------
 
 @rpc("authority", "call_remote", "reliable")
@@ -331,7 +291,7 @@ func client_add_loot_drop(drop_id: String, world_position: Vector3, loot_items: 
 		return
 	var drop := LootDropScript.new() as Node3D
 	drop.name = drop_id
-	drop.call("setup_client", drop_id, duplicate_items(loot_items), duplicate_items(gear_items))
+	drop.call("setup_client", drop_id, ItemUtils.duplicate_items(loot_items), ItemUtils.duplicate_items(gear_items))
 	drops_root.add_child(drop)
 	drop.global_position = world_position
 

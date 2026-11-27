@@ -25,6 +25,20 @@ The server is authoritative for everything: role, damage, loot, transfers, parti
 Clients only send requests through RPCs declared `@rpc("any_peer", "call_remote", "reliable")`,
 and the server checks `multiplayer.get_remote_sender_id()` on every call.
 
+`autoload/ServerManager.gd` is a thin autoload and RPC entry point. Its runtime state lives in
+`RefCounted` services created by the autoload (no extra autoloads):
+
+| Service | Owns |
+|---|---|
+| `features/instance/InstanceRegistry.gd` | create/find/free instances, `select_instance`, `format_instance_id`, empty-instance timer, slot reservations, peer → instance mapping, spawning and visibility |
+| `features/party/PartyService.gd` | create, invite/accept, leave, kick, pending invites, leader rules |
+| `features/transfer/TransferService.gd` | allowed routes (`is_route_allowed`), transfer state, ack wait, timeout, disconnect cleanup, LootyBay party entry |
+| `features/player/PlayerService.gd` | connection state, custom spawn, sell/mask/cop duty, combat, surrender, death, extraction and zones |
+
+`ServerManager` keeps the fixed RPC method names and node path, validates senders, and forwards to
+these services. Cross-service helpers with no project imports live in `lib/`
+(`GameConst`, `NetUtil`, `ItemUtils`).
+
 ## 2. Scene tree
 
 ### 2.1 Dedicated server
@@ -35,7 +49,7 @@ and the server checks `multiplayer.get_remote_sender_id()` on every call.
 └── Main                           (main/Main.tscn, Node)
     └── Instances                  (Node)
         ├── House                  (SubViewport, own_world_3d = true, UPDATE_DISABLED)
-        │   ├── Map                (maps/House.tscn)
+        │   ├── Map                (maps/house/House.tscn)
         │   │   └── SpawnPoints/Marker3D ...
         │   ├── Players            (Node3D)
         │   ├── Drops              (Node3D)
@@ -71,7 +85,7 @@ The client holds only its current instance. The `Instances` node of `Main` becom
 └── Main                           (Node)
     └── Instances                  (SubViewportContainer, stretch = true, full rect)
         └── Motel-01               (SubViewport, own_world_3d = true, UPDATE_ALWAYS)
-            ├── Map                (instance of maps/Motel.tscn)
+            ├── Map                (instance of maps/motel/Motel.tscn)
             ├── Players            (Node3D)
             ├── Drops              (Node3D)
             ├── Spawner            (MultiplayerSpawner, spawn_path = ../Players)
@@ -107,9 +121,10 @@ client, even though the client wraps it in a `SubViewportContainer`.
    synchronizer, so players in other sub-sessions never see each other.
 
 4. **No broadcast `rpc()` for gameplay events.**
-   The server uses `Instance.rpc_to_members(callable_name, args)`, which loops `rpc_id()` over that
-   instance's members only, plus `rpc_to_specific_members()` for per-peer filtering
-   (e.g. loot alerts sent only to `COP` and `CRIMINAL`).
+   `lib/net/NetUtil.gd` implements the dispatch loop. `Instance.rpc_to_members()` and
+   `Instance.rpc_to_specific_members()` are thin wrappers that pass the instance member list, so
+   packets go only to that instance's members (plus per-peer filtering, e.g. loot alerts sent only
+   to `COP` and `CRIMINAL`).
 
 5. **Every request validates its sender.**
    Every server RPC starts with `multiplayer.get_remote_sender_id()`, and the peer must exist in
@@ -146,12 +161,12 @@ through that property once bound to a player (with a standalone fallback for uni
 `MultiplayerSpawner.spawn_function` runs on **every peer** that receives the spawn, so it must be set
 on both server and client:
 
-- Server: `ServerManager._spawn_player_node()` → `Player.setup_server(instance, state)`
+- Server: `PlayerService.spawn_node()` → `Player.setup_server(instance, state)`
 - Client: same function; when `multiplayer.is_server() == false` it calls
   `Player.setup_client(instance)` to bind the controller context
+- Both sides receive the function through `ServerManager.configure_spawner()`, which delegates to
+  `InstanceRegistry`; the client calls it from `Main.client_show_instance()` after `Instance.setup()`
 - Inventory, notoriety, and cash are not included in the spawn payload; they stay on the server
-- The client configures its spawner through `ServerManager.configure_spawner()` before sending the ack
-  (`Main.client_show_instance()` calls it after `Instance.setup()`)
 
 ### 4.3 Granting visibility
 
@@ -166,8 +181,9 @@ When a player enters an instance:
 
 When a player leaves an instance:
 
-1. `_revoke_visibility()` sets `set_visibility_for(..., false)` both for the leaving player's node and
-   for every other player's synchronizer toward the leaving peer
+1. `InstanceRegistry.revoke_visibility()` (via `NetUtil.revoke_visibility()`) sets
+   `set_visibility_for(..., false)` both for the leaving player's node and for every other player's
+   synchronizer toward the leaving peer
 2. Despawn / `queue_free()` the player node
 3. `Instance.remove_member(peer_id)` and `refresh_visibility()` again
 
@@ -194,15 +210,15 @@ Client                                Server
 
 Details:
 
-- `_transfers[peer_id]` stores `target_id`, `map_name`, `deadline_ms`
+- `TransferService._transfers[peer_id]` stores `target_id`, `map_name`, `deadline_ms`
 - The target instance increments `reserved_slots` while waiting for the ack, so the room cannot fill up mid-transfer
 - Before despawn, the server calls `controller.server_prepare_leave_instance()` (cancels the mask
   channel, goes off duty if `COP`), then `export_state()` saves role, `loot_bag`, `equipped_gear`,
   `saved_civilian_gear`, `notoriety`, `cash`, `cop_on_duty`
 - The server waits for `client_instance_ready()` at most `TRANSFER_TIMEOUT_SECONDS` (10 s); on timeout
   it releases the reservation and disconnects the peer
-- If the peer disconnects at any step, `handle_peer_left()` clears the transfer, reservation,
-  instance membership, party, and state
+- If the peer disconnects at any step, `ServerManager.handle_peer_left()` clears the transfer,
+  reservation, instance membership, party, and state
 - The client builds the new instance before acking, and the server spawns only after the ack, so the
   destination spawner and synchronizer exist when the spawn message arrives
 
@@ -215,26 +231,28 @@ Details:
 | `Center` | `Motel`, `House` |
 | `LootyBay` | Exit only via `ExtractZone`, death, or surrender (to `Motel`) |
 
-`ServerManager.is_route_allowed()` is a pure static function, testable without a network.
+`TransferService.is_route_allowed()` is a pure static function, testable without a network.
 
 ### 5.2 Instance selection
 
-`ServerManager.select_instance(candidates, party_size)` picks an instance with
+`InstanceRegistry.select_instance(candidates, party_size)` picks an instance with
 `capacity - used >= party_size`, preferring the fullest one that still fits, to keep rooms full.
 If none fits it returns `""` and the caller creates a new instance
-(names like `Motel-01`, `LootyBay-03` come from `format_instance_id()`).
+(names like `Motel-01`, `LootyBay-03` come from `InstanceRegistry.format_instance_id()`).
 
 ## 6. Party
 
-`core/Party.gd` is a plain `RefCounted` holding `id`, `leader_id`, `members: Array[int]`, and enforces
-`MAX_MEMBERS = 3` itself.
+`features/party/Party.gd` is a plain `RefCounted` holding `id`, `leader_id`, `members: Array[int]`,
+and enforces `MAX_MEMBERS` from `GameConst.PARTY_MAX_MEMBERS` (3) itself.
+`features/party/PartyService.gd` owns the registry and network-facing party flow.
 
 - Create: `server_request_party_create`
-- Invite / accept: the server keeps `_pending_invites`; an invite becomes invalid if the party is
+- Invite / accept: `PartyService` keeps `_pending_invites`; an invite becomes invalid if the party is
   disbanded or its id changes
 - Leave: if the leader leaves, `Party.remove_member()` passes leadership to the first remaining member
 - Kick: leader only, and the leader cannot kick themselves
-- Disconnect: `handle_peer_left()` calls `leave_party()` and removes related invites
+- Disconnect: `ServerManager.handle_peer_left()` → `PartyService.remove_peer()` removes related
+  invites and leaves the party
 
 Entering `LootyBay`:
 
@@ -285,8 +303,9 @@ not a shared heist run).
 | anyone | anyone | `false` in `Motel` (safezone), `House`, `Center` |
 
 The controller's `can_attack(target)` uses this static function with the instance context.
-`ServerManager.server_request_attack()` checks sender, instance membership, range, `can_attack()`, and
-raycast LOS before calling `target.take_damage()`.
+`PlayerService.attack()` (called by `ServerManager.server_request_attack()`) checks instance
+membership, range, `can_attack()`, and raycast LOS before calling `target.take_damage()`.
+All rule constants come from `lib/constants/GameConst.gd`.
 
 ## 8. Inventory, notoriety, and ending a run
 
@@ -337,7 +356,7 @@ When a player enters the `LootyBay` `ExtractZone` (detected by the server throug
 
 ### 9.1 Lootable
 
-`world/Lootable.gd` is a server-authoritative container (`@export value`, `locked`):
+`features/heist/Lootable.gd` is a server-authoritative container (`@export value`, `locked`):
 
 - `server_lockpick(player)` is silent: no alert
 - `server_smash(player)` is loud: alerts the `COP` and `CRIMINAL` members of the same instance through
@@ -346,7 +365,7 @@ When a player enters the `LootyBay` `ExtractZone` (detected by the server throug
 
 ### 9.2 LootDrop
 
-`world/LootDrop.gd` holds the dead player's `loot_items` + `gear_items`:
+`features/heist/LootDrop.gd` holds the dead player's `loot_items` + `gear_items`:
 
 - The server creates the real node under `<instance>/Drops` and sends a visual placeholder to instance members
 - Clients that join the instance later receive existing drops through `sync_state_to_peer()`
@@ -354,11 +373,11 @@ When a player enters the `LootyBay` `ExtractZone` (detected by the server throug
 
 ## 10. Map placeholders
 
-- `maps/Motel.tscn`: floor, 16 `SpawnPoints`, `CashStash`, `PartyDesk`
-- `maps/LootyBay.tscn`: floor + walls, 12 spawn points, `ExtractZone`, `PoliceStation`,
+- `maps/motel/Motel.tscn`: floor, 16 `SpawnPoints`, `CashStash`, `PartyDesk`
+- `maps/looty_bay/LootyBay.tscn`: floor + walls, 12 spawn points, `ExtractZone`, `PoliceStation`,
   `PoliceVehicle` (hidden until a cop is on duty)
-- `maps/House.tscn`: floor, 6 spawn points, `Storage`, `LaundryDesk`
-- `maps/Center.tscn`: floor, 6 spawn points, market stalls, `UpgradeBench`
+- `maps/house/House.tscn`: floor, 6 spawn points, `Storage`, `LaundryDesk`
+- `maps/center/Center.tscn`: floor, 6 spawn points, market stalls, `UpgradeBench`
 
 `Instance.setup()` instantiates the map scene as a child named `Map`, then finds `ExtractZone` /
 `PoliceStation` on the server only to connect `body_entered` / `body_exited`.
@@ -387,34 +406,55 @@ Client (connects to `127.0.0.1:7777`):
 godot_console --path .
 ```
 
-Headless self-check (no network needed):
+Headless test suite (no network needed):
 
 ```text
-godot_console --headless --path . -s res://tests/test_core.gd
+godot_console --headless --path . -s res://tests/run_tests.gd
 ```
 
-The test covers server id format, party max 3 and leader transfer, instance selection, the
-`can_attack` matrix, surrender (bag cleared, gear kept), criminal death (drops everything), and citizen
-death (drops nothing), then prints `ALL TESTS PASSED` and calls `quit(0)`.
+`tests/run_tests.gd` discovers every `tests/**/test_*.gd`, runs each zero-argument `test_*` method
+through the shared `tests/TestCase.gd` assertions, prints per-file results, then prints
+`ALL TESTS PASSED (<n> assertions)` and calls `quit(0)`; any failure calls `quit(1)`.
+
+Coverage mirrors the source tree: server id format (`tests/autoload/`), party max 3 and leader
+transfer (`tests/features/party/`), instance selection and id format
+(`tests/features/instance/`), the `can_attack` matrix, sale multiplier, surrender and death rules
+(`tests/features/player/`), allowed map routes (`tests/features/transfer/`), and sender validation
+(`tests/lib/net/`).
 
 ## 13. Key files
 
 ```text
 res://
   autoload/ServerManager.gd
-  core/Instance.gd
-  core/Party.gd
-  player/Player.tscn
-  player/Player.gd
-  player/PlayerRoleController.gd
-  world/Lootable.gd
-  world/LootDrop.gd
-  maps/Motel.tscn
-  maps/LootyBay.tscn
-  maps/House.tscn
-  maps/Center.tscn
+  lib/constants/GameConst.gd
+  lib/net/NetUtil.gd
+  lib/utils/ItemUtils.gd
+  features/instance/Instance.gd
+  features/instance/InstanceRegistry.gd
+  features/party/Party.gd
+  features/party/PartyService.gd
+  features/player/Player.tscn
+  features/player/Player.gd
+  features/player/PlayerRoleController.gd
+  features/player/PlayerService.gd
+  features/transfer/TransferService.gd
+  features/heist/Lootable.gd
+  features/heist/LootDrop.gd
+  maps/motel/Motel.tscn
+  maps/looty_bay/LootyBay.tscn
+  maps/house/House.tscn
+  maps/center/Center.tscn
   main/Main.tscn
   main/Main.gd
-  tests/test_core.gd
+  tests/run_tests.gd
+  tests/TestCase.gd
+  tests/autoload/test_server_manager.gd
+  tests/features/instance/test_instance_registry.gd
+  tests/features/party/test_party.gd
+  tests/features/player/test_role_rules.gd
+  tests/features/player/test_role_outcomes.gd
+  tests/features/transfer/test_routes.gd
+  tests/lib/net/test_net_util.gd
   docs/ARCHITECTURE.md
 ```

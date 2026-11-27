@@ -6,7 +6,7 @@ extends Node3D
 ## sends only to COP and CRIMINAL members of the same instance, together with
 ## the world position of the lootable.
 
-const RoleControllerScript = preload("res://player/PlayerRoleController.gd")
+const RoleControllerScript = preload("res://features/player/PlayerRoleController.gd")
 
 @export var loot_id: String = "valuables"
 @export var value: int = 250

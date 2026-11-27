@@ -19,12 +19,6 @@ enum Role {
 	COP,
 }
 
-const MASK_CHANNEL_SECONDS: float = 3.0
-const MASK_MOVE_CANCEL_DISTANCE: float = 0.5
-const SURRENDER_RANGE: float = 6.0
-const SURRENDER_COP_REWARD_RATIO: float = 0.5
-const NOTORIETY_DIVISOR: float = 10000.0
-const NOTORIETY_MAX_BONUS: float = 1.5
 const COP_LOADOUT: Array[Dictionary] = [
 	{"id": "cop_pistol", "value": 0},
 	{"id": "cop_radio", "value": 0},
@@ -67,6 +61,19 @@ var role: int:
 				role_changed.emit(old_role, value)
 
 
+## Default persisted role state for a newly connected peer.
+static func default_player_state() -> Dictionary:
+	return {
+		"role": Role.CITIZEN,
+		"loot_bag": [],
+		"equipped_gear": [],
+		"saved_civilian_gear": [],
+		"notoriety": 0.0,
+		"cash": 0,
+		"cop_on_duty": false,
+	}
+
+
 ## Called by Player._ready.
 func bind_player(player: Node) -> void:
 	_player = player
@@ -107,7 +114,7 @@ static func can_attack_roles(
 	p_map_name: String,
 	p_safezone: bool
 ) -> bool:
-	if p_safezone or p_map_name != "LootyBay":
+	if p_safezone or p_map_name != GameConst.MAP_LOOTY_BAY:
 		return false
 	match attacker_role:
 		Role.CITIZEN:
@@ -155,15 +162,15 @@ func server_try_mask() -> bool:
 		return false
 	if role != Role.CITIZEN or _mask_active:
 		return false
-	if _active_map_name() != "LootyBay":
+	if _active_map_name() != GameConst.MAP_LOOTY_BAY:
 		return false
 	if not is_instance_valid(_player):
 		return false
 	_mask_active = true
 	_mask_start_position = _player.global_position
 	_ensure_mask_timer()
-	_mask_timer.start(MASK_CHANNEL_SECONDS)
-	mask_channel_started.emit(MASK_CHANNEL_SECONDS)
+	_mask_timer.start(GameConst.MASK_CHANNEL_SECONDS)
+	mask_channel_started.emit(GameConst.MASK_CHANNEL_SECONDS)
 	return true
 
 
@@ -187,9 +194,9 @@ func notify_damage() -> void:
 func _process(_delta: float) -> void:
 	if not _mask_active or not is_instance_valid(_player) or not _is_server_context():
 		return
-	if _player.global_position.distance_to(_mask_start_position) > MASK_MOVE_CANCEL_DISTANCE:
+	if _player.global_position.distance_to(_mask_start_position) > GameConst.MASK_MOVE_CANCEL_DISTANCE:
 		cancel_mask("moved")
-	elif _active_map_name() != "LootyBay":
+	elif _active_map_name() != GameConst.MAP_LOOTY_BAY:
 		cancel_mask("left_instance")
 
 
@@ -207,10 +214,10 @@ func _on_mask_timer_timeout() -> void:
 	if not _mask_active:
 		return
 	_mask_active = false
-	if role != Role.CITIZEN or _active_map_name() != "LootyBay":
+	if role != Role.CITIZEN or _active_map_name() != GameConst.MAP_LOOTY_BAY:
 		mask_channel_cancelled.emit("invalid_state")
 		return
-	if is_instance_valid(_player) and _player.global_position.distance_to(_mask_start_position) > MASK_MOVE_CANCEL_DISTANCE:
+	if is_instance_valid(_player) and _player.global_position.distance_to(_mask_start_position) > GameConst.MASK_MOVE_CANCEL_DISTANCE:
 		mask_channel_cancelled.emit("moved")
 		return
 	_change_role(Role.CRIMINAL)
@@ -223,9 +230,9 @@ func server_go_on_duty() -> bool:
 		return false
 	if role != Role.CITIZEN or cop_on_duty:
 		return false
-	if _active_map_name() != "LootyBay" or not in_police_station:
+	if _active_map_name() != GameConst.MAP_LOOTY_BAY or not in_police_station:
 		return false
-	_saved_civilian_gear = _copy_items(equipped_gear)
+	_saved_civilian_gear = ItemUtils.duplicate_items(equipped_gear)
 	equipped_gear.clear()
 	for item: Dictionary in COP_LOADOUT:
 		equipped_gear.append(item.duplicate(true))
@@ -241,7 +248,7 @@ func server_go_off_duty(force: bool = false) -> bool:
 	if not cop_on_duty and role != Role.COP:
 		return false
 	if not force:
-		if _active_map_name() != "LootyBay" or not in_police_station:
+		if _active_map_name() != GameConst.MAP_LOOTY_BAY or not in_police_station:
 			return false
 	cop_on_duty = false
 	equipped_gear.clear()
@@ -256,7 +263,7 @@ func server_go_off_duty(force: bool = false) -> bool:
 
 # --- Extraction / surrender / death -----------------------------------------
 
-## Called by ServerManager when the player exits LootyBay through ExtractZone.
+## Called by PlayerService when the player exits LootyBay through ExtractZone.
 ## CRIMINAL -> CITIZEN is one of the only two ways to lose the mask (the other
 ## being surrender). COP players are taken off duty.
 func server_on_extraction() -> void:
@@ -267,21 +274,46 @@ func server_on_extraction() -> void:
 		_change_role(Role.CITIZEN)
 
 
+## Pure surrender outcome for the given roles and gross loot value.
+## Returns {"ok", "reward", "loot_value"} without mutating either player.
+static func surrender_outcome(criminal_role: int, cop_role: int, gross_value: int) -> Dictionary:
+	var result: Dictionary = {"ok": false, "reward": 0, "loot_value": 0}
+	if criminal_role != Role.CRIMINAL or cop_role != Role.COP:
+		return result
+	result["ok"] = true
+	result["loot_value"] = gross_value
+	result["reward"] = int(round(float(gross_value) * GameConst.SURRENDER_COP_REWARD_RATIO))
+	return result
+
+
+## Pure death outcome: what should drop and where the player respawns.
+## CITIZEN: keeps everything. CRIMINAL: drops bag + gear, keeps the role (the
+## mask can only be removed by extraction or surrender). COP: drops nothing,
+## loses free-issue gear and goes off duty.
+static func death_outcome(death_role: int, loot_bag_data: Array, gear_data: Array) -> Dictionary:
+	var result: Dictionary = {
+		"drops": false,
+		"loot": [],
+		"gear": [],
+		"respawn_map": GameConst.MAP_MOTEL,
+	}
+	if death_role == Role.CRIMINAL:
+		result["drops"] = true
+		result["loot"] = ItemUtils.duplicate_items(loot_bag_data)
+		result["gear"] = ItemUtils.duplicate_items(gear_data)
+	return result
+
+
 ## Validates and applies a surrender reward. The proximity / line-of-sight
-## check is done by ServerManager; this method owns the inventory and role rules.
+## check is done by PlayerService; this method owns the inventory and role rules.
 ## Returns {"ok", "reward", "loot_value"}.
 func server_apply_surrender(cop: PlayerRoleController) -> Dictionary:
-	var result: Dictionary = {"ok": false, "reward": 0, "loot_value": 0}
-	if role != Role.CRIMINAL:
+	if cop == null or not is_instance_valid(cop):
+		return {"ok": false, "reward": 0, "loot_value": 0}
+	var result: Dictionary = surrender_outcome(role, cop.role, loot_value())
+	if not bool(result.get("ok", false)):
 		return result
-	if cop == null or not is_instance_valid(cop) or cop.role != Role.COP:
-		return result
-	var gross_value: int = loot_value()
-	var reward: int = int(round(float(gross_value) * SURRENDER_COP_REWARD_RATIO))
-	cop.cash += reward
-	result["ok"] = true
-	result["reward"] = reward
-	result["loot_value"] = gross_value
+	cop.cash += int(result.get("reward", 0))
 	loot_bag.clear()
 	notoriety = 0.0
 	cancel_mask("surrender")
@@ -290,22 +322,11 @@ func server_apply_surrender(cop: PlayerRoleController) -> Dictionary:
 	return result
 
 
-## Applies death rules and returns what must be dropped in the world.
-## CITIZEN: keeps everything. CRIMINAL: drops bag + gear, keeps the role (the
-## mask can only be removed by extraction or surrender). COP: drops nothing,
-## loses free-issue gear and goes off duty.
+## Applies the death mutations and returns what the world must drop.
 func server_apply_death() -> Dictionary:
-	var result: Dictionary = {
-		"drops": false,
-		"loot": [],
-		"gear": [],
-		"respawn_map": "Motel",
-	}
+	var result: Dictionary = death_outcome(role, loot_bag, equipped_gear)
 	match role:
 		Role.CRIMINAL:
-			result["drops"] = true
-			result["loot"] = _copy_items(loot_bag)
-			result["gear"] = _copy_items(equipped_gear)
 			loot_bag.clear()
 			equipped_gear.clear()
 		Role.COP:
@@ -321,7 +342,7 @@ func server_apply_death() -> Dictionary:
 	return result
 
 
-## Called by ServerManager before a transfer snapshot/despawn.
+## Called by PlayerService before a transfer snapshot/despawn.
 func server_prepare_leave_instance() -> void:
 	cancel_mask("leave_instance")
 	in_police_station = false
@@ -361,8 +382,9 @@ func gear_value() -> int:
 	return total
 
 
-func sell_multiplier() -> float:
-	return 1.0 + minf(notoriety / NOTORIETY_DIVISOR, NOTORIETY_MAX_BONUS)
+## Pure sale multiplier for a notoriety amount (max 2.5x at the cap).
+static func sell_multiplier(notoriety_value: float) -> float:
+	return 1.0 + minf(notoriety_value / GameConst.NOTORIETY_DIVISOR, GameConst.NOTORIETY_MAX_BONUS)
 
 
 ## Sells the whole bag. Notoriety resets on a completed sale (documented rule).
@@ -370,7 +392,7 @@ func server_sell_loot() -> int:
 	if loot_bag.is_empty():
 		notoriety = 0.0
 		return 0
-	var earned: int = int(round(float(loot_value()) * sell_multiplier()))
+	var earned: int = int(round(float(loot_value()) * sell_multiplier(notoriety)))
 	cash += earned
 	loot_bag.clear()
 	notoriety = 0.0
@@ -381,9 +403,9 @@ func server_sell_loot() -> int:
 func export_state() -> Dictionary:
 	return {
 		"role": role,
-		"loot_bag": _copy_items(loot_bag),
-		"equipped_gear": _copy_items(equipped_gear),
-		"saved_civilian_gear": _copy_items(_saved_civilian_gear),
+		"loot_bag": ItemUtils.duplicate_items(loot_bag),
+		"equipped_gear": ItemUtils.duplicate_items(equipped_gear),
+		"saved_civilian_gear": ItemUtils.duplicate_items(_saved_civilian_gear),
 		"notoriety": notoriety,
 		"cash": cash,
 		"cop_on_duty": cop_on_duty,
@@ -395,18 +417,9 @@ func apply_state(state: Dictionary) -> void:
 		return
 	if state.has("role"):
 		_change_role(int(state["role"]))
-	loot_bag.clear()
-	for item: Variant in state.get("loot_bag", []):
-		if item is Dictionary:
-			loot_bag.append((item as Dictionary).duplicate(true))
-	equipped_gear.clear()
-	for item: Variant in state.get("equipped_gear", []):
-		if item is Dictionary:
-			equipped_gear.append((item as Dictionary).duplicate(true))
-	_saved_civilian_gear.clear()
-	for item: Variant in state.get("saved_civilian_gear", []):
-		if item is Dictionary:
-			_saved_civilian_gear.append((item as Dictionary).duplicate(true))
+	loot_bag = ItemUtils.duplicate_items(state.get("loot_bag", []))
+	equipped_gear = ItemUtils.duplicate_items(state.get("equipped_gear", []))
+	_saved_civilian_gear = ItemUtils.duplicate_items(state.get("saved_civilian_gear", []))
 	notoriety = float(state.get("notoriety", 0.0))
 	cash = int(state.get("cash", 0))
 	cop_on_duty = bool(state.get("cop_on_duty", false))
@@ -433,11 +446,3 @@ func _active_map_name() -> String:
 		if value != null:
 			return String(value)
 	return map_name
-
-
-func _copy_items(items: Array) -> Array[Dictionary]:
-	var result: Array[Dictionary] = []
-	for item: Variant in items:
-		if item is Dictionary:
-			result.append((item as Dictionary).duplicate(true))
-	return result

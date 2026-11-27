@@ -13,15 +13,15 @@ var _visual_root: Node3D = null
 
 func setup_server(owner_peer: int, loot: Array, gear: Array) -> void:
 	owner_peer_id = owner_peer
-	loot_items = _copy_items(loot)
-	gear_items = _copy_items(gear)
+	loot_items = ItemUtils.duplicate_items(loot)
+	gear_items = ItemUtils.duplicate_items(gear)
 	_build_visual(true)
 
 
 func setup_client(p_drop_id: String, loot: Array, gear: Array) -> void:
 	drop_id = p_drop_id
-	loot_items = _copy_items(loot)
-	gear_items = _copy_items(gear)
+	loot_items = ItemUtils.duplicate_items(loot)
+	gear_items = ItemUtils.duplicate_items(gear)
 	_build_visual(true)
 
 
@@ -67,11 +67,3 @@ func _build_visual(visible_to_client: bool) -> void:
 	_visual_root.add_child(label)
 
 	_visual_root.visible = visible_to_client
-
-
-func _copy_items(items: Array) -> Array[Dictionary]:
-	var result: Array[Dictionary] = []
-	for item: Variant in items:
-		if item is Dictionary:
-			result.append((item as Dictionary).duplicate(true))
-	return result

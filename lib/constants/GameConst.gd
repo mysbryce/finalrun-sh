@@ -1,0 +1,79 @@
+class_name GameConst
+extends RefCounted
+## Single source of truth for names, capacities, timings and other magic values.
+##
+## `lib/` depends on nothing else in the project, so this file must never import
+## a scene, feature or map. Scripts outside `lib/` reference `GameConst.X`
+## instead of repeating literals.
+
+# --- Maps --------------------------------------------------------------------
+
+const MAP_MOTEL: String = "Motel"
+const MAP_LOOTY_BAY: String = "LootyBay"
+const MAP_HOUSE: String = "House"
+const MAP_CENTER: String = "Center"
+
+const INSTANCED_MAPS: Array[String] = [MAP_MOTEL, MAP_LOOTY_BAY]
+const SHARED_MAPS: Array[String] = [MAP_HOUSE, MAP_CENTER]
+
+# --- Networking / lifecycle --------------------------------------------------
+
+const PORT: int = 7777
+const MAX_CLIENTS: int = 64
+
+const SERVER_ID_PREFIX: String = "SV-SPACE-"
+const SERVER_ID_MODULO: int = 10000
+const MAX_SERVER_ID: int = 9999
+
+const EMPTY_INSTANCE_FREE_SECONDS: float = 60.0
+const TRANSFER_TIMEOUT_SECONDS: float = 10.0
+
+# --- Map config --------------------------------------------------------------
+
+const DEFAULT_MAP_CAPACITY: int = 16
+
+const MAP_CAPACITY := {
+	MAP_MOTEL: 16,
+	MAP_LOOTY_BAY: 12,
+	MAP_HOUSE: MAX_CLIENTS,
+	MAP_CENTER: MAX_CLIENTS,
+}
+
+const MAP_SAFEZONE := {
+	MAP_MOTEL: true,
+	MAP_LOOTY_BAY: false,
+	MAP_HOUSE: false,
+	MAP_CENTER: false,
+}
+
+const ZONE_EXTRACT: String = "ExtractZone"
+const ZONE_POLICE_STATION: String = "PoliceStation"
+const ZONE_NAMES: Array[String] = [ZONE_EXTRACT, ZONE_POLICE_STATION]
+
+# --- Party -------------------------------------------------------------------
+
+const PARTY_MAX_MEMBERS: int = 3
+
+# --- Player rules ------------------------------------------------------------
+
+const MASK_CHANNEL_SECONDS: float = 3.0
+const MASK_MOVE_CANCEL_DISTANCE: float = 0.5
+const SURRENDER_RANGE: float = 6.0
+const SURRENDER_COP_REWARD_RATIO: float = 0.5
+const NOTORIETY_DIVISOR: float = 10000.0
+const NOTORIETY_MAX_BONUS: float = 1.5
+
+const ATTACK_RANGE: float = 40.0
+const ATTACK_DAMAGE: int = 25
+const LINE_OF_SIGHT_EYE_HEIGHT: float = 1.4
+const LINE_OF_SIGHT_TARGET_HEIGHT: float = 1.2
+
+const WORLD_COLLISION_LAYER: int = 1
+const PLAYERS_COLLISION_LAYER: int = 2
+## World + players: the only two physics layers an attack raycast may hit.
+const RAYCAST_COLLISION_MASK: int = 3
+
+const PLAYER_SPEED: float = 5.0
+const PLAYER_GRAVITY: float = 18.0
+const PLAYER_INPUT_SEND_INTERVAL: float = 0.05
+const PLAYER_MAX_HEALTH: int = 100

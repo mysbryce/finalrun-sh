@@ -6,10 +6,10 @@ extends CharacterBody3D
 ## simulates CharacterBody3D movement and the root MultiplayerSynchronizer
 ## replicates position/rotation/role back. Clients never move themselves.
 
-const SPEED: float = 5.0
-const GRAVITY: float = 18.0
-const INPUT_SEND_INTERVAL: float = 0.05
-const MAX_HEALTH: int = 100
+const SPEED: float = GameConst.PLAYER_SPEED
+const GRAVITY: float = GameConst.PLAYER_GRAVITY
+const INPUT_SEND_INTERVAL: float = GameConst.PLAYER_INPUT_SEND_INTERVAL
+const MAX_HEALTH: int = GameConst.PLAYER_MAX_HEALTH
 
 @export var peer_id: int = 0:
 	set(value):
@@ -90,7 +90,7 @@ func get_role_controller() -> PlayerRoleController:
 	return _role_controller
 
 
-## Server-only damage hook. Death resolution is owned by ServerManager.
+## Server-only damage hook. Death resolution is owned by PlayerService.
 func take_damage(amount: int) -> void:
 	if not multiplayer.is_server() or amount <= 0:
 		return

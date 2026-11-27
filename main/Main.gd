@@ -3,14 +3,7 @@ extends Node
 ## the instance root. Without the flag the process becomes a client connecting
 ## to 127.0.0.1:7777.
 
-const InstanceScript = preload("res://core/Instance.gd")
-
-const MAP_SCENES := {
-	"Motel": preload("res://maps/Motel.tscn"),
-	"LootyBay": preload("res://maps/LootyBay.tscn"),
-	"House": preload("res://maps/House.tscn"),
-	"Center": preload("res://maps/Center.tscn"),
-}
+const InstanceScript = preload("res://features/instance/Instance.gd")
 
 var _server_mode: bool = false
 var _client_view: SubViewportContainer = null
@@ -33,9 +26,9 @@ func is_server_mode() -> bool:
 
 func _start_server() -> void:
 	var peer := ENetMultiplayerPeer.new()
-	var error := peer.create_server(ServerManager.PORT, ServerManager.MAX_CLIENTS)
+	var error := peer.create_server(GameConst.PORT, GameConst.MAX_CLIENTS)
 	if error != OK:
-		push_error("Could not create server on port %d (error %d)" % [ServerManager.PORT, error])
+		push_error("Could not create server on port %d (error %d)" % [GameConst.PORT, error])
 		get_tree().quit(1)
 		return
 	_peer = peer
@@ -43,13 +36,13 @@ func _start_server() -> void:
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 	multiplayer.multiplayer_peer = peer
 	ServerManager.setup_server($Instances)
-	print("[Main] Dedicated server on port %d" % ServerManager.PORT)
+	print("[Main] Dedicated server on port %d" % GameConst.PORT)
 
 
 func _start_client() -> void:
 	_create_client_view_container()
 	var peer := ENetMultiplayerPeer.new()
-	var error := peer.create_client("127.0.0.1", ServerManager.PORT)
+	var error := peer.create_client("127.0.0.1", GameConst.PORT)
 	if error != OK:
 		push_error("Could not create client (error %d)" % error)
 		get_tree().quit(1)
@@ -60,7 +53,7 @@ func _start_client() -> void:
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
 	multiplayer.multiplayer_peer = peer
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
-	print("[Main] Connecting to 127.0.0.1:%d" % ServerManager.PORT)
+	print("[Main] Connecting to 127.0.0.1:%d" % GameConst.PORT)
 	print("[Main] Controls: 1 Motel | 2 LootyBay | 3 House | 4 Center | 5 sell loot | F mask | G cop duty | H surrender | P create party")
 
 
@@ -87,17 +80,17 @@ func client_show_instance(instance_id: String, map_name: String) -> void:
 	for child: Node in _client_view.get_children():
 		_client_view.remove_child(child)
 		child.queue_free()
-	if not MAP_SCENES.has(map_name):
+	var map_scene: PackedScene = ServerManager.get_map_scene(map_name)
+	if map_scene == null:
 		push_error("Main.client_show_instance: unknown map %s" % map_name)
 		return
 	var instance: GameInstance = InstanceScript.new()
 	instance.name = instance_id
 	_client_view.add_child(instance)
-	var map_scene: PackedScene = MAP_SCENES[map_name]
 	instance.setup(
 		instance_id,
 		map_name,
-		GameInstance.Kind.SHARED if (map_name == "House" or map_name == "Center") else GameInstance.Kind.INSTANCED,
+		GameInstance.Kind.SHARED if GameConst.SHARED_MAPS.has(map_name) else GameInstance.Kind.INSTANCED,
 		ServerManager.get_map_capacity(map_name),
 		ServerManager.is_map_safezone(map_name),
 		map_scene,
@@ -146,13 +139,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	match key_event.physical_keycode:
 		KEY_1:
-			ServerManager.request_join_map("Motel")
+			ServerManager.request_join_map(GameConst.MAP_MOTEL)
 		KEY_2:
-			ServerManager.request_join_map("LootyBay")
+			ServerManager.request_join_map(GameConst.MAP_LOOTY_BAY)
 		KEY_3:
-			ServerManager.request_join_map("House")
+			ServerManager.request_join_map(GameConst.MAP_HOUSE)
 		KEY_4:
-			ServerManager.request_join_map("Center")
+			ServerManager.request_join_map(GameConst.MAP_CENTER)
 		KEY_5:
 			ServerManager.request_sell_loot()
 		KEY_F:
