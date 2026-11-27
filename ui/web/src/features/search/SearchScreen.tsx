@@ -24,7 +24,7 @@ export function SearchScreen() {
   }
 
   return (
-    <div className="pointer-events-auto absolute left-1/2 top-1/2 w-[460px] -translate-x-1/2 -translate-y-1/2 rounded-md bg-zinc-950/80 ring-1 ring-white/10 text-white">
+    <div className="pointer-events-auto absolute left-1/2 top-1/2 w-[460px] -translate-x-1/2 -translate-y-1/2 rounded-md bg-zinc-950/95 ring-1 ring-white/10 text-white">
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
         <span className="text-lg font-bold uppercase tracking-wider">{search.title}</span>
         <div className="flex items-center gap-3">

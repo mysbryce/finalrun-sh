@@ -1,3 +1,4 @@
+import { useRouterState } from '@tanstack/react-router'
 import { useHudStore } from './hudStore'
 import { NetStats } from './components/NetStats'
 import { MinimapFrame } from './components/MinimapFrame'
@@ -12,6 +13,7 @@ import { InteractCard } from './components/InteractCard'
 
 export function HudScreen() {
   const hud = useHudStore((s) => s.hud)
+  const panelOpen = useRouterState({ select: (s) => s.location.pathname !== '/' })
   if (!hud) return null
 
   return (
@@ -30,7 +32,7 @@ export function HudScreen() {
         maxHealth={hud.maxHealth}
       />
       <Hotbar slots={hud.hotbar} active={hud.activeSlot} bag={hud.bag} />
-      {hud.interact && <InteractCard interact={hud.interact} />}
+      {hud.interact && !panelOpen && <InteractCard interact={hud.interact} />}
     </div>
   )
 }
