@@ -94,6 +94,14 @@ const PLAYER_TURN_SPEED: float = 12.0          # lerp_angle rate per second
 const APPEARANCE_SLOTS: PackedStringArray = ["hair", "top", "bottom", "shoes", "hat", "mask"]
 const BODY_TYPES: PackedStringArray = ["male", "female"]
 const COSMETICS_DIR: String = "res://data/cosmetics/"
+const BODY_MODELS: Dictionary = {
+	"male": "res://assets/characters/kenney_mini_characters/character-male-a.glb",
+	"female": "res://assets/characters/kenney_mini_characters/character-female-a.glb",
+}
+const CHARACTER_HEIGHT: float = 1.8            # target visual height in metres
+const ANIM_WALK_SPEED: float = 0.5             # m/s; below this play idle (10% of PLAYER_SPEED)
+const ANIM_SPRINT_SPEED: float = 4.5           # m/s; at or above this play sprint (90% of PLAYER_SPEED)
+const ANIM_BLEND_TIME: float = 0.15            # seconds
 
 # --- Downed state ------------------------------------------------------------
 

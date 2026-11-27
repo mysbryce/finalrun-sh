@@ -33,6 +33,10 @@ const MAX_HEALTH: int = GameConst.PLAYER_MAX_HEALTH
 		life_state = value
 		if _role_controller != null and is_instance_valid(_role_controller):
 			_role_controller.handle_replicated_life_state(old_state, life_state)
+		if is_node_ready():
+			var rig := get_node_or_null("Rig") as CharacterRig
+			if rig != null:
+				rig.set_life_state(life_state)
 
 @export var downed_deadline_ms: int = 0
 
@@ -54,6 +58,9 @@ var _input_enabled: bool = false
 var _camera: PlayerCamera = null
 var _has_snapshot: bool = false
 var _last_fire_local_ms: int = 0
+## Last visual position fed to the rig's motion animation.
+var _last_visual_position: Vector3 = Vector3.ZERO
+var _has_visual_position: bool = false
 
 
 func _ready() -> void:
@@ -68,6 +75,7 @@ func _ready() -> void:
 	var rig := get_node_or_null("Rig") as CharacterRig
 	if rig != null:
 		rig.set_masked(role == PlayerRoleController.Role.CRIMINAL)
+		rig.set_life_state(life_state)
 	_update_control_state()
 
 
@@ -211,6 +219,11 @@ func _physics_process(delta: float) -> void:
 
 
 func _process(delta: float) -> void:
+	_client_interpolate(delta)
+	_update_rig_motion(delta)
+
+
+func _client_interpolate(delta: float) -> void:
 	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
 		return
 	if not _has_snapshot:
@@ -220,6 +233,20 @@ func _process(delta: float) -> void:
 		return
 	position = smoothed_position(position, sync_position, delta)
 	rotation.y = lerp_angle(rotation.y, sync_yaw, interp_weight(delta))
+
+
+## Feeds the rig the XZ speed of the visual position (interpolated on clients,
+## the body position on the server). Visual only, no networking.
+func _update_rig_motion(delta: float) -> void:
+	var rig := get_node_or_null("Rig") as CharacterRig
+	if rig == null or delta <= 0.0:
+		return
+	if not _has_visual_position:
+		_last_visual_position = position
+		_has_visual_position = true
+	var moved := position - _last_visual_position
+	_last_visual_position = position
+	rig.set_motion(Vector2(moved.x, moved.z).length() / delta)
 
 
 func _unhandled_input(event: InputEvent) -> void:
