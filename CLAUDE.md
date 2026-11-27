@@ -14,6 +14,7 @@ Folder structure, lib/utils placement, and reuse rules: `docs/CONVENTIONS.md` (b
 ## Asset tools (owner, 2026-11-27)
 - **Blender MCP**: the owner keeps Blender open with the MCP server running. For model work (characters, outfits, props, LODs, GLB export) use the `mcp__blender__*` tools directly, no need to ask first. Follow `docs/design/ART_DIRECTION.md` and the `godot-export` workflow.
 - **Codex image generation**: spawn Codex CLI freely to generate textures, images and other assets for the game: `codex exec -C d:\FinalRun --enable image_generation "<prompt>"` (codex-cli 0.160.1, `image_generation` is stable and on by default). Tell it the exact output path under `assets/` and the size/format; review every image before committing.
+- **Codex follow-ups**: when Codex asks back (open questions, a `.failed` marker), answer by resuming its thread `FinalRun` from this workspace (sessions are filtered by cwd, so run in `d:\FinalRun`): `codex exec resume FinalRun -c sandbox_mode="workspace-write" - < answers.md` (prompt on stdin). The supervisor decides the answers with sensible defaults, tells the owner which ones, and keeps going on the goal without waiting.
 - Originality still applies: our own designs only, never imitate or reuse another game's characters, art or assets (nothing from `E:\ROBRUN`). Record the source/license of every asset in `assets/CREDITS.md` (generated ones: "generated with Codex image generation, owned by the project").
 
 ## Git

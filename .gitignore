@@ -19,3 +19,4 @@ ui/web/node_modules/
 # Codex completion markers
 docs/ui-design/.success
 docs/ui-design/.failed
+docs/ui-design/.answers-*
