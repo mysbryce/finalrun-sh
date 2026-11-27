@@ -47,3 +47,6 @@ godot_console --headless --path . -s res://tests/run_tests.gd
 - Web UI source is `ui/web/` (layout in `docs/design/WEB_UI.md`); build output `ui/dist/` is generated: change the source and rebuild, never edit `ui/dist/`.
 - Instance SubViewports use own_world_3d, so Viewport.world_3d is null there. Get a node's world with Node3D.get_world_3d() (or Viewport.find_world_3d()).
 - The web page is zoomed with CSS `zoom` on `<html>` (`app/uiScale.ts`): anything placed with `position: fixed` from screen-px coords (dnd-kit `DragOverlay`, popovers at the cursor) must cancel the zoom, see `features/inventory/dragZoom.ts`.
+- Keys never reach the web page in game: the CEF browser has `FOCUS_NONE` and `_set_panel_input` only frees the mouse. Keyboard shortcuts for a screen (Enter, Esc, Tab) are handled in Godot (`Main._unhandled_input`) and forwarded; page key handlers only work in the dev preview.
+- The Hud is a `CanvasLayer` (layer 1) whose full-screen browser texture eats clicks while a panel is open: native Godot UI that must show above it needs its own `CanvasLayer` with a higher layer (constant in `GameConst`).
+- `Hud.page_ready`-style signals fire on every page load (also after boot, e.g. Vite reloads with `--ui-dev`): handlers for one-off flows must null-check their state object.
