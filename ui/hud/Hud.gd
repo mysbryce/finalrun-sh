@@ -24,6 +24,16 @@ signal lobby_join_requested
 signal lobby_news_retry_requested
 ## The pause menu confirmed Leave to Lobby. Main closes the connection.
 signal session_leave_requested
+## The pause party panel asked for a party action (create, invite, accept,
+## decline, leave, kick). peer_id is 0 for create and leave. Main forwards it.
+signal party_action_requested(verb: String, peer_id: int)
+
+const PARTY_VERBS_WITH_TARGET := {
+	"party.invite": ["invite", "targetPeerId"],
+	"party.kick": ["kick", "targetPeerId"],
+	"party.accept": ["accept", "inviterPeerId"],
+	"party.decline": ["decline", "inviterPeerId"],
+}
 
 
 static func role_text(role: int) -> String:
@@ -117,6 +127,69 @@ static func party_entry(peer_id: int, leader_id: int, present: bool, health: int
 		"life": life_text(life) if present else "?",
 		"leader": peer_id == leader_id,
 		"away": not present,
+	}
+
+
+## PartyPeer for the pause party panel.
+static func party_peer(peer_id: int, self_id: int, leader_id: int) -> Dictionary:
+	return {
+		"peerId": peer_id,
+		"name": player_name(peer_id),
+		"leader": peer_id == leader_id,
+		"isSelf": peer_id == self_id,
+		"presence": "in_session",
+		"canKick": self_id == leader_id and peer_id != self_id,
+	}
+
+
+## PartyView for the pause menu. `invite` is {inviter, expires_ms} or empty;
+## `pending` is the last requested verb or "".
+static func party_view(
+	self_id: int,
+	members: Array,
+	leader_id: int,
+	roster: Array,
+	invite: Dictionary,
+	pending: String,
+	now_ms: int
+) -> Dictionary:
+	var in_party := not members.is_empty()
+	var member_ids: Array[int] = []
+	if in_party:
+		member_ids.append(self_id)
+	for member: Variant in members:
+		if not member_ids.has(int(member)):
+			member_ids.append(int(member))
+	var can_invite := member_ids.size() < GameConst.PARTY_MAX_MEMBERS
+	var peers: Array = []
+	for member_id: int in member_ids:
+		peers.append(party_peer(member_id, self_id, leader_id))
+	var players: Array = []
+	for peer: Variant in roster:
+		var peer_id := int(peer)
+		if peer_id == self_id or member_ids.has(peer_id):
+			continue
+		players.append({"peerId": peer_id, "name": player_name(peer_id), "canInvite": can_invite})
+	var incoming: Variant = null
+	if not invite.is_empty() and int(invite.get("expires_ms", 0)) > now_ms:
+		var inviter := int(invite.get("inviter", 0))
+		incoming = {
+			"inviterPeerId": inviter,
+			"name": player_name(inviter),
+			"expiresInSeconds": seconds_left(int(invite.get("expires_ms", 0)), now_ms),
+			# ponytail: the server still checks role and life on accept and replies with notifications.
+			"canAccept": not in_party,
+		}
+	return {
+		"members": peers,
+		"players": players,
+		"incoming": incoming,
+		"canCreate": not in_party,
+		"canInvite": can_invite,
+		"canLeave": in_party,
+		"pending": null if pending == "" else pending,
+		# ponytail: outcomes arrive as notifications; no issue projection yet.
+		"issue": null,
 	}
 
 
@@ -278,6 +351,17 @@ static func route_request(request: Dictionary, open_target: int) -> Dictionary:
 	if method == "session.leave":
 		# ponytail: the contract's busy / not_available errors are deferred.
 		return _ok_reply(id, {}, ["session_leave"])
+	if method == "party.create":
+		return _ok_reply(id, {}, ["party", "create", 0])
+	if method == "party.leave":
+		return _ok_reply(id, {}, ["party", "leave", 0])
+	if PARTY_VERBS_WITH_TARGET.has(method):
+		var spec: Array = PARTY_VERBS_WITH_TARGET[method]
+		var raw: Variant = params.get(spec[1])
+		var peer_id := int(raw) if (raw is int or raw is float) else 0
+		if peer_id <= 0:
+			return _error_reply(id, "bad_params")
+		return _ok_reply(id, {}, ["party", spec[0], peer_id])
 	if method == "settings.open":
 		# ponytail: not_available until the settings card.
 		return _error_reply(id, "not_available")
@@ -293,6 +377,12 @@ var _party_members: Array[int] = []
 var _party_leader: int = 0
 var _fps: int = 0
 var _ping: int = 0
+var _roster: Array[int] = []
+## {inviter, expires_ms} in ticks ms; empty when there is no invite.
+var _invite: Dictionary = {}
+var _party_pending: String = ""
+var _party_pending_ms: int = 0
+var _last_party_json: String = ""
 
 var _browser: Control = null
 var _page_ready: bool = false
@@ -353,6 +443,28 @@ func set_party(info: Dictionary) -> void:
 	else:
 		_party_members = []
 		_party_leader = 0
+	_party_pending = ""
+
+
+func set_roster(peers: Array) -> void:
+	_roster = []
+	for peer: Variant in peers:
+		_roster.append(int(peer))
+	_party_pending = ""
+
+
+func set_invite(inviter_id: int, ttl_seconds: int, now_ms: int) -> void:
+	_invite = {"inviter": inviter_id, "expires_ms": now_ms + ttl_seconds * 1000}
+	_party_pending = ""
+
+
+## Session over (left or disconnected): forget the whole party projection.
+func clear_party_session() -> void:
+	_party_members = []
+	_party_leader = 0
+	_roster = []
+	_invite = {}
+	_party_pending = ""
 
 
 func set_net(fps: int, ping_ms: int) -> void:
@@ -405,6 +517,20 @@ func _process(_delta: float) -> void:
 	if json != _last_hud_json:
 		_last_hud_json = json
 		_send_json(json)
+	if self_id > 0:
+		_publish_party(self_id, Time.get_ticks_msec())
+
+
+func _publish_party(self_id: int, ticks_ms: int) -> void:
+	if _party_pending != "" and ticks_ms - _party_pending_ms >= GameConst.PARTY_PENDING_TIMEOUT_MS:
+		_party_pending = ""
+	if not _invite.is_empty() and int(_invite.get("expires_ms", 0)) <= ticks_ms:
+		_invite = {}
+	var view := party_view(self_id, _party_members, _party_leader, _roster, _invite, _party_pending, ticks_ms)
+	var json := JSON.stringify(view)
+	if json != _last_party_json:
+		_last_party_json = json
+		publish("party", view)
 
 
 func _on_ipc_message(message: String) -> void:
@@ -415,6 +541,7 @@ func _on_ipc_message(message: String) -> void:
 	if type == "ready":
 		_page_ready = true
 		_last_hud_json = ""
+		_last_party_json = ""
 		_send_json(JSON.stringify({"type": "route", "to": _route}))
 		for snapshot_json: String in _snapshots.values():
 			_send_json(snapshot_json)
@@ -449,6 +576,13 @@ func _on_ipc_message(message: String) -> void:
 			close_pause()
 		elif action.size() == 1 and action[0] == "session_leave":
 			session_leave_requested.emit()
+		elif action.size() == 3 and action[0] == "party":
+			var verb := String(action[1])
+			_party_pending = verb
+			_party_pending_ms = Time.get_ticks_msec()
+			if verb == "decline":
+				_invite = {}
+			party_action_requested.emit(verb, int(action[2]))
 
 
 ## Sends a snapshot message for `boot`, `lobby`, `party`, `settings`, `transfer`

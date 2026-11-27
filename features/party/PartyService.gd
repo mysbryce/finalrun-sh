@@ -56,7 +56,7 @@ func create_party(peer_id: int) -> Party:
 	return party
 
 
-func invite_to_party(inviter_id: int, target_id: int) -> bool:
+func invite_to_party(inviter_id: int, target_id: int, now_ms: int = Time.get_ticks_msec()) -> bool:
 	if inviter_id <= 0 or target_id <= 0 or inviter_id == target_id:
 		return false
 	if not bool(_is_player_known.call(target_id)):
@@ -71,14 +71,17 @@ func invite_to_party(inviter_id: int, target_id: int) -> bool:
 	_pending_invites[target_id] = {
 		"inviter": inviter_id,
 		"party_id": party.id,
+		"expires_ms": now_ms + GameConst.PARTY_INVITE_TTL_MS,
 	}
 	_notify.call(target_id, "Party invite from player %d" % inviter_id)
-	_send_client_rpc.call(target_id, "client_party_invite", [inviter_id])
+	_send_client_rpc.call(
+		target_id, "client_party_invite", [inviter_id, GameConst.PARTY_INVITE_TTL_MS / 1000]
+	)
 	_notify.call(inviter_id, "Invite sent to player %d" % target_id)
 	return true
 
 
-func accept_party_invite(target_id: int, inviter_id: int) -> bool:
+func accept_party_invite(target_id: int, inviter_id: int, now_ms: int = Time.get_ticks_msec()) -> bool:
 	var invite: Variant = _pending_invites.get(target_id)
 	if invite == null:
 		return false
@@ -86,6 +89,9 @@ func accept_party_invite(target_id: int, inviter_id: int) -> bool:
 	if int(invite_data.get("inviter", 0)) != inviter_id:
 		return false
 	_pending_invites.erase(target_id)
+	if now_ms >= int(invite_data.get("expires_ms", 0)):
+		_notify.call(target_id, "Party invite expired")
+		return false
 	if get_party(target_id) != null:
 		return false
 	var party := get_party(inviter_id)
@@ -98,6 +104,17 @@ func accept_party_invite(target_id: int, inviter_id: int) -> bool:
 	_peer_party[target_id] = party.id
 	_notify.call(target_id, "Joined the party")
 	send_party_state(party)
+	return true
+
+
+func decline_party_invite(target_id: int, inviter_id: int) -> bool:
+	var invite: Variant = _pending_invites.get(target_id)
+	if not invite is Dictionary:
+		return false
+	if int((invite as Dictionary).get("inviter", 0)) != inviter_id:
+		return false
+	_pending_invites.erase(target_id)
+	_notify.call(inviter_id, "Player %d declined the invite" % target_id)
 	return true
 
 

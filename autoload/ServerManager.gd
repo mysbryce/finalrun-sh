@@ -8,7 +8,8 @@ extends Node
 ## Gameplay events are never broadcast.
 
 signal notification_received(text: String)
-signal party_invite_received(inviter_id: int)
+signal party_invite_received(inviter_id: int, ttl_seconds: int)
+signal party_roster_received(peers: Array)
 signal party_changed_client(party_info: Dictionary)
 signal search_contents_received(target_peer_id: int, items: Array)
 signal search_closed_received(target_peer_id: int, reason: String)
@@ -163,6 +164,25 @@ func server_request_party_accept(inviter_peer_id: int) -> void:
 
 
 @rpc("any_peer", "call_remote", "reliable")
+func server_request_party_decline(inviter_peer_id: int) -> void:
+	var sender: int = multiplayer.get_remote_sender_id()
+	if _can_accept_request(sender):
+		_parties.decline_party_invite(sender, inviter_peer_id)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func server_request_party_roster() -> void:
+	var sender: int = multiplayer.get_remote_sender_id()
+	if not _can_accept_request(sender):
+		return
+	var peers: Array = []
+	for peer_id: int in _players.peer_ids():
+		if peer_id != sender:
+			peers.append(peer_id)
+	rpc_id(sender, "client_party_roster", peers)
+
+
+@rpc("any_peer", "call_remote", "reliable")
 func server_request_party_leave() -> void:
 	var sender: int = multiplayer.get_remote_sender_id()
 	if not _can_accept_request(sender):
@@ -314,8 +334,13 @@ func client_mask_channel(seconds: float) -> void:
 
 
 @rpc("authority", "call_remote", "reliable")
-func client_party_invite(inviter_id: int) -> void:
-	party_invite_received.emit(inviter_id)
+func client_party_invite(inviter_id: int, ttl_seconds: int) -> void:
+	party_invite_received.emit(inviter_id, ttl_seconds)
+
+
+@rpc("authority", "call_remote", "reliable")
+func client_party_roster(peers: Array) -> void:
+	party_roster_received.emit(peers)
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -344,6 +369,8 @@ func request_join_map(map_name: String) -> void: _send_client_request("server_re
 func request_party_create() -> void: _send_client_request("server_request_party_create")
 func request_party_invite(target_peer_id: int) -> void: _send_client_request("server_request_party_invite", [target_peer_id])
 func request_party_accept(inviter_peer_id: int) -> void: _send_client_request("server_request_party_accept", [inviter_peer_id])
+func request_party_decline(inviter_peer_id: int) -> void: _send_client_request("server_request_party_decline", [inviter_peer_id])
+func request_party_roster() -> void: _send_client_request("server_request_party_roster")
 func request_party_leave() -> void: _send_client_request("server_request_party_leave")
 func request_party_kick(target_peer_id: int) -> void: _send_client_request("server_request_party_kick", [target_peer_id])
 func request_sell_loot() -> void: _send_client_request("server_request_sell_loot")

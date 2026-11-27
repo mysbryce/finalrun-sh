@@ -4,6 +4,8 @@ import { request } from '@/lib/ipc/bridge'
 import { Button } from '@/lib/ui/Button'
 import { Modal } from '@/lib/ui/Modal'
 import { Panel } from '@/lib/ui/Panel'
+import { PartyPanel } from './PartyPanel'
+import { usePartyStore } from './partyStore'
 
 /** Absolute box in base px, relative to the pause panel (docs/ui-design/04-hud.md, Pause menu A02-A09). */
 const box = (left: number, top: number, width: number, height: number): CSSProperties => ({
@@ -22,6 +24,7 @@ export function PauseScreen() {
   const [confirm, setConfirm] = useState<Confirm>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const party = usePartyStore((s) => s.party)
 
   const send = (method: string, failText: string) => {
     setError(null)
@@ -72,6 +75,7 @@ export function PauseScreen() {
           )}
         </div>
       </Panel>
+      {party !== null && <PartyPanel party={party} />}
 
       {confirm === 'leave' && (
         <Modal

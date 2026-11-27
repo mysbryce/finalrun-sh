@@ -370,3 +370,86 @@ func test_headless_has_no_browser() -> void:
 	hud.free()
 	assert_eq(count, 0, "headless HUD creates no browser")
 	assert_false(Hud.can_use_browser(), "no browser available in headless tests")
+
+
+func test_party_view_no_party() -> void:
+	var view := Hud.party_view(10, [], 0, [10, 11, 12], {}, "", 0)
+	assert_true(view["canCreate"], "no party can create")
+	assert_false(view["canLeave"], "no party cannot leave")
+	assert_eq(view["members"], [], "no party has no members")
+	assert_eq(view["players"].size(), 2, "roster minus self")
+	assert_eq(view["players"][0]["peerId"], 11, "first roster player")
+	assert_eq(view["players"][0]["name"], "Player 11", "roster player name")
+	assert_true(view["players"][0]["canInvite"], "roster player invitable")
+	assert_eq(view["incoming"], null, "no invite")
+	assert_eq(view["pending"], null, "no pending")
+	assert_eq(view["issue"], null, "no issue")
+
+
+func test_party_view_leader_two_members() -> void:
+	var view := Hud.party_view(10, [10, 11], 10, [10, 11, 12], {}, "invite", 0)
+	var members: Array = view["members"]
+	assert_eq(members.size(), 2, "two members")
+	assert_eq(members[0]["peerId"], 10, "self listed")
+	assert_true(members[0]["isSelf"], "self flagged")
+	assert_true(members[0]["leader"], "self is leader")
+	assert_false(members[0]["canKick"], "cannot kick self")
+	assert_true(members[1]["canKick"], "can kick the other member")
+	assert_eq(members[1]["presence"], "in_session", "presence in session")
+	assert_eq(view["players"].size(), 1, "members removed from players")
+	assert_eq(view["players"][0]["peerId"], 12, "only non-member left")
+	assert_false(view["canCreate"], "in party cannot create")
+	assert_true(view["canLeave"], "in party can leave")
+	assert_true(view["canInvite"], "two members can invite")
+	assert_eq(view["pending"], "invite", "pending verb")
+
+
+func test_party_view_member_cannot_kick() -> void:
+	var view := Hud.party_view(11, [10, 11], 10, [], {}, "", 0)
+	for member: Dictionary in view["members"]:
+		assert_false(member["canKick"], "non-leader cannot kick")
+
+
+func test_party_view_full_party() -> void:
+	var view := Hud.party_view(10, [10, 11, 12], 10, [10, 11, 12, 13], {}, "", 0)
+	assert_false(view["canInvite"], "full party cannot invite")
+	assert_eq(view["players"].size(), 1, "one outsider")
+	assert_false(view["players"][0]["canInvite"], "outsider not invitable when full")
+
+
+func test_party_view_invite_countdown() -> void:
+	var now := 100000
+	var invite := {"inviter": 12, "expires_ms": now + 12200}
+	var view := Hud.party_view(10, [], 0, [], invite, "", now)
+	var incoming: Dictionary = view["incoming"]
+	assert_eq(incoming["inviterPeerId"], 12, "inviter id")
+	assert_eq(incoming["name"], "Player 12", "inviter name")
+	assert_eq(incoming["expiresInSeconds"], 13, "remaining seconds round up")
+	assert_true(incoming["canAccept"], "not in a party can accept")
+	var expired := Hud.party_view(10, [], 0, [], {"inviter": 12, "expires_ms": now}, "", now)
+	assert_eq(expired["incoming"], null, "expired invite hidden")
+	var in_party := Hud.party_view(10, [10, 11], 10, [], invite, "", now)
+	assert_false(in_party["incoming"]["canAccept"], "in a party cannot accept")
+
+
+func test_route_party_methods() -> void:
+	var create := Hud.route_request({"id": 1, "method": "party.create", "params": {}}, 0)
+	var leave := Hud.route_request({"id": 2, "method": "party.leave", "params": {}}, 0)
+	var invite := Hud.route_request({"id": 3, "method": "party.invite", "params": {"targetPeerId": 5}}, 0)
+	var kick := Hud.route_request({"id": 4, "method": "party.kick", "params": {"targetPeerId": 6.0}}, 0)
+	var accept := Hud.route_request({"id": 5, "method": "party.accept", "params": {"inviterPeerId": 7}}, 0)
+	var decline := Hud.route_request({"id": 6, "method": "party.decline", "params": {"inviterPeerId": 8}}, 0)
+	var missing := Hud.route_request({"id": 7, "method": "party.invite", "params": {}}, 0)
+	var negative := Hud.route_request({"id": 8, "method": "party.kick", "params": {"targetPeerId": -1}}, 0)
+	var wrong_key := Hud.route_request({"id": 9, "method": "party.accept", "params": {"targetPeerId": 7}}, 0)
+	assert_eq(create["action"], ["party", "create", 0], "create action")
+	assert_eq(leave["action"], ["party", "leave", 0], "leave action")
+	assert_eq(invite["action"], ["party", "invite", 5], "invite action")
+	assert_eq(kick["action"], ["party", "kick", 6], "kick action from a JSON float")
+	assert_eq(accept["action"], ["party", "accept", 7], "accept action")
+	assert_eq(decline["action"], ["party", "decline", 8], "decline action")
+	assert_true(invite["reply"]["ok"], "invite replies ok")
+	assert_eq(missing["reply"].get("error"), "bad_params", "missing id is bad_params")
+	assert_eq(negative["reply"].get("error"), "bad_params", "negative id is bad_params")
+	assert_eq(wrong_key["reply"].get("error"), "bad_params", "accept needs inviterPeerId")
+	assert_eq(missing["action"], [], "bad_params has no action")

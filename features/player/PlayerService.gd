@@ -105,6 +105,14 @@ func is_peer_known(peer_id: int) -> bool:
 	return _states.has(peer_id)
 
 
+## Connected players known to the server.
+func peer_ids() -> Array[int]:
+	var ids: Array[int] = []
+	for peer_id: Variant in _states.keys():
+		ids.append(int(peer_id))
+	return ids
+
+
 # --- Connection lifecycle ----------------------------------------------------
 
 func handle_peer_joined(peer_id: int) -> void:

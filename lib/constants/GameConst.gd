@@ -53,6 +53,8 @@ const ZONE_NAMES: Array[String] = [ZONE_EXTRACT, ZONE_POLICE_STATION]
 # --- Party -------------------------------------------------------------------
 
 const PARTY_MAX_MEMBERS: int = 3
+const PARTY_INVITE_TTL_MS: int = 30000  # server-side invite lifetime
+const PARTY_PENDING_TIMEOUT_MS: int = 5000  # client clears the pending flag after this
 
 # --- Player rules ------------------------------------------------------------
 

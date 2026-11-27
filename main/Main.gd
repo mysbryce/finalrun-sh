@@ -71,6 +71,7 @@ func _start_client() -> void:
 	_hud.lobby_join_requested.connect(_on_lobby_join)
 	_hud.lobby_news_retry_requested.connect(_on_lobby_news_retry)
 	_hud.session_leave_requested.connect(_leave_session)
+	_hud.party_action_requested.connect(_on_party_action)
 	_endpoint = BootFlow.parse_endpoint(OS.get_cmdline_user_args())
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	ServerManager.search_contents_received.connect(_on_search_contents)
@@ -79,6 +80,8 @@ func _start_client() -> void:
 	ServerManager.hud_state_received.connect(_on_hud_state)
 	ServerManager.mask_channel_received.connect(_on_hud_mask_channel)
 	ServerManager.party_changed_client.connect(_on_hud_party)
+	ServerManager.party_invite_received.connect(_on_party_invite)
+	ServerManager.party_roster_received.connect(_on_party_roster)
 	if not Hud.can_use_browser():
 		_connect_to_server()
 	else:
@@ -87,7 +90,7 @@ func _start_client() -> void:
 		_hud.show_boot(_boot.view())
 	print(
 		"[Main] Controls: 1 Motel | 2 LootyBay | 3 House | 4 Center | 5 sell loot | "
-		+ "F mask | G cop duty | H surrender | P create party | R revive | X finish | "
+		+ "F mask | G cop duty | H surrender | R revive | X finish | "
 		+ "C cuff | E lockpick/search | V smash | T take | Q close | LMB fire | Esc pause menu"
 	)
 
@@ -157,6 +160,7 @@ func _show_lobby(error: Variant) -> void:
 	_lobby.error = error
 	_create_client_view_container()
 	_search_items.clear()
+	_hud.clear_party_session()
 	# ponytail: 3D preview viewport when the semi-realistic characters land.
 	_hud.show_lobby(_lobby.view())
 	print("[Main] Lobby shown")
@@ -214,6 +218,7 @@ func _leave_session() -> void:
 	_peer = null
 	multiplayer.multiplayer_peer = null
 	_search_items.clear()
+	_hud.clear_party_session()
 	_show_lobby(null)
 
 
@@ -451,6 +456,35 @@ func _on_hud_party(info: Dictionary) -> void:
 		_hud.set_party(info)
 
 
+func _on_party_invite(inviter_id: int, ttl_seconds: int) -> void:
+	if _hud == null:
+		return
+	_hud.set_invite(inviter_id, ttl_seconds, Time.get_ticks_msec())
+	_hud.add_notification("Party invite from %s: press Esc to answer" % Hud.player_name(inviter_id), _client_now_ms())
+
+
+func _on_party_roster(peers: Array) -> void:
+	if _hud != null:
+		_hud.set_roster(peers)
+
+
+## Pause party panel request -> the matching server facade.
+func _on_party_action(verb: String, peer_id: int) -> void:
+	match verb:
+		"create":
+			ServerManager.request_party_create()
+		"invite":
+			ServerManager.request_party_invite(peer_id)
+		"accept":
+			ServerManager.request_party_accept(peer_id)
+		"decline":
+			ServerManager.request_party_decline(peer_id)
+		"leave":
+			ServerManager.request_party_leave()
+		"kick":
+			ServerManager.request_party_kick(peer_id)
+
+
 ## Round-trip time to the server in ms, 0 when unknown.
 func _client_ping_ms() -> int:
 	var enet := multiplayer.multiplayer_peer as ENetMultiplayerPeer
@@ -540,6 +574,7 @@ func _on_escape() -> void:
 		_hud.close_pause()
 	elif not _hud.is_panel_open() and _is_connected() and _local_player() != null:
 		_hud.open_pause()
+		ServerManager.request_party_roster()
 
 
 func _is_connected() -> bool:
@@ -593,8 +628,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			ServerManager.request_cop_duty()
 		KEY_H:
 			ServerManager.request_surrender()
-		KEY_P:
-			ServerManager.request_party_create()
 		KEY_R:
 			var revive_target := _target_peer_id()
 			if revive_target > 0:
