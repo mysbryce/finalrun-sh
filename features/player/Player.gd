@@ -41,6 +41,7 @@ var _input_dir: Vector2 = Vector2.ZERO
 var _movement_sent: bool = false
 var _send_accumulator: float = 0.0
 var _input_enabled: bool = false
+var _camera: PlayerCamera = null
 
 
 func _ready() -> void:
@@ -195,6 +196,8 @@ func _server_physics(delta: float) -> void:
 	var direction := Vector3(_input_dir.x, 0.0, _input_dir.y)
 	if direction.length_squared() > 1.0:
 		direction = direction.normalized()
+	if speed > 0.0 and direction.length_squared() > 0.0001:
+		rotation.y = turn_toward(rotation.y, facing_yaw(direction), delta)
 	velocity.x = direction.x * speed
 	velocity.z = direction.z * speed
 	move_and_slide()
@@ -232,14 +235,43 @@ func _read_input() -> Vector2:
 		z += 1.0
 	if Input.is_physical_key_pressed(KEY_W):
 		z -= 1.0
-	return Vector2(x, z).limit_length(1.0)
+	var raw := Vector2(x, z)
+	if _camera != null and is_instance_valid(_camera):
+		return camera_relative_input(raw, _camera.get_yaw())
+	return raw.limit_length(1.0)
 
 
 func _update_control_state() -> void:
 	if not is_inside_tree() or not multiplayer.has_multiplayer_peer():
 		_input_enabled = false
-		return
-	_input_enabled = not multiplayer.is_server() and peer_id == multiplayer.get_unique_id()
+	else:
+		_input_enabled = not multiplayer.is_server() and peer_id == multiplayer.get_unique_id()
+	_sync_camera()
+
+
+func _sync_camera() -> void:
+	if _input_enabled and _camera == null:
+		_camera = PlayerCamera.new()
+		_camera.name = "PlayerCamera"
+		_camera.target = self
+		add_child.call_deferred(_camera)
+	elif not _input_enabled and _camera != null:
+		_camera.queue_free()
+		_camera = null
+
+
+## Turns raw WASD (x = right, y = back) into a world XZ direction for a camera yaw.
+static func camera_relative_input(raw: Vector2, yaw: float) -> Vector2:
+	return raw.limit_length(1.0).rotated(-yaw)
+
+
+## Body yaw that faces a world-space move direction (Godot forward is -Z).
+static func facing_yaw(direction: Vector3) -> float:
+	return atan2(-direction.x, -direction.z)
+
+
+static func turn_toward(current_yaw: float, target_yaw: float, delta: float) -> float:
+	return lerp_angle(current_yaw, target_yaw, clampf(GameConst.PLAYER_TURN_SPEED * delta, 0.0, 1.0))
 
 
 func _now_ms() -> int:

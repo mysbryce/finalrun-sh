@@ -78,6 +78,14 @@ const PLAYER_GRAVITY: float = 18.0
 const PLAYER_INPUT_SEND_INTERVAL: float = 0.05
 const PLAYER_MAX_HEALTH: int = 100
 
+# Camera
+const CAMERA_PIVOT_HEIGHT: float = 1.6
+const CAMERA_DISTANCE: float = 4.5
+const CAMERA_MOUSE_SENSITIVITY: float = 0.003  # radians per pixel
+const CAMERA_PITCH_MIN: float = -1.2           # radians, looking down
+const CAMERA_PITCH_MAX: float = 0.6            # radians, looking up
+const PLAYER_TURN_SPEED: float = 12.0          # lerp_angle rate per second
+
 # --- Downed state ------------------------------------------------------------
 
 const DOWNED_BLEEDOUT_SECONDS: float = 60.0
