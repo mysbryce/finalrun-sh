@@ -33,20 +33,28 @@ Status: `[x]` done · `[~]` in progress · `[ ]` planned. Each item ships as one
 - [ ] Local 1 server + 3 clients smoke test script
 
 ## Phase 3: Heist loop `[ ]`
+Adopted from [genre reference](research/GENRE_REFERENCE.md) (owner decision 2026-11-27).
 - [ ] Items and loot tables as Resources (`lib/data/`, `data/*.tres`)
+- [ ] **Bag capacity + bag tiers**: loot has size/weight, bag tier sets capacity, bigger bags bought in Center
+- [ ] **Multi-step heists**: alarm box to disable (some cannot be), clerk NPC held at gunpoint or calls police, cameras to break, loot, escape
+- [ ] **Key chains**: tiered keys; a low key opens a room holding a higher key, chaining to the best loot
 - [ ] Lockpick and smash interactions, big heist objective with timer
 - [ ] Extraction zone flow, loot drop pickup
+- [ ] **Fence points** inside LootyBay: sell at a bonus, PvP hotspot (Center stays the safe, normal-price market)
 - [ ] PvE guards (simple AI)
 
 ## Phase 4: Cops `[ ]`
 - [ ] Police station duty, free loadout and vehicle
+- [ ] **Cop slot cap** per LootyBay instance
 - [ ] Surrender prompt and arrest flow, seizure rewards
 - [ ] Heist alert UI and map markers
 
 ## Phase 5: Economy and housing `[ ]`
 - [ ] Motel cash stash
+- [ ] **Solo bonus**: solo players start with higher notoriety (better loot quality and sell price) to balance vs parties of 3
 - [ ] Center market: sell with notoriety multiplier, upgrades, player trading
 - [ ] House plots, storage, laundering desk (dirty → clean cash)
+- [ ] **Raidable houses**: breach consumable vs house security level. Open design question: House is a no-combat zone today, so decide how raids work (raid window, combat allowed only inside a breached house, owner offline rules) in a design doc first.
 
 ## Phase 6: Customization and skins `[ ]`
 All cosmetics are `CosmeticData` Resources (`id`, `slot`, `mesh/material`, `rarity`). Pure visual: no stat changes.
@@ -63,6 +71,7 @@ All cosmetics are `CosmeticData` Resources (`id`, `slot`, `mesh/material`, `rari
 - [ ] Player save data (DB), auth
 - [ ] Multiple big servers, server browser / matchmaker
 - [ ] Linux dedicated server export, Docker deploy
+- [ ] Server wipe cycle with carry-over meta progression (cycle length decided here)
 
 ## Phase 8: Polish `[ ]`
 - [ ] Art, audio, VFX
