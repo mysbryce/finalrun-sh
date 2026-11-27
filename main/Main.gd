@@ -12,6 +12,7 @@ var _search_items: Dictionary = {}
 var _hud: Hud = null
 var _last_life_state: int = -1
 var _last_bleedout_seconds: int = -1
+var _next_net_ms: int = 0
 
 
 func _ready() -> void:
@@ -65,6 +66,7 @@ func _start_client() -> void:
 	ServerManager.notification_received.connect(_on_hud_notification)
 	ServerManager.hud_state_received.connect(_on_hud_state)
 	ServerManager.mask_channel_received.connect(_on_hud_mask_channel)
+	ServerManager.party_changed_client.connect(_on_hud_party)
 	print("[Main] Connecting to 127.0.0.1:%d" % GameConst.PORT)
 	print(
 		"[Main] Controls: 1 Motel | 2 LootyBay | 3 House | 4 Center | 5 sell loot | "
@@ -153,6 +155,11 @@ func _process(_delta: float) -> void:
 	var player := _local_player()
 	if _hud != null:
 		_hud.set_player(player)
+		_hud.set_instance(_current_instance())
+		var ticks := Time.get_ticks_msec()
+		if ticks >= _next_net_ms:
+			_next_net_ms = ticks + 1000
+			_hud.set_net(int(Engine.get_frames_per_second()), _client_ping_ms())
 	if player == null:
 		return
 	var state: int = int(player.get("life_state"))
@@ -193,6 +200,22 @@ func _on_hud_state(state: Dictionary) -> void:
 func _on_hud_mask_channel(seconds: float) -> void:
 	if _hud != null:
 		_hud.set_mask_channel(seconds, _client_now_ms())
+
+
+func _on_hud_party(info: Dictionary) -> void:
+	if _hud != null:
+		_hud.set_party(info)
+
+
+## Round-trip time to the server in ms, 0 when unknown.
+func _client_ping_ms() -> int:
+	var enet := multiplayer.multiplayer_peer as ENetMultiplayerPeer
+	if enet == null:
+		return 0
+	var server := enet.get_peer(1)
+	if server == null:
+		return 0
+	return int(server.get_statistic(ENetPacketPeer.PEER_ROUND_TRIP_TIME))
 
 
 func _client_now_ms() -> int:

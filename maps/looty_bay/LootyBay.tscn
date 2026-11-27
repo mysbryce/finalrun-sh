@@ -228,6 +228,7 @@ surface_material_override/0 = SubResource("StandardMaterial3D_crate")
 [node name="InteractArea" type="Node3D" parent="Lootables/Crate01"]
 script = ExtResource("2_interact")
 prompt = "E lockpick | V smash"
+title = "Loot crate"
 
 [node name="Crate02" type="Node3D" parent="Lootables"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0.4, -16)
@@ -242,6 +243,7 @@ surface_material_override/0 = SubResource("StandardMaterial3D_crate")
 [node name="InteractArea" type="Node3D" parent="Lootables/Crate02"]
 script = ExtResource("2_interact")
 prompt = "E lockpick | V smash"
+title = "Loot crate"
 
 [node name="Crate03" type="Node3D" parent="Lootables"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0.4, -10)
@@ -256,3 +258,4 @@ surface_material_override/0 = SubResource("StandardMaterial3D_crate")
 [node name="InteractArea" type="Node3D" parent="Lootables/Crate03"]
 script = ExtResource("2_interact")
 prompt = "E lockpick | V smash"
+title = "Loot crate"

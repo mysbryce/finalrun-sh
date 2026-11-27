@@ -9,6 +9,9 @@ const GROUP := &"interact_areas"
 ## Prompt text shown by the HUD, e.g. "E lockpick | V smash".
 @export var prompt: String = "Interact"
 
+## Card title shown above the prompt, e.g. "Loot crate".
+@export var title: String = ""
+
 
 func _enter_tree() -> void:
 	add_to_group(GROUP)

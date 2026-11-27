@@ -38,7 +38,7 @@ const MAX_HEALTH: int = GameConst.PLAYER_MAX_HEALTH
 
 var instance_id: String = ""
 var map_name: String = ""
-var health: int = MAX_HEALTH
+@export var health: int = MAX_HEALTH
 
 var _role_controller: PlayerRoleController = null
 var _input_dir: Vector2 = Vector2.ZERO

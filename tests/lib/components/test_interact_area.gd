@@ -44,3 +44,10 @@ func test_pick_nearest_tie_keeps_first() -> void:
 		0,
 		"ties keep the first index"
 	)
+
+
+func test_title_defaults_empty() -> void:
+	var area := InteractArea.new()
+	var title := area.title
+	area.free()
+	assert_eq(title, "", "title defaults to empty")

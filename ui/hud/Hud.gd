@@ -59,9 +59,71 @@ static func page_url(user_args: PackedStringArray) -> String:
 	return GameConst.UI_DEV_URL if user_args.has(GameConst.UI_DEV_FLAG) else GameConst.UI_PAGE_URL
 
 
-## HudState for the page. `prompt` shows only while ALIVE.
-static func snapshot(role: int, life: int, downed_deadline_ms: int, mask_end_ms: int,
-		money: Dictionary, prompt: String, notifications: Array, now_ms: int) -> Dictionary:
+## Compass heading in whole degrees 0..359: 0 = north = -Z, 90 = east = +X.
+static func heading_from_yaw(yaw_rad: float) -> int:
+	return posmod(int(round(-rad_to_deg(yaw_rad))), 360)
+
+
+## Interact card from an InteractArea; null when prompt is empty.
+## "E lockpick | V smash" -> actions [{key E, label lockpick}, {key V, label smash}].
+static func interact_of(title: String, prompt: String) -> Variant:
+	if prompt.strip_edges() == "":
+		return null
+	var actions: Array = []
+	for raw_part: String in prompt.split("|"):
+		var part := raw_part.strip_edges()
+		if part == "":
+			continue
+		var space := part.find(" ")
+		if space < 0:
+			actions.append({"key": "", "label": part})
+		else:
+			actions.append({"key": part.left(space), "label": part.substr(space + 1).strip_edges()})
+	return {"title": title, "actions": actions}
+
+
+## Display name for a peer; "Player %d" until a name system exists.
+static func player_name(peer_id: int) -> String:
+	return "Player %d" % peer_id
+
+
+## One other party member. present = their player node is in our instance.
+static func party_entry(peer_id: int, leader_id: int, present: bool, health: int, life: int) -> Dictionary:
+	return {
+		"name": player_name(peer_id),
+		"health": health if present else -1,
+		"maxHealth": GameConst.PLAYER_MAX_HEALTH,
+		"life": life_text(life) if present else "?",
+		"leader": peer_id == leader_id,
+		"away": not present,
+	}
+
+
+## Hotbar slots. ponytail: one weapon exists today, so slot 1 is fixed; build from
+## equipped items once items are Resources (Phase 3).
+static func hotbar() -> Array:
+	var slots: Array = []
+	for i in GameConst.HUD_HOTBAR_SLOTS:
+		slots.append({"label": "Pistol"} if i == 0 else null)
+	return slots
+
+
+## HudState for the page. The interact card shows only while ALIVE.
+static func snapshot(ctx: Dictionary, now_ms: int) -> Dictionary:
+	var role := int(ctx.get("role", -1))
+	var life := int(ctx.get("life", -1))
+	var health := int(ctx.get("health", 0))
+	var downed_deadline_ms := int(ctx.get("downed_deadline_ms", 0))
+	var mask_end_ms := int(ctx.get("mask_end_ms", 0))
+	var money: Dictionary = ctx.get("money", {})
+	var interact_title := String(ctx.get("interact_title", ""))
+	var interact_prompt := String(ctx.get("interact_prompt", ""))
+	var notifications: Array = ctx.get("notifications", [])
+	var heading := int(ctx.get("heading", 0))
+	var self_id := int(ctx.get("self_id", 0))
+	var party: Array = ctx.get("party", [])
+	var fps := int(ctx.get("fps", 0))
+	var ping := int(ctx.get("ping", 0))
 	var timer: Variant = null
 	if life == PlayerRoleController.LifeState.DOWNED:
 		timer = {"label": "Bleeding out", "seconds": seconds_left(downed_deadline_ms, now_ms)}
@@ -73,12 +135,20 @@ static func snapshot(role: int, life: int, downed_deadline_ms: int, mask_end_ms:
 	return {
 		"role": role_text(role),
 		"life": life_text(life),
+		"health": health,
+		"maxHealth": GameConst.PLAYER_MAX_HEALTH,
 		"cash": int(money.get("cash", 0)),
 		"bag": int(money.get("bag_value", 0)),
 		"notoriety": int(money.get("notoriety", 0)),
+		"heading": heading,
 		"timer": timer,
-		"prompt": prompt if life == PlayerRoleController.LifeState.ALIVE else "",
+		"interact": interact_of(interact_title, interact_prompt) if life == PlayerRoleController.LifeState.ALIVE else null,
 		"notifications": texts,
+		"self": {"name": player_name(self_id)},
+		"party": party,
+		"hotbar": hotbar(),
+		"activeSlot": 0,
+		"net": {"fps": fps, "ping": ping},
 	}
 
 
@@ -94,6 +164,11 @@ var _player: Node3D = null
 var _money: Dictionary = {}
 var _mask_end_ms: int = 0
 var _notifications: Array = []
+var _instance: GameInstance = null
+var _party_members: Array[int] = []
+var _party_leader: int = 0
+var _fps: int = 0
+var _ping: int = 0
 
 var _browser: Control = null
 var _page_ready: bool = false
@@ -129,26 +204,68 @@ func add_notification(text: String, now_ms: int) -> void:
 	_notifications = push_notification(_notifications, text, now_ms)
 
 
+func set_instance(instance: GameInstance) -> void:
+	_instance = instance
+
+
+func set_party(info: Dictionary) -> void:
+	if bool(info.get("active", false)):
+		_party_leader = int(info.get("leader_id", 0))
+		_party_members = []
+		for member: int in info.get("members", []):
+			_party_members.append(int(member))
+	else:
+		_party_members = []
+		_party_leader = 0
+
+
+func set_net(fps: int, ping_ms: int) -> void:
+	_fps = fps
+	_ping = ping_ms
+
+
 func _process(_delta: float) -> void:
 	var now_ms := int(Time.get_unix_time_from_system() * 1000.0)
 	_notifications = prune_notifications(_notifications, now_ms)
 	if not _page_ready:
 		return
-	var role := -1
-	var life := -1
-	var downed_deadline_ms := 0
-	var prompt := ""
+	var ctx: Dictionary = {
+		"money": _money,
+		"mask_end_ms": _mask_end_ms,
+		"notifications": _notifications,
+		"fps": _fps,
+		"ping": _ping,
+	}
+	var self_id := 0
 	if _player != null and is_instance_valid(_player):
-		role = int(_player.get("role"))
-		life = int(_player.get("life_state"))
-		downed_deadline_ms = int(_player.get("downed_deadline_ms"))
+		ctx["role"] = int(_player.get("role"))
+		ctx["life"] = int(_player.get("life_state"))
+		ctx["health"] = int(_player.get("health"))
+		ctx["downed_deadline_ms"] = int(_player.get("downed_deadline_ms"))
+		self_id = int(_player.get("peer_id"))
+		ctx["self_id"] = self_id
 		var area := InteractArea.nearest(_player, GameConst.INTERACT_RANGE)
-		prompt = area.prompt if area != null else ""
-	var json := JSON.stringify({
-		"type": "hud",
-		"data": snapshot(role, life, downed_deadline_ms, _mask_end_ms, _money, prompt,
-				_notifications, now_ms),
-	})
+		if area != null:
+			ctx["interact_title"] = area.title
+			ctx["interact_prompt"] = area.prompt
+		var camera := _player.get_viewport().get_camera_3d()
+		if camera != null:
+			ctx["heading"] = heading_from_yaw(camera.global_rotation.y)
+	var party: Array = []
+	for member: int in _party_members:
+		if member == self_id:
+			continue
+		var node: Node = _instance.get_player(member) if _instance != null and is_instance_valid(_instance) else null
+		var present := node != null
+		party.append(party_entry(
+			member,
+			_party_leader,
+			present,
+			int(node.get("health")) if present else -1,
+			int(node.get("life_state")) if present else -1
+		))
+	ctx["party"] = party
+	var json := JSON.stringify({"type": "hud", "data": snapshot(ctx, now_ms)})
 	if json != _last_hud_json:
 		_last_hud_json = json
 		_send_json(json)
