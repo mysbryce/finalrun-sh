@@ -78,6 +78,6 @@ All cosmetics are `CosmeticData` Resources (`id`, `slot`, `mesh/material`, `rari
 
 ## Phase 8: Polish `[ ]`
 - [ ] Art, audio, VFX
-- [ ] **Realistic human characters**: replace the Kenney Mini Characters with realistic-proportion CC0 humans (candidates: Quaternius modular men/women, Kenney Animated Characters), same shared skeleton and slot rig, our own look (no other game's character designs)
+- [ ] **Semi-realistic human characters** ([art direction](design/ART_DIRECTION.md)): replace the Kenney Mini Characters with MakeHuman/MPFB2 humans (CC0) and a retargeted CC0 animation set, male/female on one skeleton, LODs, same slot rig, our own look (no other game's character designs)
 - [ ] Server-side anti-cheat checks (speed, fire rate, range)
 - [ ] Performance pass, network bandwidth budget

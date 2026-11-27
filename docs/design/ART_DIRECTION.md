@@ -1,15 +1,17 @@
 # Art Direction
 
-Decided by the owner on 2026-11-27.
+Decided by the owner on 2026-11-27. Changed from stylized low-poly to semi-realistic by the owner on 2026-11-27.
 
-## Style: stylized low-poly
-- Chunky, readable silhouettes; flat or soft-gradient colors; minimal texture detail.
+## Style: semi-realistic
+- Realistic adult human proportions, simplified detail: PBR materials with modest texture detail, no photoreal skin or hair.
+- Our own look: original faces, outfits and masks. No other game's character designs.
 - Roles must read at a distance: Criminal mask, Cop uniform, Citizen casual. Silhouette first, color second.
-- Budget per character (all slots equipped): ~5-8k tris, 1 shared atlas material where possible.
+- Budget per character (all slots equipped): ~15-25k tris at LOD0, with LOD1/LOD2 for distance; one material per body plus one per slot item where possible.
 
 ## Source: CC0 base + Blender edits
-- Start from a CC0 modular humanoid and CC0 animation set (license must be CC0; record source URL and license in `assets/CREDITS.md`).
+- Base humans from MakeHuman via the MPFB2 Blender add-on (exported models are CC0), game-engine rig. Animations from a CC0 set (candidate: Quaternius Universal Animation Library), retargeted to that rig. Record source URL and license of everything in `assets/CREDITS.md`.
 - Customize and build original outfits, hair, masks in Blender (Blender MCP is available to the supervisor).
+- Until this lands the game uses Kenney Mini Characters (CC0) as a stand-in.
 - Export GLB to Godot (`godot-export` workflow), one shared skeleton for male and female bodies so animations are reused.
 
 ## Modular character
@@ -19,5 +21,5 @@ Decided by the owner on 2026-11-27.
 - Skin tone and hair color via material parameters, not separate meshes.
 
 ## Vehicles and props
-- Same low-poly language. Vehicle skins = material/paint swaps plus optional wrap decal; rims as a separate mesh slot.
+- Same semi-realistic language. Vehicle skins = material/paint swaps plus optional wrap decal; rims as a separate mesh slot.
 - Loot bag: one base mesh, skins are material swaps.
