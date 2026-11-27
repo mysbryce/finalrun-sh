@@ -178,6 +178,14 @@ func get_spawn_transform(peer_id: int) -> Transform3D:
 	return markers[index % markers.size()].global_transform
 
 
+## Server-only zone lookup used for deferred extraction checks (a revive inside
+## ExtractZone does not fire body_entered again).
+func get_zone(zone_name: String) -> Area3D:
+	if map_root == null:
+		return null
+	return map_root.get_node_or_null(zone_name) as Area3D
+
+
 ## Sends an RPC only to the given member peers of this instance.
 ##
 ## Thin wrapper over `NetUtil.rpc_to_members`; the instance owns the member list
@@ -233,10 +241,8 @@ func spawn_loot_drop(
 	drop.call("setup_server", owner_peer, ItemUtils.duplicate_items(loot_items), ItemUtils.duplicate_items(gear_items))
 	drops_root.add_child(drop)
 	drop.global_position = world_position
-	rpc_to_members(
-		"client_add_loot_drop",
-		[drop_id, world_position, ItemUtils.duplicate_items(loot_items), ItemUtils.duplicate_items(gear_items)]
-	)
+	# Clients receive only the placeholder position; contents stay server-side.
+	rpc_to_members("client_add_loot_drop", [drop_id, world_position])
 	return drop
 
 
@@ -250,13 +256,9 @@ func sync_state_to_peer(peer_id: int) -> void:
 	if drops_root == null:
 		return
 	for drop: Node in drops_root.get_children():
-		var loot_items: Variant = drop.get("loot_items")
-		var gear_items: Variant = drop.get("gear_items")
-		var loot_payload: Array = loot_items if loot_items is Array else []
-		var gear_payload: Array = gear_items if gear_items is Array else []
 		rpc_to_specific_members(
 			"client_add_loot_drop",
-			[String(drop.name), (drop as Node3D).global_position, loot_payload, gear_payload],
+			[String(drop.name), (drop as Node3D).global_position],
 			peers
 		)
 
@@ -286,12 +288,12 @@ func client_loot_alert(world_position: Vector3, loot_id: String, loud: bool) -> 
 
 
 @rpc("authority", "call_remote", "reliable")
-func client_add_loot_drop(drop_id: String, world_position: Vector3, loot_items: Array, gear_items: Array) -> void:
+func client_add_loot_drop(drop_id: String, world_position: Vector3) -> void:
 	if drops_root == null or drops_root.has_node(drop_id):
 		return
 	var drop := LootDropScript.new() as Node3D
 	drop.name = drop_id
-	drop.call("setup_client", drop_id, ItemUtils.duplicate_items(loot_items), ItemUtils.duplicate_items(gear_items))
+	drop.call("setup_client", drop_id)
 	drops_root.add_child(drop)
 	drop.global_position = world_position
 
