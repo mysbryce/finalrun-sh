@@ -126,8 +126,9 @@ client, even though the client wraps it in a `SubViewportContainer`.
 
 ### 4.1 Player synchronizer
 
-The player's `MultiplayerSynchronizer` replicates these properties (configured through a
-`SceneReplicationConfig` in `Player._setup_replication()` on both server and client):
+The player's `MultiplayerSynchronizer` replicates these properties (declared through a
+`SceneReplicationConfig` sub-resource inside `Player.tscn`, so it exists before the spawner starts
+replication):
 
 | Property | Purpose |
 |---|---|
