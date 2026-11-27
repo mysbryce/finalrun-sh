@@ -22,6 +22,12 @@ Folder structure, lib/utils placement, and reuse rules: `docs/CONVENTIONS.md` (b
 - Parse/import: `godot_console --headless --path . --import`
 - Tests: `godot_console --headless --path . -s res://tests/run_tests.gd` must print `ALL TESTS PASSED` (until the restructure lands: `res://tests/test_core.gd`).
 
+## Token-saving shell (rtk)
+- `rtk` 1.2.1 (oss edition) is installed globally; the `rtk hook claude` PreToolUse hook rewrites Bash commands automatically. In PowerShell, prefix by hand.
+- Use rtk for: `git status`, `git log`, `ls`, `grep`/`find` sweeps, `git add`/`commit` output.
+- Never filter what a review or check depends on: `git diff`, `git show`, `godot_console` (import/tests), `dsh` runs and their logs. These are in `exclude_commands` in `%APPDATA%\rtk\config.toml`; in PowerShell just call them without `rtk`.
+- If rtk trims output it prints `[full output: rtk recall <hash>]`. Run that before drawing conclusions. `rtk bypass <cmd>` runs a command unfiltered.
+
 ## Worker effort
 - Default `reasoningEffort: high` (briefs carry the design, the worker only implements).
 - Switch to `max` when a task fails review/tests twice in a row, or for hard problems: networking race conditions, sync bugs, large multi-file refactors.
