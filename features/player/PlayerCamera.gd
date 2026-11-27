@@ -7,6 +7,10 @@ extends Node3D
 ## with the camera, so movement stays camera-relative.
 
 var target: Node3D = null
+## Radians per pixel; set from the mouse_sensitivity setting (SettingsApplier).
+var sensitivity: float = GameConst.CAMERA_MOUSE_SENSITIVITY
+## Flips the pitch direction; set from the invert_y setting.
+var invert_y: bool = false
 var _pitch: Node3D
 var _arm: SpringArm3D
 var _camera: Camera3D
@@ -39,9 +43,9 @@ func _process(_delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		var motion := event as InputEventMouseMotion
-		rotation.y -= motion.relative.x * GameConst.CAMERA_MOUSE_SENSITIVITY
+		rotation.y -= motion.relative.x * sensitivity
 		_pitch.rotation.x = clampf(
-			_pitch.rotation.x - motion.relative.y * GameConst.CAMERA_MOUSE_SENSITIVITY,
+			_pitch.rotation.x + pitch_delta(motion.relative.y, sensitivity, invert_y),
 			GameConst.CAMERA_PITCH_MIN,
 			GameConst.CAMERA_PITCH_MAX
 		)
@@ -58,6 +62,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		):
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 			get_viewport().set_input_as_handled()
+
+
+## Pitch change for a vertical mouse move: moving down looks down unless inverted.
+static func pitch_delta(relative_y: float, mouse_sensitivity: float, invert: bool) -> float:
+	var delta := -relative_y * mouse_sensitivity
+	return -delta if invert else delta
+
+
+func get_camera() -> Camera3D:
+	return _camera
 
 
 func get_yaw() -> float:

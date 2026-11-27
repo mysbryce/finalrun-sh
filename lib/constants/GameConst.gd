@@ -138,6 +138,10 @@ const NEWS_PATH: String = "res://ui/dist/news.json"     # patch notes (ui/web/pu
 const SETTINGS_PATH: String = "user://settings.cfg"  # durable settings, section = tab
 const SETTINGS_SCHEMA_PATH: String = "res://ui/dist/settings-schema.json"  # ui/web/public/settings-schema.json, copied by Vite
 const SETTINGS_TABS: PackedStringArray = ["graphics", "controls", "social", "others"]
+const SHADOW_ATLAS_SIZES := {"low": 1024, "medium": 2048, "high": 4096}  # directional shadow atlas px per `shadows` option
+const VIEW_DISTANCE_FAR := {"low": 150.0, "medium": 300.0, "high": 600.0}  # Camera3D.far (m) per `view_distance` option
+## Command-line flags that set the window: display settings are not applied at startup when any is present.
+const DISPLAY_CMDLINE_FLAGS: PackedStringArray = ["--resolution", "--position", "--windowed", "-w", "--fullscreen", "-f"]
 
 # Boot
 const BOOT_TITLE_DWELL_MS: int = 800        # minimum title card time

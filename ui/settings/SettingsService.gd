@@ -34,6 +34,7 @@ var _schema: Array = []
 var _by_key: Dictionary = {}
 var _values: Dictionary = {}
 var _launch_values: Dictionary = {}
+var _saved_keys: Array = []
 var _capabilities: Dictionary = {}
 var _revision: int = 0
 var _key_pattern: RegEx = RegEx.create_from_string("^[A-Za-z0-9]+$")
@@ -50,6 +51,7 @@ func load() -> void:
 	_schema = []
 	_by_key = {}
 	_values = {}
+	_saved_keys = []
 	save_error = null
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(_schema_path))
 	if parsed is Array:
@@ -80,6 +82,7 @@ func load() -> void:
 		if has_file and String(e.get("storage", "")) == STORAGE_CONFIG_FILE:
 			var tab := String(e.get("tab", ""))
 			if config.has_section_key(tab, key):
+				_saved_keys.append(key)
 				var stored: Variant = config.get_value(tab, key)
 				if String(e.get("type", "")) == TYPE_BINDING and stored is String and stored == UNBOUND_STORED:
 					stored = null
@@ -96,6 +99,11 @@ func entry(key: String) -> Dictionary:
 ## Every non-action key -> current value.
 func values() -> Dictionary:
 	return _values.duplicate(true)
+
+
+## Keys present in the loaded settings file ([] when there was no file).
+func saved_keys() -> Array:
+	return _saved_keys.duplicate()
 
 
 func get_value(key: String) -> Variant:

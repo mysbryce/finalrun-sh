@@ -70,9 +70,9 @@ static func seconds_left(deadline_ms: int, now_ms: int) -> int:
 	return maxi(0, ceili(float(deadline_ms - now_ms) / 1000.0))
 
 
-static func push_notification(list: Array, text: String, now_ms: int) -> Array:
+static func push_notification(list: Array, text: String, now_ms: int, lifetime_ms: int = GameConst.HUD_NOTIFICATION_MS) -> Array:
 	var result: Array = list.duplicate()
-	result.append({"text": text, "expires_ms": now_ms + GameConst.HUD_NOTIFICATION_MS})
+	result.append({"text": text, "expires_ms": now_ms + lifetime_ms})
 	while result.size() > GameConst.HUD_MAX_NOTIFICATIONS:
 		result.pop_front()
 	return result
@@ -395,6 +395,8 @@ var _player: Node3D = null
 var _money: Dictionary = {}
 var _mask_end_ms: int = 0
 var _notifications: Array = []
+## Notification lifetime; set from the notifications_duration setting (Main).
+var notification_ms: int = GameConst.HUD_NOTIFICATION_MS
 var _instance: GameInstance = null
 var _party_members: Array[int] = []
 var _party_leader: int = 0
@@ -452,7 +454,7 @@ func set_mask_channel(seconds: float, now_ms: int) -> void:
 
 
 func add_notification(text: String, now_ms: int) -> void:
-	_notifications = push_notification(_notifications, text, now_ms)
+	_notifications = push_notification(_notifications, text, now_ms, notification_ms)
 
 
 func set_instance(instance: GameInstance) -> void:

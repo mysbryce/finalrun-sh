@@ -26,6 +26,8 @@ var _fallback: CanvasLayer = null
 var _lobby: LobbyState = null
 var _lobby_connect_ms: int = 0
 var _settings: SettingsService = null
+## Instance id of the PlayerCamera that last got the camera settings (0 = none).
+var _applied_camera_id: int = 0
 
 
 func _ready() -> void:
@@ -79,6 +81,14 @@ func _start_client() -> void:
 	_settings = SettingsService.new()
 	_settings.load()
 	print("[Main] Settings loaded (%d keys)" % _settings.values().size())
+	var settings_values := _settings.values()
+	SettingsApplier.apply_engine(settings_values)
+	SettingsApplier.apply_window(
+		settings_values,
+		SettingsApplier.display_keys_allowed_at_startup(OS.get_cmdline_args(), _settings.saved_keys())
+	)
+	_apply_hud_settings(settings_values)
+	_settings.changed.connect(_on_settings_changed)
 	_endpoint = BootFlow.parse_endpoint(OS.get_cmdline_user_args())
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	ServerManager.search_contents_received.connect(_on_search_contents)
@@ -255,6 +265,48 @@ func _on_settings_apply(request_id: int, revision: int, patch: Dictionary) -> vo
 		_hud.push_settings(_settings.view())
 
 
+## Applied settings changed: engine, window (changed display keys only), every
+## instance viewport, the local camera and the HUD notification lifetime.
+func _on_settings_changed(values: Dictionary, changed_keys: Array) -> void:
+	SettingsApplier.apply_engine(values)
+	SettingsApplier.apply_window(values, changed_keys)
+	if _client_view != null and is_instance_valid(_client_view):
+		for child: Node in _client_view.get_children():
+			if child is SubViewport:
+				SettingsApplier.apply_viewport(child as SubViewport, values)
+	var camera := _local_camera()
+	if camera != null:
+		SettingsApplier.apply_camera(camera, values)
+	_apply_hud_settings(values)
+
+
+func _apply_hud_settings(values: Dictionary) -> void:
+	if values.has("notifications_duration"):
+		_hud.notification_ms = int(values["notifications_duration"]) * 1000
+
+
+## The local player's PlayerCamera once it is in the tree, or null.
+func _local_camera() -> PlayerCamera:
+	var player := _local_player()
+	if player == null:
+		return null
+	var camera := player.get_node_or_null("PlayerCamera") as PlayerCamera
+	if camera == null or not camera.is_inside_tree():
+		return null
+	return camera
+
+
+## Camera settings once per new local camera instance.
+func _apply_camera_settings_once() -> void:
+	if _settings == null:
+		return
+	var camera := _local_camera()
+	if camera == null or camera.get_instance_id() == _applied_camera_id:
+		return
+	_applied_camera_id = camera.get_instance_id()
+	SettingsApplier.apply_camera(camera, _settings.values())
+
+
 func _on_quit() -> void:
 	get_tree().quit()
 
@@ -375,6 +427,8 @@ func client_show_instance(instance_id: String, map_name: String) -> void:
 		false
 	)
 	ServerManager.configure_spawner(instance.spawner)
+	if _settings != null:
+		SettingsApplier.apply_viewport(instance, _settings.values())
 	print("[Main] Client loaded instance %s (%s)" % [instance_id, map_name])
 
 
@@ -440,6 +494,7 @@ func _process(_delta: float) -> void:
 			_hud.set_net(int(Engine.get_frames_per_second()), _client_ping_ms())
 	if player == null:
 		return
+	_apply_camera_settings_once()
 	var state: int = int(player.get("life_state"))
 	if state != _last_life_state:
 		_last_life_state = state
