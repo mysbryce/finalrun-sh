@@ -21,7 +21,7 @@ Status: `[x]` done · `[~]` in progress · `[ ]` planned. Each item ships as one
 - [x] `lib/constants/GameConst.gd`, `lib/net/` helpers, pure rule functions
 - [x] `tests/run_tests.gd` single entry, remove scratch files
 
-## Phase 2: Playable slice `[~]`
+## Phase 2: Playable slice `[x]`
 - [x] Player controller + camera, client input → server movement, interpolation
 - [x] Health, hitscan weapons (server raycast in instance world), safezone weapon lock
 - [x] Downed (knock) state before death: bleed-out, revive, finish off, body as searchable loot node ([design](design/DOWNED_STATE.md))
@@ -30,10 +30,11 @@ Status: `[x]` done · `[~]` in progress · `[ ]` planned. Each item ships as one
 - [x] Interact system (`lib/components/InteractArea`), basic HUD (role, mask timer, bag value)
 - [x] Web UI: HUD rendered by Godot CEF from React + Zustand + Tailwind + TanStack (`ui/web/` → `ui/dist/`, [design](design/WEB_UI.md))
 - [x] HUD in the reference layout: net stats, minimap, compass, status, cash, party health, hotbar, interact card ([design](design/HUD_LAYOUT.md))
-- [x] Body search panel on the web UI (route + virtualized item list + take request), mouse freed while open (in-game click-through not yet verified with two clients)
+- [x] Body search panel on the web UI (packed scrolling grid beside the owner inventory + take request), mouse freed while open (two-client click-through on a downed body still to check in a real play test)
 - [x] Base character: CC0 low-poly modular humanoid + animations, male/female on one skeleton ([art direction](design/ART_DIRECTION.md)) (Kenney Mini Characters, CC0; see assets/CREDITS.md)
-- [x] Appearance foundation: `AppearanceData` Resource (body type, slot → item id), synced once on spawn, modular character rig with swappable slots. Built now so later cosmetics are data only, no code changes. (placeholder primitive meshes until the CC0 base character lands)
-- [x] Local 1 server + 3 clients smoke test script (`pwsh tools/smoke_local.ps1`; 3 clients connect and see each other spawn in Motel-01)
+- [x] Appearance foundation: `AppearanceData` Resource (body type, slot → item id), synced once on spawn, modular character rig with swappable slots. Built now so later cosmetics are data only, no code changes. (now on the CC0 base character)
+- [x] Local 1 server + 3 clients smoke test script (`pwsh tools/smoke_local.ps1`; 3 clients connect and see each other spawn in Motel-01; re-run 2026-11-27 after the UI work: all three clients log all three spawns, no script errors)
+- [x] UI design implementation ([docs/ui-design](ui-design/README.md) order 1-14: splash, lobby, settings, HUD, pause and party, inventory and body search, death/arrest receipts, transfer screen), web build, desktop input smoke (keys stay in Godot after page clicks)
 
 ## Phase 3: Heist loop `[ ]`
 Adopted from [genre reference](research/GENRE_REFERENCE.md) (owner decision 2026-11-27).
