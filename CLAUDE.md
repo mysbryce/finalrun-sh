@@ -27,4 +27,30 @@ Folder structure, lib/utils placement, and reuse rules: `docs/CONVENTIONS.md` (b
 - Switch to `max` when a task fails review/tests twice in a row, or for hard problems: networking race conditions, sync bugs, large multi-file refactors.
 
 ## Memory
-- Auto memory is off for this project (`.claude/settings.json`). Persistent rules live in this file only.
+- Auto memory is off for this project (`.claude/settings.json`).
+- Supervisor memory: this file. Worker memory: `AGENTS.md` (auto-loaded by dsh on every run).
+- After each review, append new gotchas to `AGENTS.md` → "Lessons learned" (one line each), so the worker does not repeat a mistake. Project-wide rules go here.
+
+## EGM reviewers (use before handing work to dsh)
+Run as subagents (`subagent_type: egm:<name>`), pointing them at the file path. Fix findings in the doc, then run dsh.
+
+| When | Reviewer(s) |
+|---|---|
+| Every brief before dsh (non-trivial) | `egm-implementation-readiness`: missing details, ambiguity, untestable steps |
+| Brief that touches existing code / refactor | + `egm-codebase-details`: paths, names, reuse vs the real code |
+| New system design (`docs/design/*`) | `egm-design` + `egm-inventive-catalyst` (contradictions, rule conflicts) |
+| New phase or scope growth (roadmap) | `egm-zoom-out`: cut overbuild, YAGNI |
+| Big phase-level brief (3+ reviewers) | `egm-synthesizer` to run them in parallel and merge findings |
+| Human-facing docs (README, ARCHITECTURE) | `egm-comprehension`, `egm-structural`, `egm-style` |
+| Per-folder README docs (after big restructure) | `egm-bootstrap-orchestrator` |
+Skip EGM for tiny fixes (one file, obvious change).
+
+## What to give dsh
+dsh starts fresh each run. It auto-loads `AGENTS.md`; everything else must be named in the prompt or the brief:
+- The brief path (`docs/BRIEF_<topic>.md`), and `docs/CONVENTIONS.md`.
+- `docs/ARCHITECTURE.md` when the task touches net, instances, players.
+- The design doc (`docs/design/*.md`) the brief implements.
+- Exact file paths to create or change, existing helpers in `lib/` to reuse, and constants to add to `GameConst`.
+- Acceptance: test cases to add, verification commands, what the final answer must report.
+- For fix runs: the failing output and the reviewer findings, pasted into the brief.
+Do not give dsh: chat history, open design questions (decide them first), or Thai text.

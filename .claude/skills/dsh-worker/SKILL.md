@@ -8,6 +8,9 @@ description: Delegate a coding task to the DeepSeek worker (dsh CLI, DeepSeek-V4
 ## 1. Write the brief
 Put the task in `docs/BRIEF_<topic>.md` (English). Include: goal, exact file paths (following `docs/CONVENTIONS.md`), hard constraints, which `lib/` helpers to reuse or create, and the verification commands the worker must run. Commit it: `docs(brief): add <topic> brief`.
 
+## 1b. Review the brief with EGM
+Non-trivial briefs go through the EGM reviewers listed in `CLAUDE.md` (at least `egm-implementation-readiness`). Fix the brief, then commit.
+
 ## 2. Run the worker
 Pick the patch file:
 - `dsh-flash-high.yml` (default): brief is detailed, task is implementation.
@@ -30,6 +33,7 @@ Run in background from the repo root (PowerShell):
 - Check `docs/CONVENTIONS.md`: files in the right folder, `lib/` has no feature imports, no duplicated logic, no magic numbers, no raw `rpc()` broadcast.
 - Run the checks listed in `CLAUDE.md` yourself.
 - Problems: write a short fix brief (or continue the session) and run the worker again. Do not hand-edit code.
+- Append any new gotcha to `AGENTS.md` → "Lessons learned".
 
 ## 4. Commit
 Split by concern, Conventional Commits, explicit paths, no co-author line:
