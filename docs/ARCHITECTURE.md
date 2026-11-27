@@ -131,7 +131,7 @@ client, even though the client wraps it in a `SubViewportContainer`.
    Every server RPC starts with `multiplayer.get_remote_sender_id()`, and the peer must exist in
    `_player_states` (connected and joined). The player is then resolved only from the sender's own
    instance. If the sender is not a member of the instance that owns the target node, the request is
-   rejected (e.g. `server_request_attack()` only looks for targets in the shooter's `Players` node).
+   rejected (e.g. `server_request_fire()` only accepts a ray hit on a player in the shooter's own instance).
 
 6. **Server-side hit detection.**
    Shots and LOS checks run in `from_player.get_world_3d().direct_space_state` with
@@ -314,10 +314,11 @@ static function. `same_party` is appended last, so existing callers keep the old
 | anyone | anyone | `false` in `Motel` (safezone), `House`, `Center` |
 
 The controller's `can_attack(target, same_party = false)` uses this static function with the instance
-context. `PlayerService.attack()` (called by `ServerManager.server_request_attack()`) computes
-`same_party` from the party service and checks instance membership, range, `can_attack()`, and
-raycast LOS before calling `target.take_damage()`. All rule constants come from
-`lib/constants/GameConst.gd`.
+context. `PlayerService.fire(peer_id, aim, now_ms)` (called by `ServerManager.server_request_fire(aim)`)
+enforces `FIRE_INTERVAL_MS`, rejects fire in safezones and non-LootyBay maps ("Weapons are locked
+here"), sanitizes the aim vector, raycasts `ATTACK_RANGE` along it in the shooter's own `World3D`,
+then checks the hit player's instance membership, `same_party`, and `can_attack()` before calling
+`target.take_damage()`. All rule constants come from `lib/constants/GameConst.gd`.
 
 ### 7.4 Life state and downed actions
 
@@ -491,8 +492,8 @@ Every action key targets the nearest other player in the current instance.
 - `P` = create party
 - `R` = revive target, `X` = finish target, `C` = cuff target
 - `E` = open body search (contents are printed), `T` = take first listed item, `Q` = close search
-- `K` = attack target (`request_attack`)
-- WASD = movement (client sends `server_request_move` to the server)
+- Left mouse = fire along the camera aim (`request_fire`), only while the mouse is captured; `Esc` frees the mouse, left click recaptures it
+- Mouse = third-person camera (`PlayerCamera`), WASD = camera-relative movement (client sends `server_request_move`; the server replicates `sync_position`/`sync_yaw` at 20 Hz and clients interpolate)
 - The client prints its own life state and bleed-out seconds whenever they change
 
 ## 12. Running and testing
