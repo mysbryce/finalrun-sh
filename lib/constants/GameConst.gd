@@ -104,3 +104,9 @@ const SEARCH_OPEN_SECONDS: float = 1.5
 const SEIZURE_COP_REWARD_RATIO: float = 0.25
 const INTERACT_RANGE: float = 2.5
 const DOWNED_CHANNEL_MAX_MOVE: float = 0.75
+
+# HUD
+const HUD_NOTIFICATION_MS: int = 4000   # how long a notification stays on screen
+const HUD_MAX_NOTIFICATIONS: int = 4    # newest kept, oldest dropped
+const HUD_MARGIN: float = 16.0          # px from the screen edge
+const HUD_FONT_SIZE: int = 18

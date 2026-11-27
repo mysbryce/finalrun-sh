@@ -9,6 +9,7 @@ var _server_mode: bool = false
 var _client_view: SubViewportContainer = null
 var _peer: ENetMultiplayerPeer = null
 var _search_items: Dictionary = {}
+var _hud: Hud = null
 var _last_life_state: int = -1
 var _last_bleedout_seconds: int = -1
 
@@ -44,6 +45,9 @@ func _start_server() -> void:
 
 func _start_client() -> void:
 	_create_client_view_container()
+	_hud = Hud.new()
+	_hud.name = "Hud"
+	add_child(_hud)
 	var peer := ENetMultiplayerPeer.new()
 	var error := peer.create_client("127.0.0.1", GameConst.PORT)
 	if error != OK:
@@ -58,6 +62,9 @@ func _start_client() -> void:
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	ServerManager.search_contents_received.connect(_on_search_contents)
 	ServerManager.search_closed_received.connect(_on_search_closed)
+	ServerManager.notification_received.connect(_on_hud_notification)
+	ServerManager.hud_state_received.connect(_on_hud_state)
+	ServerManager.mask_channel_received.connect(_on_hud_mask_channel)
 	print("[Main] Connecting to 127.0.0.1:%d" % GameConst.PORT)
 	print(
 		"[Main] Controls: 1 Motel | 2 LootyBay | 3 House | 4 Center | 5 sell loot | "
@@ -144,6 +151,8 @@ func _process(_delta: float) -> void:
 	if _server_mode:
 		return
 	var player := _local_player()
+	if _hud != null:
+		_hud.set_player(player)
 	if player == null:
 		return
 	var state: int = int(player.get("life_state"))
@@ -169,6 +178,25 @@ func _on_search_contents(target_peer_id: int, items: Array) -> void:
 func _on_search_closed(target_peer_id: int, reason: String) -> void:
 	_search_items.erase(target_peer_id)
 	print("[Main] Body %d search closed (%s)" % [target_peer_id, reason])
+
+
+func _on_hud_notification(text: String) -> void:
+	if _hud != null:
+		_hud.add_notification(text, _client_now_ms())
+
+
+func _on_hud_state(state: Dictionary) -> void:
+	if _hud != null:
+		_hud.set_money(state)
+
+
+func _on_hud_mask_channel(seconds: float) -> void:
+	if _hud != null:
+		_hud.set_mask_channel(seconds, _client_now_ms())
+
+
+func _client_now_ms() -> int:
+	return int(Time.get_unix_time_from_system() * 1000.0)
 
 
 func _current_instance() -> GameInstance:
