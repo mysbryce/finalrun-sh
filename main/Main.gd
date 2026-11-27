@@ -5,6 +5,8 @@ extends Node
 ## user arg `--connect host:port` / `--connect=host:port`. With CEF the client
 ## first runs the splash boot flow (BootFlow) and connects once the page is ready
 ## and the title dwell is over; without CEF it connects immediately.
+## When the server connection drops after boot, the client shows the lobby
+## (LobbyState): Play reconnects to the same endpoint, news, Quit.
 
 const InstanceScript = preload("res://features/instance/Instance.gd")
 
@@ -21,6 +23,8 @@ var _boot: BootFlow = null
 var _last_boot_json: String = ""
 var _last_boot_phase: String = ""
 var _fallback: CanvasLayer = null
+var _lobby: LobbyState = null
+var _lobby_connect_ms: int = 0
 
 
 func _ready() -> void:
@@ -64,6 +68,8 @@ func _start_client() -> void:
 	_hud.boot_retry_requested.connect(_on_boot_retry)
 	_hud.quit_requested.connect(_on_quit)
 	_hud.page_ready.connect(_on_page_ready)
+	_hud.lobby_join_requested.connect(_on_lobby_join)
+	_hud.lobby_news_retry_requested.connect(_on_lobby_news_retry)
 	_endpoint = BootFlow.parse_endpoint(OS.get_cmdline_user_args())
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	ServerManager.search_contents_received.connect(_on_search_contents)
@@ -85,12 +91,15 @@ func _start_client() -> void:
 	)
 
 
-## Starts the ENet client for `_endpoint`. During boot a failure goes to BootFlow;
-## without boot it quits as before.
+## Starts the ENet client for `_endpoint`. During boot a failure goes to BootFlow,
+## in the lobby to LobbyState; otherwise it quits as before.
 func _connect_to_server() -> void:
 	if not bool(_endpoint.get("ok", false)):
 		if _boot != null:
 			_boot.on_connection_failed("invalid_endpoint")
+			return
+		if _lobby != null:
+			_lobby_failed("invalid_endpoint")
 			return
 		push_error("Invalid --connect endpoint")
 		get_tree().quit(1)
@@ -102,6 +111,9 @@ func _connect_to_server() -> void:
 	if error != OK:
 		if _boot != null:
 			_boot.on_connection_failed("connection_failed")
+			return
+		if _lobby != null:
+			_lobby_failed("connection_failed")
 			return
 		push_error("Could not create client (error %d)" % error)
 		get_tree().quit(1)
@@ -133,6 +145,63 @@ func _on_boot_retry() -> void:
 			_hide_native_fallback()
 			if _hud != null:
 				_hud.reload_page()
+
+
+## Shows the lobby after the connection dropped. `error` is a ConnectionError or null.
+func _show_lobby(error: Variant) -> void:
+	if _lobby == null:
+		_lobby = LobbyState.new()
+		_apply_news(LobbyState.load_news(GameConst.NEWS_PATH))
+	_lobby.status = "disconnected" if error == null or error == "disconnected" else "failed"
+	_lobby.error = error
+	_create_client_view_container()
+	_search_items.clear()
+	# ponytail: 3D preview viewport when the semi-realistic characters land.
+	_hud.show_lobby(_lobby.view())
+	print("[Main] Lobby shown")
+
+
+func _apply_news(news: Dictionary) -> void:
+	_lobby.news_status = String(news.get("status", "failed"))
+	_lobby.news_entries = news.get("entries", [])
+
+
+func _publish_lobby() -> void:
+	if _lobby != null and _hud != null:
+		_hud.show_lobby(_lobby.view())
+
+
+func _lobby_failed(error: String) -> void:
+	_lobby.status = "failed"
+	_lobby.error = error
+	_publish_lobby()
+
+
+func _on_lobby_join() -> void:
+	if _lobby == null or _lobby.status == "connecting":
+		return
+	_lobby.status = "connecting"
+	_lobby.error = null
+	_lobby_connect_ms = Time.get_ticks_msec()
+	_publish_lobby()
+	_connect_to_server()
+
+
+func _on_lobby_news_retry() -> void:
+	if _lobby == null:
+		return
+	_apply_news(LobbyState.load_news(GameConst.NEWS_PATH))
+	_publish_lobby()
+
+
+## Lobby connect timeout: give up after BOOT_CONNECT_TIMEOUT_MS.
+func _process_lobby() -> void:
+	if _lobby.status != "connecting":
+		return
+	if Time.get_ticks_msec() - _lobby_connect_ms < GameConst.BOOT_CONNECT_TIMEOUT_MS:
+		return
+	_abort_connect()
+	_lobby_failed("connection_timeout")
 
 
 func _on_quit() -> void:
@@ -274,6 +343,9 @@ func _on_connected_to_server() -> void:
 		_boot.on_connected()
 		_hud.end_boot()
 		_boot = null
+	if _lobby != null:
+		_hud.end_lobby()
+		_lobby = null
 
 
 func _on_connection_failed() -> void:
@@ -281,11 +353,15 @@ func _on_connection_failed() -> void:
 	multiplayer.multiplayer_peer = null
 	if _boot != null:
 		_boot.on_connection_failed("connection_failed")
+	elif _lobby != null:
+		_lobby_failed("connection_failed")
 
 
 func _on_server_disconnected() -> void:
 	print("[Main] Server disconnected")
 	multiplayer.multiplayer_peer = null
+	if _boot == null and _hud != null:
+		_show_lobby("disconnected")
 
 
 func _on_viewport_size_changed() -> void:
@@ -300,6 +376,8 @@ func _process(_delta: float) -> void:
 		return
 	if _boot != null:
 		_process_boot()
+	if _lobby != null:
+		_process_lobby()
 	var player := _local_player()
 	if _hud != null:
 		_hud.set_player(player)
@@ -446,6 +524,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _boot != null and (key_event.keycode == KEY_ENTER or key_event.keycode == KEY_KP_ENTER):
 		_boot.skip(Time.get_ticks_msec())
 		get_viewport().set_input_as_handled()
+		return
+	if _boot != null or _lobby != null:
 		return
 	match key_event.physical_keycode:
 		KEY_1:

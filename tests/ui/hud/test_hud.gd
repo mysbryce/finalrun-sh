@@ -154,6 +154,29 @@ func test_reply_unknown_method() -> void:
 	assert_eq(routed["action"], [], "unknown method has no action")
 
 
+func test_route_lobby_join() -> void:
+	var configured := Hud.route_request({"id": 1, "method": "lobby.join", "params": {"mode": "configured"}}, 0)
+	var by_id := Hud.route_request({"id": 2, "method": "lobby.join", "params": {"mode": "by_id", "serverId": "SV-SPACE-0001"}}, 0)
+	var missing := Hud.route_request({"id": 3, "method": "lobby.join", "params": {}}, 0)
+	var invalid := Hud.route_request({"id": 4, "method": "lobby.join", "params": {"mode": 5}}, 0)
+	assert_true(configured["reply"]["ok"], "configured join is ok")
+	assert_eq(configured["action"], ["lobby_join"], "configured join action")
+	assert_eq(by_id["reply"].get("error"), "discovery_unavailable", "by_id has no discovery")
+	assert_eq(by_id["action"], [], "by_id has no action")
+	assert_eq(missing["reply"].get("error"), "bad_params", "missing mode is bad_params")
+	assert_eq(invalid["reply"].get("error"), "bad_params", "non-string mode is bad_params")
+
+
+func test_route_lobby_news_retry_and_settings() -> void:
+	var retry := Hud.route_request({"id": 5, "method": "lobby.news_retry"}, 0)
+	var settings := Hud.route_request({"id": 6, "method": "settings.open"}, 0)
+	assert_true(retry["reply"]["ok"], "news retry is ok")
+	assert_eq(retry["action"], ["news_retry"], "news retry action")
+	assert_false(settings["reply"]["ok"], "settings is not open yet")
+	assert_eq(settings["reply"].get("error"), "not_available", "settings not_available")
+	assert_eq(settings["action"], [], "settings has no action")
+
+
 func test_item_label() -> void:
 	assert_eq(Hud.item_label("cop_pistol"), "Cop pistol", "underscore to space")
 	assert_eq(Hud.item_label("jewelry"), "Jewelry", "capitalised")

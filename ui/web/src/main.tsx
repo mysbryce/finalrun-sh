@@ -12,6 +12,8 @@ import { useInventoryStore } from '@/features/inventory/inventoryStore'
 import { DEMO_INVENTORY } from '@/features/inventory/demoInventory'
 import { useSplashStore } from '@/features/splash/splashStore'
 import { DEMO_BOOT } from '@/features/splash/demoBoot'
+import { useLobbyStore } from '@/features/lobby/lobbyStore'
+import { DEMO_LOBBY } from '@/features/lobby/demoLobby'
 import { App } from '@/app/App'
 
 applyUiScale()
@@ -25,6 +27,7 @@ installBridge({
   setSearch: (v) => useSearchStore.getState().setSearch(v),
   setInventory: (v) => useInventoryStore.getState().setInventory(v),
   setBoot: (v) => useSplashStore.getState().setBoot(v),
+  setLobby: (v) => useLobbyStore.getState().setLobby(v),
 })
 
 if (import.meta.env.DEV && !window.sendIpcMessage) {
@@ -40,6 +43,10 @@ if (import.meta.env.DEV && !window.sendIpcMessage) {
   if (window.location.hash === '#splash') {
     useSplashStore.getState().setBoot(DEMO_BOOT)
     void router.navigate({ to: '/splash' })
+  }
+  if (window.location.hash === '#lobby') {
+    useLobbyStore.getState().setLobby(DEMO_LOBBY)
+    void router.navigate({ to: '/lobby' })
   }
 }
 

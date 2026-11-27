@@ -130,6 +130,7 @@ const HUD_MINIMAP_HEIGHT: float = 80.0             # camera height above the pla
 const UI_PAGE_URL: String = "res://ui/dist/index.html"  # built web UI (ui/web/ -> ui/dist/)
 const UI_DEV_URL: String = "http://localhost:5173/"     # Vite dev server
 const UI_DEV_FLAG: String = "--ui-dev"                  # client user arg: load UI_DEV_URL
+const NEWS_PATH: String = "res://ui/dist/news.json"     # patch notes (ui/web/public/news.json, copied by Vite)
 
 # Boot
 const BOOT_TITLE_DWELL_MS: int = 800        # minimum title card time

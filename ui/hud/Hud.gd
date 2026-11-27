@@ -18,6 +18,10 @@ signal boot_retry_requested
 signal quit_requested
 ## The page sent `ready` (every page load, also after boot).
 signal page_ready
+## The lobby asked to join the configured server.
+signal lobby_join_requested
+## The lobby asked to reload the bundled patch notes.
+signal lobby_news_retry_requested
 
 
 static func role_text(role: int) -> String:
@@ -258,6 +262,18 @@ static func route_request(request: Dictionary, open_target: int) -> Dictionary:
 		return _ok_reply(id, {}, ["boot_retry"])
 	if method == "app.quit":
 		return _ok_reply(id, {}, ["quit"])
+	if method == "lobby.join":
+		var mode: Variant = params.get("mode")
+		if not mode is String or not ["configured", "by_id", "quick"].has(mode):
+			return _error_reply(id, "bad_params")
+		if mode != "configured":
+			return _error_reply(id, "discovery_unavailable")
+		return _ok_reply(id, {}, ["lobby_join"])
+	if method == "lobby.news_retry":
+		return _ok_reply(id, {}, ["news_retry"])
+	if method == "settings.open":
+		# ponytail: not_available until the settings card.
+		return _error_reply(id, "not_available")
 	return _error_reply(id, "unknown_method")
 
 
@@ -418,6 +434,10 @@ func _on_ipc_message(message: String) -> void:
 			boot_retry_requested.emit()
 		elif action.size() == 1 and action[0] == "quit":
 			quit_requested.emit()
+		elif action.size() == 1 and action[0] == "lobby_join":
+			lobby_join_requested.emit()
+		elif action.size() == 1 and action[0] == "news_retry":
+			lobby_news_retry_requested.emit()
 
 
 ## Sends a snapshot message for `boot`, `lobby`, `party`, `settings`, `transfer`
@@ -443,6 +463,25 @@ func show_boot(view: Dictionary) -> void:
 ## Boot is over: clear the boot snapshot and return to the HUD.
 func end_boot() -> void:
 	_snapshots.erase("boot")
+	_navigate("/")
+	_set_panel_input(false)
+
+
+## Shows the lobby route with the current LobbyView. Open search/inventory
+## panels are closed locally (no server request: the connection is gone).
+func show_lobby(view: Dictionary) -> void:
+	if is_search_open():
+		close_search(_search_target)
+	close_inventory()
+	publish("lobby", view)
+	if _route != "/lobby":
+		_navigate("/lobby")
+	_set_panel_input(true)
+
+
+## Lobby is over (connected again): clear the lobby snapshot and return to the HUD.
+func end_lobby() -> void:
+	_snapshots.erase("lobby")
 	_navigate("/")
 	_set_panel_input(false)
 
@@ -522,6 +561,10 @@ func _set_panel_input(open: bool) -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if open else Input.MOUSE_MODE_CAPTURED
 
 
+## Messages before the page's `ready` are dropped: snapshots, route and panels
+## are replayed on `ready`.
 func _send_json(json: String) -> void:
+	if not _page_ready:
+		return
 	if _browser != null and is_instance_valid(_browser):
 		_browser.call("send_ipc_message", json)
