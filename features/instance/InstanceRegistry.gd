@@ -16,6 +16,7 @@ var _peer_instances: Dictionary = {}
 var _spawn_function: Callable = Callable()
 var _on_zone_entered: Callable = Callable()
 var _on_zone_exited: Callable = Callable()
+var _appearance_provider: Callable = Callable()
 
 
 func configure(
@@ -33,6 +34,11 @@ func configure(
 ## The client configures its spawner without ever calling setup_server.
 func set_spawn_function(spawn_function: Callable) -> void:
 	_spawn_function = spawn_function
+
+
+## Server only: peer_id -> appearance dictionary for the spawn payload.
+func set_appearance_provider(provider: Callable) -> void:
+	_appearance_provider = provider
 
 
 static func is_shared_map(map_name: String) -> bool:
@@ -211,11 +217,14 @@ func spawn_player(peer_id: int, instance: GameInstance) -> void:
 	if instance == null or instance.spawner == null:
 		return
 	# The custom spawn payload is replicated to visible peers, so only send the
-	# routing ids. Private inventory state stays on the server.
+	# routing ids and the public appearance. Private inventory state stays on
+	# the server.
 	var data := {
 		"peer_id": peer_id,
 		"instance_id": instance.instance_id,
 	}
+	if _appearance_provider.is_valid():
+		data["appearance"] = _appearance_provider.call(peer_id)
 	var spawned: Variant = instance.spawner.spawn(data)
 	var player: Node = null
 	if spawned is Node:

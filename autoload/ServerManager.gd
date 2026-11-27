@@ -58,6 +58,7 @@ func _ready() -> void:
 		Callable(_players, "disconnect_peer")
 	)
 	_instances.set_spawn_function(Callable(_players, "spawn_node"))
+	_instances.set_appearance_provider(Callable(_players, "appearance_of"))
 
 
 # --- Lifecycle ---------------------------------------------------------------

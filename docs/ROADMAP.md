@@ -32,7 +32,7 @@ Status: `[x]` done · `[~]` in progress · `[ ]` planned. Each item ships as one
 - [x] HUD in the reference layout: net stats, minimap, compass, status, cash, party health, hotbar, interact card ([design](design/HUD_LAYOUT.md))
 - [x] Body search panel on the web UI (route + virtualized item list + take request), mouse freed while open (in-game click-through not yet verified with two clients)
 - [ ] Base character: CC0 low-poly modular humanoid + animations, male/female on one skeleton ([art direction](design/ART_DIRECTION.md))
-- [ ] Appearance foundation: `AppearanceData` Resource (body type, slot → item id), synced once on spawn, modular character rig with swappable slots. Built now so later cosmetics are data only, no code changes.
+- [x] Appearance foundation: `AppearanceData` Resource (body type, slot → item id), synced once on spawn, modular character rig with swappable slots. Built now so later cosmetics are data only, no code changes. (placeholder primitive meshes until the CC0 base character lands)
 - [ ] Local 1 server + 3 clients smoke test script
 
 ## Phase 3: Heist loop `[ ]`

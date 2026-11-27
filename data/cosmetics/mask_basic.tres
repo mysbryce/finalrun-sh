@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="CosmeticData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://lib/data/CosmeticData.gd" id="1_cosmetic"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_mask"]
+size = Vector3(0.3, 0.2, 0.1)
+
+[resource]
+script = ExtResource("1_cosmetic")
+id = "mask_basic"
+slot = "mask"
+mesh = SubResource("BoxMesh_mask")
+color = Color(0.05, 0.05, 0.05, 1)
+offset = Vector3(0, 1.6, 0.2)

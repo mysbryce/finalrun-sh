@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="CosmeticData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://lib/data/CosmeticData.gd" id="1_cosmetic"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_hair"]
+radius = 0.2
+height = 0.25
+
+[resource]
+script = ExtResource("1_cosmetic")
+id = "hair_short"
+slot = "hair"
+mesh = SubResource("SphereMesh_hair")
+color = Color(0.3, 0.18, 0.1, 1)
+offset = Vector3(0, 1.72, 0)

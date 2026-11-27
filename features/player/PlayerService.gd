@@ -26,6 +26,8 @@ var _death_pending: Dictionary = {}
 var _next_item_uid: int = 1
 ## peer_id -> unix ms of the last accepted shot
 var _last_fire_ms: Dictionary = {}
+## peer_id -> appearance dictionary; kept across map transfers.
+var _appearances: Dictionary = {}
 
 
 ## Allocates a server-wide unique item uid.
@@ -92,6 +94,13 @@ func configure(
 	_parties = parties
 
 
+## Appearance provider for the spawn payload; creates a default on first use.
+func appearance_of(peer_id: int) -> Dictionary:
+	if not _appearances.has(peer_id):
+		_appearances[peer_id] = AppearanceData.default_for(peer_id).to_dict()
+	return _appearances[peer_id]
+
+
 func is_peer_known(peer_id: int) -> bool:
 	return _states.has(peer_id)
 
@@ -134,6 +143,7 @@ func handle_peer_left(peer_id: int) -> void:
 	if detached != null:
 		_refresh_police_vehicle(detached)
 	_states.erase(peer_id)
+	_appearances.erase(peer_id)
 	_parties.remove_peer(peer_id)
 	_last_fire_ms.erase(peer_id)
 
@@ -180,6 +190,7 @@ func spawn_node(data: Variant) -> Node:
 	var player := PlayerScene.instantiate()
 	player.name = str(peer_id)
 	player.set("peer_id", peer_id)
+	player.call("apply_appearance", spawn_data.get("appearance", {}))
 	var controller := player.get_node_or_null("PlayerRoleController") as PlayerRoleController
 	if _host.multiplayer.is_server() and controller != null:
 		controller.set_item_uid_allocator(Callable(self, "allocate_item_uid"))

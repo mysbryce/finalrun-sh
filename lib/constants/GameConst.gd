@@ -90,6 +90,11 @@ const CAMERA_PITCH_MIN: float = -1.2           # radians, looking down
 const CAMERA_PITCH_MAX: float = 0.6            # radians, looking up
 const PLAYER_TURN_SPEED: float = 12.0          # lerp_angle rate per second
 
+# Appearance
+const APPEARANCE_SLOTS: PackedStringArray = ["hair", "top", "bottom", "shoes", "hat", "mask"]
+const BODY_TYPES: PackedStringArray = ["male", "female"]
+const COSMETICS_DIR: String = "res://data/cosmetics/"
+
 # --- Downed state ------------------------------------------------------------
 
 const DOWNED_BLEEDOUT_SECONDS: float = 60.0

@@ -22,6 +22,10 @@ const MAX_HEALTH: int = GameConst.PLAYER_MAX_HEALTH
 		role = value
 		if _role_controller != null and is_instance_valid(_role_controller):
 			_role_controller.handle_replicated_role(old_role, role)
+		if is_node_ready():
+			var rig := get_node_or_null("Rig") as CharacterRig
+			if rig != null:
+				rig.set_masked(role == PlayerRoleController.Role.CRIMINAL)
 
 @export var life_state: int = 0:
 	set(value):
@@ -39,6 +43,8 @@ const MAX_HEALTH: int = GameConst.PLAYER_MAX_HEALTH
 var instance_id: String = ""
 var map_name: String = ""
 @export var health: int = MAX_HEALTH
+## Public appearance from the spawn payload (server-owned).
+var appearance: AppearanceData = AppearanceData.new()
 
 var _role_controller: PlayerRoleController = null
 var _input_dir: Vector2 = Vector2.ZERO
@@ -58,6 +64,10 @@ func _ready() -> void:
 	if sync != null:
 		sync.public_visibility = false
 		sync.replication_interval = GameConst.PLAYER_SYNC_INTERVAL
+	# The role setter skips the rig before ready (setup_server sets role first).
+	var rig := get_node_or_null("Rig") as CharacterRig
+	if rig != null:
+		rig.set_masked(role == PlayerRoleController.Role.CRIMINAL)
 	_update_control_state()
 
 
@@ -110,6 +120,16 @@ func setup_client(instance_node: Node) -> void:
 			map_name,
 			bool(instance_node.get("safezone"))
 		)
+
+
+## Applies the spawn-payload appearance on server and clients.
+func apply_appearance(data: Variant) -> void:
+	appearance = AppearanceData.from_dict(data)
+	var rig := get_node_or_null("Rig") as CharacterRig
+	if rig == null:
+		return
+	rig.apply(appearance)
+	rig.set_masked(role == PlayerRoleController.Role.CRIMINAL)
 
 
 func get_role_controller() -> PlayerRoleController:
