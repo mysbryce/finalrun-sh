@@ -44,6 +44,9 @@ signal transfer_return_requested
 
 ## Routes the HUD picks itself from the transfer and receipt state.
 const BASE_ROUTES := ["/", "/transfer", "/death", "/arrest"]
+## Routes where the page hides the HUD layer. Mirror of ui/web/src/app/showsHud.ts:
+## keep both lists equal.
+const HUD_HIDDEN_ROUTES := ["/inventory", "/search", "/splash", "/lobby", "/death", "/arrest", "/transfer"]
 
 const PARTY_VERBS_WITH_TARGET := {
 	"party.invite": ["invite", "targetPeerId"],
@@ -64,6 +67,12 @@ const PROMPT_KEY_ACTIONS := {
 	"F": "bind_mask",
 	"G": "bind_cop_duty",
 }
+
+
+## True when the HUD layer is drawn under the route's screen. Mirror of
+## ui/web/src/app/showsHud.ts: keep both lists equal.
+static func shows_hud(route: String) -> bool:
+	return not HUD_HIDDEN_ROUTES.has(route) and not route.begins_with("/settings")
 
 
 static func role_text(role: int) -> String:
@@ -614,9 +623,11 @@ func _ready() -> void:
 	_browser.set("url", page_url(OS.get_cmdline_user_args()))
 	_browser.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_browser.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_browser.focus_mode = Control.FOCUS_NONE
 	_browser.connect("ipc_message", _on_ipc_message)
 	add_child(_browser)
+	# CefTexture's ready sets CLICK focus; a focused browser takes keys (Tab focus
+	# navigation and its own _input), so keys stop reaching Main.
+	_browser.focus_mode = Control.FOCUS_NONE
 
 
 func set_player(player: Node3D) -> void:
@@ -1081,6 +1092,8 @@ func _send_inventory() -> void:
 
 func _navigate(to: String) -> void:
 	_route = to
+	if _minimap != null:
+		_minimap.shown = shows_hud(to)
 	_send_json(JSON.stringify({"type": "route", "to": to}))
 
 

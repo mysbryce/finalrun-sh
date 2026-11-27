@@ -7,6 +7,13 @@ const DOWNED := PlayerRoleController.LifeState.DOWNED
 const CRIMINAL := PlayerRoleController.Role.CRIMINAL
 
 
+func test_shows_hud_routes() -> void:
+	assert_true(Hud.shows_hud("/"), "plain HUD shows the HUD")
+	assert_true(Hud.shows_hud("/pause"), "pause shows the HUD")
+	for route: String in ["/inventory", "/search", "/splash", "/lobby", "/death", "/arrest", "/transfer", "/settings/controls"]:
+		assert_false(Hud.shows_hud(route), "%s hides the HUD" % route)
+
+
 func test_role_and_life_text() -> void:
 	assert_eq(Hud.role_text(PlayerRoleController.Role.CRIMINAL), "CRIMINAL", "criminal role text")
 	assert_eq(Hud.role_text(99), "?", "unknown role text")

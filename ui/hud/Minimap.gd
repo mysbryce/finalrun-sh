@@ -18,6 +18,8 @@ static func camera_rotation(yaw: float, rotate: bool) -> Vector3:
 var rotate_with_heading: bool = false
 ## Camera yaw in radians, fed by the Hud every frame.
 var heading_yaw: float = 0.0
+## False while the route hides the HUD (Hud._navigate).
+var shown: bool = true
 var _viewport: SubViewport = null
 var _camera: Camera3D = null
 var _target: Node3D = null
@@ -58,4 +60,4 @@ func _process(_delta: float) -> void:
 	_camera.current = true
 	_camera.global_position = camera_position(_target.global_position)
 	_camera.rotation = camera_rotation(heading_yaw, rotate_with_heading)
-	visible = true
+	visible = shown

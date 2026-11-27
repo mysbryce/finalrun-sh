@@ -36,3 +36,22 @@ func test_minimap_rect_and_hidden_without_target() -> void:
 	assert_eq(map_size, GameConst.HUD_MINIMAP_RECT.size, "minimap size matches the HUD rect")
 	assert_false(map_visible, "minimap hidden without a target")
 	assert_eq(child_count, 1, "minimap owns one SubViewport child")
+
+
+func test_minimap_shown_flag() -> void:
+	var root := (Engine.get_main_loop() as SceneTree).root
+	var map := Minimap.new()
+	var target := Node3D.new()
+	root.add_child(map)
+	root.add_child(target)
+	map.follow(target)
+	map.shown = false
+	map._process(0.0)
+	var hidden_visible := map.visible
+	map.shown = true
+	map._process(0.0)
+	var shown_visible := map.visible
+	map.free()
+	target.free()
+	assert_false(hidden_visible, "minimap hidden while shown is false")
+	assert_true(shown_visible, "minimap visible while shown is true")

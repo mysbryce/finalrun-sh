@@ -29,6 +29,7 @@ Folder structure, lib/utils placement, and reuse rules: `docs/CONVENTIONS.md` (b
 ## Checks
 - Parse/import: `godot_console --headless --path . --import`
 - Tests: `godot_console --headless --path . -s res://tests/run_tests.gd` must print `ALL TESTS PASSED` (until the restructure lands: `res://tests/test_core.gd`).
+- Desktop smoke via windows-mcp: the first click only focuses the client window (click twice before keys). windows-mcp letter/F-keys carry no scan code, so Godot's `physical_keycode` is 0 and rebind capture ignores them; send real scan codes with `SendInput` (`MapVirtualKey`) instead. Tab/Esc/arrows from windows-mcp work.
 
 ## Token-saving shell (rtk)
 - `rtk` 1.2.1 (oss edition) is installed globally; the `rtk hook claude` PreToolUse hook rewrites Bash commands automatically. In PowerShell, prefix by hand.
