@@ -62,6 +62,9 @@ Methods so far: `ping` (replies `{"pong": true}`). Screen cards add their own.
 ## Input
 The HUD is display-only: the `CefTexture` uses `mouse_filter = MOUSE_FILTER_IGNORE` and `focus_mode = FOCUS_NONE`, so mouse and keys reach the game. Interactive panels (later) switch to `MOUSE_FILTER_STOP` and free the mouse while open.
 
+## Scale
+Godot stretches its canvas (`canvas_items`, base 1280x720); CEF renders the page at physical pixels. `app/uiScale.ts` zooms the page by `innerWidth / 1280`, so 1 CSS px = 1 Godot canvas unit at every window size. Rects shared by both sides (the minimap) use the same numbers on both sides.
+
 ## Open items
 - Export: Godot export must include `ui/dist/*` as non-resource files (export filter), checked when export is set up.
 - Remote DevTools is on by default (port 9229). Turn it off for release builds (`godot_cef/debug/remote_devtools_port`).
