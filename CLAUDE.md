@@ -11,6 +11,11 @@ Folder structure, lib/utils placement, and reuse rules: `docs/CONVENTIONS.md` (b
 - All code is written by the DeepSeek worker through the `dsh` CLI. Use the `dsh-worker` skill (`.claude/skills/dsh-worker/SKILL.md`).
 - Small non-code files (briefs, docs, config, this file) may be edited by Claude directly.
 
+## Asset tools (owner, 2026-11-27)
+- **Blender MCP**: the owner keeps Blender open with the MCP server running. For model work (characters, outfits, props, LODs, GLB export) use the `mcp__blender__*` tools directly, no need to ask first. Follow `docs/design/ART_DIRECTION.md` and the `godot-export` workflow.
+- **Codex image generation**: spawn Codex CLI freely to generate textures, images and other assets for the game: `codex exec -C d:\FinalRun --enable image_generation "<prompt>"` (codex-cli 0.160.1, `image_generation` is stable and on by default). Tell it the exact output path under `assets/` and the size/format; review every image before committing.
+- Originality still applies: our own designs only, never imitate or reuse another game's characters, art or assets (nothing from `E:\ROBRUN`). Record the source/license of every asset in `assets/CREDITS.md` (generated ones: "generated with Codex image generation, owned by the project").
+
 ## Git
 - Commit after every completed action. Conventional Commits: `type(scope): summary` (`feat`, `fix`, `refactor`, `docs`, `test`, `chore`).
 - Scopes: `server`, `player`, `world`, `net`, `docs`, `tooling`.
