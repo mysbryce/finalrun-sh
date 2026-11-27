@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "plugin_version": "2.2.0",
+  "cef_version": "156.0.30",
+  "platforms": [
+    {
+      "target": "universal-apple-darwin",
+      "directory": "bin/universal-apple-darwin/2.2.0-cef-156.0.30",
+      "library": "bin/universal-apple-darwin/2.2.0-cef-156.0.30/Godot CEF.framework/libgdcef.dylib",
+      "bootstrap": "bin/universal-apple-darwin/2.2.0-cef-156.0.30/libgdcef_bootstrap.dylib",
+      "helper": {
+        "offset": 5873505,
+        "length": 3145995,
+        "sha256": "34f672e7fc70bb669dd34394dd1c375d508945aa1b8656097f1c4643a70bbf37"
+      },
+      "files": [
+        "Godot CEF.framework/libgdcef.dylib",
+        "Godot CEF.framework/Resources/Info.plist",
+        "Godot CEF.framework/Helpers/Godot CEF.app/Contents/Frameworks/Chromium Embedded Framework (ARM64).framework/Chromium Embedded Framework",
+        "Godot CEF.framework/Helpers/Godot CEF.app/Contents/Frameworks/Chromium Embedded Framework (X86_64).framework/Chromium Embedded Framework",
+        "Godot CEF.framework/Helpers/Godot CEF.app/Contents/Frameworks/Godot CEF Helper (Alerts).app/Contents/Info.plist",
+        "Godot CEF.framework/Helpers/Godot CEF.app/Contents/Frameworks/Godot CEF Helper (Alerts).app/Contents/MacOS/Godot CEF Helper (Alerts)",
+        "Godot CEF.framework/Helpers/Godot CEF.app/Contents/Frameworks/Godot CEF Helper (Alerts).app/Contents/_CodeSignature/CodeResources",
+        "Godot CEF.framework/Helpers/Godot CEF.app/Contents/Frameworks/Godot CEF Helper (GPU).app/Contents/Info.plist",
+        "Godot CEF.framework/Helpers/Godot CEF.app/Contents/Frameworks/Godot CEF Helper (GPU).app/Contents/MacOS/Godot CEF Helper (GPU)",
+        "Godot CEF.framework/Helpers/Godot CEF.app/Contents/Frameworks/Godot CEF Helper (GPU).app/Contents/_CodeSignature/CodeResources",
+        "Godot CEF.framework/Helpers/Godot CEF.app/Contents/Frameworks/Godot CEF Helper (Plugin).app/Contents/Info.plist",
+        "Godot CEF.framework/Helpers/Godot CEF.app/Contents/Frameworks/Godot CEF Helper (Plugin).app/Contents/MacOS/Godot CEF Helper (Plugin)",
+        "Godot CEF.framework/Helpers/Godot CEF.app/Contents/Frameworks/Godot CEF Helper (Plugin).app/Contents/_CodeSignature/CodeResources",
+        "Godot CEF.framework/Helpers/Godot CEF.app/Contents/Frameworks/Godot CEF Helper (Renderer).app/Contents/Info.plist",
+        "Godot CEF.framework/Helpers/Godot CEF.app/Contents/Frameworks/Godot CEF Helper (Renderer).app/Contents/MacOS/Godot CEF Helper (Renderer)",
+        "Godot CEF.framework/Helpers/Godot CEF.app/Contents/Frameworks/Godot CEF Helper (Renderer).app/Contents/_CodeSignature/CodeResources",
+        "Godot CEF.framework/Helpers/Godot CEF.app/Contents/Frameworks/Godot CEF Helper.app/Contents/Info.plist",
+        "Godot CEF.framework/Helpers/Godot CEF.app/Contents/Frameworks/Godot CEF Helper.app/Contents/MacOS/Godot CEF Helper",
+        "Godot CEF.framework/Helpers/Godot CEF.app/Contents/Frameworks/Godot CEF Helper.app/Contents/_CodeSignature/CodeResources",
+        "Godot CEF.framework/Helpers/Godot CEF.app/Contents/Info.plist",
+        "Godot CEF.framework/Helpers/Godot CEF.app/Contents/MacOS/Godot CEF"
+      ],
+      "dirs": [
+        "Godot CEF.framework/Helpers/Godot CEF.app/Contents/Frameworks/Chromium Embedded Framework (ARM64).framework/Libraries",
+        "Godot CEF.framework/Helpers/Godot CEF.app/Contents/Frameworks/Chromium Embedded Framework (ARM64).framework/Resources",
+        "Godot CEF.framework/Helpers/Godot CEF.app/Contents/Frameworks/Chromium Embedded Framework (X86_64).framework/Libraries",
+        "Godot CEF.framework/Helpers/Godot CEF.app/Contents/Frameworks/Chromium Embedded Framework (X86_64).framework/Resources",
+        "cef-licenses"
+      ]
+    },
+    {
+      "target": "x86_64-pc-windows-msvc",
+      "directory": "bin/x86_64-pc-windows-msvc/2.2.0-cef-156.0.30",
+      "library": "bin/x86_64-pc-windows-msvc/2.2.0-cef-156.0.30/gdcef.dll",
+      "bootstrap": "bin/x86_64-pc-windows-msvc/2.2.0-cef-156.0.30/gdcef_bootstrap.dll",
+      "helper": {
+        "offset": 5918176,
+        "length": 139207,
+        "sha256": "a56b21e075b33553637e5311d3f5511d998510be4905949c41a6688e6e7b0239"
+      },
+      "files": [
+        "gdcef.dll",
+        "libcef.dll",
+        "chrome_elf.dll",
+        "d3dcompiler_47.dll",
+        "dxcompiler.dll",
+        "vk_swiftshader.dll",
+        "vk_swiftshader_icd.json",
+        "vulkan-1.dll",
+        "icudtl.dat",
+        "resources.pak",
+        "chrome_100_percent.pak",
+        "chrome_200_percent.pak",
+        "v8_context_snapshot.bin",
+        "bootstrap.exe",
+        "bootstrapc.exe",
+        "gdcef_helper.exe"
+      ],
+      "dirs": [
+        "locales",
+        "cef-licenses"
+      ]
+    },
+    {
+      "target": "aarch64-pc-windows-msvc",
+      "directory": "bin/aarch64-pc-windows-msvc/2.2.0-cef-156.0.30",
+      "library": "bin/aarch64-pc-windows-msvc/2.2.0-cef-156.0.30/gdcef.dll",
+      "bootstrap": "bin/aarch64-pc-windows-msvc/2.2.0-cef-156.0.30/gdcef_bootstrap.dll",
+      "helper": {
+        "offset": 5212096,
+        "length": 132356,
+        "sha256": "ec64f68d675e50d7a426fdf8bde631f46849ed734d03efcefd430a750353b134"
+      },
+      "files": [
+        "gdcef.dll",
+        "libcef.dll",
+        "chrome_elf.dll",
+        "d3dcompiler_47.dll",
+        "dxcompiler.dll",
+        "vk_swiftshader.dll",
+        "vk_swiftshader_icd.json",
+        "vulkan-1.dll",
+        "icudtl.dat",
+        "resources.pak",
+        "chrome_100_percent.pak",
+        "chrome_200_percent.pak",
+        "v8_context_snapshot.bin",
+        "bootstrap.exe",
+        "bootstrapc.exe",
+        "gdcef_helper.exe"
+      ],
+      "dirs": [
+        "locales",
+        "cef-licenses"
+      ]
+    },
+    {
+      "target": "x86_64-unknown-linux-gnu",
+      "directory": "bin/x86_64-unknown-linux-gnu/2.2.0-cef-156.0.30",
+      "library": "bin/x86_64-unknown-linux-gnu/2.2.0-cef-156.0.30/libgdcef.so",
+      "bootstrap": "bin/x86_64-unknown-linux-gnu/2.2.0-cef-156.0.30/libgdcef_bootstrap.so",
+      "helper": {
+        "offset": 377420,
+        "length": 815237,
+        "sha256": "3a97a1fb01a7e44b78688324e2d8af08bb26e5c21cbe0cde628b5f6505bc1d2e"
+      },
+      "files": [
+        "libgdcef.so",
+        "libcef.so",
+        "libvk_swiftshader.so",
+        "libvulkan.so.1",
+        "vk_swiftshader_icd.json",
+        "icudtl.dat",
+        "resources.pak",
+        "chrome_100_percent.pak",
+        "chrome_200_percent.pak",
+        "v8_context_snapshot.bin",
+        "chrome-sandbox",
+        "gdcef_helper"
+      ],
+      "dirs": [
+        "locales",
+        "cef-licenses"
+      ]
+    },
+    {
+      "target": "aarch64-unknown-linux-gnu",
+      "directory": "bin/aarch64-unknown-linux-gnu/2.2.0-cef-156.0.30",
+      "library": "bin/aarch64-unknown-linux-gnu/2.2.0-cef-156.0.30/libgdcef.so",
+      "bootstrap": "bin/aarch64-unknown-linux-gnu/2.2.0-cef-156.0.30/libgdcef_bootstrap.so",
+      "helper": {
+        "offset": 5522079,
+        "length": 728807,
+        "sha256": "87b1a56a4bc7193e63659a41c3cb1fc19ec4b596405f2587dfcff7caa18b9fa7"
+      },
+      "files": [
+        "libgdcef.so",
+        "libcef.so",
+        "libvk_swiftshader.so",
+        "libvulkan.so.1",
+        "vk_swiftshader_icd.json",
+        "icudtl.dat",
+        "resources.pak",
+        "chrome_100_percent.pak",
+        "chrome_200_percent.pak",
+        "v8_context_snapshot.bin",
+        "chrome-sandbox",
+        "gdcef_helper"
+      ],
+      "dirs": [
+        "locales",
+        "cef-licenses"
+      ]
+    }
+  ]
+}

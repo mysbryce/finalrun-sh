@@ -1,0 +1,11 @@
+[configuration]
+entry_symbol = "gdcef_bootstrap_init"
+compatibility_minimum = 4.6
+reloadable = false
+
+[libraries]
+macos = "bin/universal-apple-darwin/2.2.0-cef-156.0.30/libgdcef_bootstrap.dylib"
+windows.x86_64 = "bin/x86_64-pc-windows-msvc/2.2.0-cef-156.0.30/gdcef_bootstrap.dll"
+windows.arm64 = "bin/aarch64-pc-windows-msvc/2.2.0-cef-156.0.30/gdcef_bootstrap.dll"
+linux.x86_64 = "bin/x86_64-unknown-linux-gnu/2.2.0-cef-156.0.30/libgdcef_bootstrap.so"
+linux.arm64 = "bin/aarch64-unknown-linux-gnu/2.2.0-cef-156.0.30/libgdcef_bootstrap.so"
