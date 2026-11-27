@@ -4,10 +4,21 @@ Owner decision 2026-11-27: the game UI is HTML rendered by the Godot CEF addon, 
 
 ## Pieces
 - **Addon:** `addons/godot_cef` (dsh0416/godot-cef v2.2.0, MIT, Godot 4.6+). Config files are committed; native binaries in `addons/godot_cef/bin/` are gitignored and installed with `tools/install_godot_cef.ps1`.
-- **Source:** `webui/` (Vite + React + TypeScript). It has a `.gdignore`, so Godot never scans it (`node_modules` would otherwise be imported).
-- **Build output:** `ui/web/` (`npm run build` in `webui/`). Godot loads `res://ui/web/index.html` into one full-screen `CefTexture`. The build is committed so the game runs without Node.
+- **Source:** `ui/web/` (Vite + React + TypeScript). It has a `.gdignore`, so Godot never scans it (`node_modules` would otherwise be imported).
+- **Build output:** `ui/dist/` (`npm run build` in `ui/web/`). Godot loads `res://ui/dist/index.html` into one full-screen `CefTexture`. The build is committed so the game runs without Node; never hand-edit it.
 - **Godot side:** `ui/hud/Hud.gd` (`class_name Hud`, `CanvasLayer`) owns the `CefTexture`, turns game state into JSON messages, and answers UI requests. It is created only on clients with a display (`DisplayServer.get_name() != "headless"` and `ClassDB.class_exists("CefTexture")`). The server and headless tests never create a browser.
 - **Dev mode:** the client started with `-- --ui-dev` loads `GameConst.UI_DEV_URL` (`http://localhost:5173/`, the Vite dev server with hot reload) instead of the built page.
+
+## Source layout (`ui/web/src/`)
+Same shape and dependency rule as the Godot side: `app/ -> features/ -> lib/`. `lib/` never imports `features/` or `app/`; a feature never imports another feature's files. Cross-folder imports use the `@/` alias.
+```
+main.tsx                  entry: installs the bridge, renders <App />
+app/                      App.tsx (providers), router.tsx (route tree), queryClient.ts
+lib/ipc/                  protocol.ts (message and HudState types), bridge.ts (+ bridge.test.ts)
+features/<screen>/        <Screen>Screen.tsx (route component), <screen>Store.ts, components/
+styles/index.css          Tailwind entry
+```
+A new screen adds `features/<screen>/`, one route in `app/router.tsx`, and its request methods to the table below.
 
 ## Which tool for what
 | Need | Tool |
@@ -52,6 +63,6 @@ Methods so far: `ping` (replies `{"pong": true}`). Screen cards add their own.
 The HUD is display-only: the `CefTexture` uses `mouse_filter = MOUSE_FILTER_IGNORE` and `focus_mode = FOCUS_NONE`, so mouse and keys reach the game. Interactive panels (later) switch to `MOUSE_FILTER_STOP` and free the mouse while open.
 
 ## Open items
-- Export: Godot export must include `ui/web/*` as non-resource files (export filter), checked when export is set up.
+- Export: Godot export must include `ui/dist/*` as non-resource files (export filter), checked when export is set up.
 - Remote DevTools is on by default (port 9229). Turn it off for release builds (`godot_cef/debug/remote_devtools_port`).
 - Visual theme: neutral placeholder until the owner picks one.

@@ -43,3 +43,5 @@ godot_console --headless --path . -s res://tests/run_tests.gd
 - Smoke drivers you write for a run must live under `tools/smoke/` and stay in the repo, so the supervisor can rerun them. Do not delete them.
 - Rules that hold "for the whole party" must also hold at every time-delayed completion (channels) and at every way into the party (invite, accept), not only at the start action.
 - `LootDrop._on_take` / `_can_access` only check ALIVE. Any pickup RPC must add range, line-of-sight and the COP seizure rule before it is wired.
+- npm in this sandbox: the default cache is outside the workspace (`EPERM`), so pass `--cache <session temp dir>\npm-cache` to `npm install` / `npm ci`. Vitest needs `pool: 'threads'` (forks cannot spawn).
+- Web UI source is `ui/web/` (layout in `docs/design/WEB_UI.md`); build output `ui/dist/` is generated: change the source and rebuild, never edit `ui/dist/`.

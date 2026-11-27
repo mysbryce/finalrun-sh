@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { HudState } from './types'
+import type { HudState } from '@/lib/ipc/protocol'
 
 type HudStore = {
   hud: HudState | null

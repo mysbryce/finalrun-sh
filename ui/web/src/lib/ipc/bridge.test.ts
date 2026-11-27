@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { handleMessage, installBridge, request, type BridgeDeps } from './bridge'
-import type { HudState } from './types'
+import type { HudState } from './protocol'
 
 const sample: HudState = {
   role: 'CRIMINAL',

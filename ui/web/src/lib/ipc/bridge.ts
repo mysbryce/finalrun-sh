@@ -1,4 +1,4 @@
-import type { HudState, PageToGodot } from './types'
+import type { HudState, PageToGodot } from './protocol'
 
 declare global {
   interface Window {
