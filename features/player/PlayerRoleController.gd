@@ -559,7 +559,8 @@ func set_item_uid_allocator(allocator: Callable) -> void:
 ## an existing item use `receive_item()` so the uid survives the move.
 func grant_loot(loot_id: String, value: int, issued: bool = false) -> Dictionary:
 	var item := ItemUtils.make_item(_allocate_item_uid(), loot_id, value, issued)
-	item["slot"] = first_free_slot(loot_bag)
+	# -1 when the bag is full; callers check can_fit_bag() first.
+	item["slot"] = find_fit(loot_bag, ItemUtils.size_of(loot_id))
 	loot_bag.append(item)
 	if not issued:
 		notoriety += float(int(item["value"]))
@@ -588,7 +589,8 @@ func receive_item(item: Dictionary, source: String) -> Dictionary:
 		received.erase("slot")
 		equipped_gear.append(received)
 	else:
-		received["slot"] = first_free_slot(loot_bag)
+		# -1 when the bag is full; callers check can_fit_bag() first.
+		received["slot"] = find_fit(loot_bag, ItemUtils.size_of(String(received.get("id", ""))))
 		loot_bag.append(received)
 		if not bool(received.get("issued", false)):
 			notoriety += float(int(received.get("value", 0)))
@@ -596,15 +598,51 @@ func receive_item(item: Dictionary, source: String) -> Dictionary:
 	return received
 
 
-## Smallest grid slot (>= 0) not used by any item in `bag`.
-static func first_free_slot(bag: Array) -> int:
-	var used := {}
+## Grid cells covered by an item of `size` whose top-left cell is `slot`.
+## Returns [] when the item would leave the grid.
+static func footprint(slot: int, size: Vector2i) -> Array[int]:
+	var cells: Array[int] = []
+	var columns: int = GameConst.INVENTORY_BAG_COLUMNS
+	var rows: int = GameConst.INVENTORY_BAG_SLOTS / GameConst.INVENTORY_BAG_COLUMNS
+	if slot < 0:
+		return cells
+	var col: int = slot % columns
+	var row: int = slot / columns
+	if col + size.x > columns or row + size.y > rows:
+		return cells
+	for dy: int in range(size.y):
+		for dx: int in range(size.x):
+			cells.append((row + dy) * columns + (col + dx))
+	return cells
+
+
+## True when an item of `size` fits at `slot` without covering any item of
+## `bag` (items whose uid is in `ignore_uids` do not count).
+static func fits_at(bag: Array, slot: int, size: Vector2i, ignore_uids: Array) -> bool:
+	var cells := footprint(slot, size)
+	if cells.is_empty():
+		return false
 	for item: Dictionary in bag:
-		used[int(item.get("slot", -1))] = true
-	var slot: int = 0
-	while used.has(slot):
-		slot += 1
-	return slot
+		if ignore_uids.has(int(item.get("uid", 0))):
+			continue
+		var covered := footprint(int(item.get("slot", -1)), ItemUtils.size_of(String(item.get("id", ""))))
+		for cell: int in covered:
+			if cells.has(cell):
+				return false
+	return true
+
+
+## First slot where an item of `size` fits in `bag`, or -1 when none does.
+static func find_fit(bag: Array, size: Vector2i) -> int:
+	for slot: int in range(GameConst.INVENTORY_BAG_SLOTS):
+		if fits_at(bag, slot, size, []):
+			return slot
+	return -1
+
+
+## True when an item with that id still fits somewhere in the loot bag.
+func can_fit_bag(item_id: String) -> bool:
+	return find_fit(loot_bag, ItemUtils.size_of(item_id)) != -1
 
 
 ## Moves a bag item to a grid slot; swaps with the item already there.
@@ -622,10 +660,37 @@ func move_bag_item(uid: int, slot: int) -> bool:
 	var old_slot: int = int(moving.get("slot", -1))
 	if old_slot == slot:
 		return true
+	var size := ItemUtils.size_of(String(moving.get("id", "")))
+	if fits_at(loot_bag, slot, size, [uid]):
+		moving["slot"] = slot
+		inventory_changed.emit()
+		return true
+	var a := footprint(slot, size)
+	var overlapping: Array[Dictionary] = []
 	for item: Dictionary in loot_bag:
-		if not is_same(item, moving) and int(item.get("slot", -1)) == slot:
-			item["slot"] = old_slot
-			break
+		if is_same(item, moving):
+			continue
+		var covered := footprint(int(item.get("slot", -1)), ItemUtils.size_of(String(item.get("id", ""))))
+		for cell: int in covered:
+			if a.has(cell):
+				overlapping.append(item)
+				break
+	if overlapping.size() != 1:
+		return false
+	var other: Dictionary = overlapping[0]
+	var other_uid: int = int(other.get("uid", 0))
+	var other_size := ItemUtils.size_of(String(other.get("id", "")))
+	var b := footprint(old_slot, other_size)
+	if a.is_empty() or b.is_empty():
+		return false
+	for cell: int in a:
+		if b.has(cell):
+			return false
+	if not fits_at(loot_bag, slot, size, [uid, other_uid]):
+		return false
+	if not fits_at(loot_bag, old_slot, other_size, [uid, other_uid]):
+		return false
+	other["slot"] = old_slot
 	moving["slot"] = slot
 	inventory_changed.emit()
 	return true

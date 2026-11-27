@@ -176,6 +176,7 @@ static func search_view(target_peer_id: int, items: Array) -> Dictionary:
 
 
 static func item_view(item: Dictionary, default_source: String) -> Dictionary:
+	var size := ItemUtils.size_of(String(item.get("id", "")))
 	return {
 		"uid": int(item.get("uid", 0)),
 		"id": String(item.get("id", "")),
@@ -183,6 +184,8 @@ static func item_view(item: Dictionary, default_source: String) -> Dictionary:
 		"value": int(item.get("value", 0)),
 		"source": String(item.get("source", default_source)),
 		"slot": int(item.get("slot", -1)),
+		"w": size.x,
+		"h": size.y,
 	}
 
 

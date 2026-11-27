@@ -83,7 +83,10 @@ func _on_take(actor_peer: int, item: Dictionary) -> Dictionary:
 	var controller := player.get_node_or_null("PlayerRoleController") as PlayerRoleController
 	if controller == null:
 		return {"ok": false, "reason": "invalid_state"}
-	controller.receive_item(item, String(item.get("source", "bag")))
+	var source := String(item.get("source", "bag"))
+	if source != "gear" and not controller.can_fit_bag(String(item.get("id", ""))):
+		return {"ok": false, "reason": "bag_full"}
+	controller.receive_item(item, source)
 	return {"ok": true, "item": item}
 
 

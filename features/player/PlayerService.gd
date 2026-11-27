@@ -360,6 +360,10 @@ func loot(peer_id: int, lootable_name: String, smash: bool) -> void:
 	if player.global_position.distance_to(lootable.global_position) > GameConst.INTERACT_RANGE:
 		_notify(peer_id, "Too far away")
 		return
+	var controller := player.get_role_controller()
+	if controller != null and not controller.can_fit_bag(lootable.loot_id):
+		_notify(peer_id, "Bag full")
+		return
 	var value: int = lootable.value
 	var ok: bool = lootable.server_smash(player) if smash else lootable.server_lockpick(player)
 	if ok:

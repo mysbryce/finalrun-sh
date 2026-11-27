@@ -8,6 +8,22 @@ extends RefCounted
 ## therefore lives in `PlayerService`, not here.
 
 
+## Grid size (columns x rows) of each item id in the bag. Unknown ids are 1x1.
+## ponytail: a table until item Resources carry their own size.
+const ITEM_SIZES: Dictionary = {
+	"valuables": Vector2i(1, 2),
+	"jewelry": Vector2i(1, 1),
+	"electronics": Vector2i(2, 1),
+	"cash_box": Vector2i(2, 2),
+	"gold_bar": Vector2i(2, 1),
+	"painting": Vector2i(2, 3),
+}
+
+
+static func size_of(item_id: String) -> Vector2i:
+	return ITEM_SIZES.get(item_id, Vector2i(1, 1))
+
+
 ## Builds one item. `uid` must come from `PlayerService.allocate_item_uid()`.
 static func make_item(uid: int, item_id: String, value: int, issued: bool = false) -> Dictionary:
 	return {

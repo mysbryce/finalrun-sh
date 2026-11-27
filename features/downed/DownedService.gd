@@ -169,7 +169,10 @@ func request_search_take(actor_peer: int, target_peer: int, item_uid: int) -> vo
 		return
 	var result: Dictionary = container.take(actor_peer, item_uid)
 	if not bool(result.get("ok", false)):
-		_notify(actor_peer, "That item is no longer there")
+		if String(result.get("reason", "")) == "bag_full":
+			_notify(actor_peer, "Bag full")
+		else:
+			_notify(actor_peer, "That item is no longer there")
 		return
 	var taken: Dictionary = result.get("item", {})
 	_notify(actor_peer, "Took %s" % String(taken.get("id", "item")))
@@ -630,6 +633,12 @@ func _body_on_take(actor_peer: int, item: Dictionary, body: Node) -> Dictionary:
 	):
 		return {"ok": false, "reason": "invalid_state"}
 	var source := String(item.get("source", "bag"))
+	if (
+		taker_controller.role == RoleController.Role.CRIMINAL
+		and source != "gear"
+		and not taker_controller.can_fit_bag(String(item.get("id", "")))
+	):
+		return {"ok": false, "reason": "bag_full"}
 	var removed: Dictionary = victim_controller.remove_item_by_uid(int(item.get("uid", 0)))
 	if removed.is_empty():
 		return {"ok": false, "reason": "invalid_state"}

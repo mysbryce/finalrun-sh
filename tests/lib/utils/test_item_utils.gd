@@ -42,3 +42,8 @@ func test_lootable_only_drops_issued() -> void:
 	assert_eq(String(lootable[1]["id"]), "vest", "non-issued gear stays lootable")
 	lootable[0]["id"] = "changed"
 	assert_eq(String(items[0]["id"]), "diamond", "lootable_only returns copies")
+
+
+func test_item_sizes() -> void:
+	assert_eq(ItemUtils.size_of("painting"), Vector2i(2, 3), "painting is 2x3")
+	assert_eq(ItemUtils.size_of("unknown_thing"), Vector2i(1, 1), "unknown ids are 1x1")
