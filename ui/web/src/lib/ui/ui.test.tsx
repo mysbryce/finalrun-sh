@@ -117,6 +117,11 @@ describe('Modal', () => {
     expect(leave).toHaveFocus()
   })
 
+  it('renders a disabled primary as disabled', () => {
+    render(<Modal title="Replace?" primary={{ label: 'Replace', onPress: () => undefined, disabled: true }} />)
+    expect(screen.getByRole('button', { name: 'Replace' })).toBeDisabled()
+  })
+
   it('returns focus to the opener after unmount', () => {
     const { opener } = openModal(false)
     fireEvent.click(screen.getByRole('button', { name: 'Stay' }))

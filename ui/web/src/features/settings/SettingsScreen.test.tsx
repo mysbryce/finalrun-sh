@@ -21,7 +21,8 @@ function chooseOption(label: string, option: string) {
 
 describe('SettingsScreen', () => {
   beforeEach(() => {
-    vi.mocked(request).mockClear()
+    vi.mocked(request).mockReset()
+    vi.mocked(request).mockImplementation(() => Promise.resolve({}))
     reset()
   })
 
@@ -84,7 +85,27 @@ describe('SettingsScreen', () => {
     expect(row('bind_sell_loot')).toBeNull()
     expect(screen.queryByText('Sell loot')).toBeNull()
     expect(within(row('bind_fire')).getByText('LMB')).toBeInTheDocument()
-    expect(within(row('bind_fire')).getByRole('button', { name: 'Change' })).toBeDisabled()
+    expect(within(row('bind_fire')).getByRole('button', { name: 'Change' })).toBeEnabled()
+    expect(within(row('bind_jump')).getByText('Coming later')).toBeInTheDocument()
+    expect(within(row('bind_jump')).getByRole('button', { name: 'Change' })).toBeDisabled()
+  })
+
+  it('Change on Interact opens the rebind dialog', () => {
+    vi.mocked(request).mockImplementation((m) => (m === 'settings.capture' ? new Promise(() => {}) : Promise.resolve({})))
+    render(<SettingsScreen tab="controls" />)
+    fireEvent.click(within(row('bind_interact')).getByRole('button', { name: 'Change' }))
+    expect(screen.getByRole('dialog', { name: 'Rebind Interact / lockpick / search' })).toBeInTheDocument()
+    expect(request).toHaveBeenCalledWith('settings.capture', { key: 'bind_interact' }, 20000)
+    expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Reset' })).toBeDisabled()
+  })
+
+  it('Look and Pause / back are fixed', () => {
+    render(<SettingsScreen tab="controls" />)
+    for (const key of ['bind_look', 'bind_pause']) {
+      expect(within(row(key)).getByText('Fixed')).toBeInTheDocument()
+      expect(within(row(key)).queryByRole('button', { name: 'Change' })).toBeNull()
+    }
   })
 
   it('Discard clears the draft', () => {

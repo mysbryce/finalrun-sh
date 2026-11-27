@@ -36,11 +36,34 @@ const NAMED: Record<string, string> = {
   MouseLeft: 'LMB',
   MouseRight: 'RMB',
   MouseMiddle: 'MMB',
+  MouseBack: 'Mouse 4',
+  MouseForward: 'Mouse 5',
   MouseMotion: 'Mouse',
-  ShiftLeft: 'Shift',
-  ControlLeft: 'Ctrl',
-  AltLeft: 'Alt',
+  ShiftLeft: 'Left Shift',
+  ShiftRight: 'Right Shift',
+  ControlLeft: 'Left Ctrl',
+  ControlRight: 'Right Ctrl',
+  AltLeft: 'Left Alt',
+  AltRight: 'Right Alt',
   Escape: 'Esc',
+  Backquote: '`',
+  Minus: '-',
+  Equal: '=',
+  BracketLeft: '[',
+  BracketRight: ']',
+  Backslash: '\\',
+  Semicolon: ';',
+  Quote: "'",
+  Comma: ',',
+  Period: '.',
+  Slash: '/',
+  ArrowUp: '↑',
+  ArrowDown: '↓',
+  ArrowLeft: '←',
+  ArrowRight: '→',
+  PageUp: 'Page Up',
+  PageDown: 'Page Down',
+  CapsLock: 'Caps Lock',
 }
 
 function codeText(code: string): string {
@@ -49,6 +72,8 @@ function codeText(code: string): string {
   if (key) return key[1]
   const digit = /^Digit(\d)$/.exec(code)
   if (digit) return digit[1]
+  const numpad = /^Numpad(\d)$/.exec(code)
+  if (numpad) return `Num ${numpad[1]}`
   return code
 }
 

@@ -38,6 +38,9 @@ export const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'others', label: 'Others' },
 ]
 
+/** Binding keys that cannot be rebound or unbound. */
+export const FIXED_BINDINGS = ['bind_look', 'bind_pause']
+
 const BY_KEY = new Map(SETTINGS.map((e) => [e.key, e]))
 
 export function entryFor(key: string): SettingEntry | undefined {

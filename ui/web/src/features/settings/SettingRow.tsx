@@ -8,9 +8,14 @@ import { Modal } from '@/lib/ui/Modal'
 import { Slider } from '@/lib/ui/Slider'
 import { Toggle } from '@/lib/ui/Toggle'
 import { bindingText, optionLabel, valueText } from './format'
+import { FIXED_BINDINGS } from './schema'
 import type { SettingEntry } from './schema'
 
 export const ALWAYS_AVAILABLE: SettingAvailability = { visible: true, enabled: true, reason: null }
+
+/** Binding chip (also used by the capture dialog). */
+export const BINDING_CHIP =
+  'grid h-7 min-w-10 place-items-center rounded-[2px] border border-white/70 px-2 text-xs leading-none font-bold text-zinc-100'
 
 export interface SettingRowProps {
   entry: SettingEntry
@@ -24,6 +29,8 @@ export interface SettingRowProps {
   onChange: (value: SettingValue) => void
   /** Stages defaults for the keys an action row resets. */
   onReset: (which: 'controls' | 'all') => void
+  /** Opens the rebind dialog for a binding row. */
+  onCapture: () => void
 }
 
 // The lib controls render their own label; the row draws the visible label column, so theirs become sr-only.
@@ -56,10 +63,12 @@ export function SettingRow({
   locked,
   onChange,
   onReset,
+  onCapture,
 }: SettingRowProps) {
   const [confirm, setConfirm] = useState<Confirm>(null)
   if (!availability.visible) return null
   const disabled = !availability.enabled || locked
+  const fixed = entry.type === 'binding' && FIXED_BINDINGS.includes(entry.key)
   const ownLabel = entry.type === 'boolean' || entry.type === 'enum' || entry.type === 'integer' || entry.type === 'number' || entry.type === 'device'
 
   let control: ReactNode = null
@@ -116,12 +125,8 @@ export function SettingRow({
     case 'binding':
       control = (
         <div className="flex items-center gap-3">
-          <span className="grid h-7 min-w-10 place-items-center rounded-[2px] border border-white/70 px-2 text-xs leading-none font-bold text-zinc-100">
-            {bindingText(typeof value === 'string' ? value : null)}
-          </span>
-          <span title="Rebinding comes in the next update">
-            <Button label="Change" variant="secondary" size="compact" disabled />
-          </span>
+          <span className={BINDING_CHIP}>{bindingText(typeof value === 'string' ? value : null)}</span>
+          {!fixed && <Button label="Change" variant="secondary" size="compact" disabled={disabled} onPress={onCapture} />}
         </div>
       )
       break
@@ -140,7 +145,13 @@ export function SettingRow({
     }
   }
 
-  const tag = !availability.enabled ? (availability.reason === 'coming_later' ? 'Coming later' : 'Not available') : null
+  const tag = !availability.enabled
+    ? availability.reason === 'coming_later'
+      ? 'Coming later'
+      : 'Not available'
+    : fixed
+      ? 'Fixed'
+      : null
 
   return (
     <div

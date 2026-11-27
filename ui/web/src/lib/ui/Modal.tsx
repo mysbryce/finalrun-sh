@@ -5,7 +5,7 @@ import { Button } from './Button'
 export interface ModalProps {
   title: string
   children?: ReactNode
-  primary: { label: string; onPress: () => void; busy?: boolean }
+  primary: { label: string; onPress: () => void; busy?: boolean; disabled?: boolean }
   secondary?: { label: string; onPress: () => void }
   dismissible?: boolean
   onDismiss?: () => void
@@ -69,7 +69,7 @@ export function Modal({ title, children, primary, secondary, dismissible = false
         <div className="mt-3 min-h-0 flex-1 text-sm leading-5">{children}</div>
         <div ref={actionsRef} className="flex justify-end gap-2">
           {secondary && <Button label={secondary.label} variant="secondary" onPress={secondary.onPress} />}
-          <Button label={primary.label} variant="primary" loading={primary.busy} onPress={primary.onPress} />
+          <Button label={primary.label} variant="primary" loading={primary.busy} disabled={primary.disabled} onPress={primary.onPress} />
         </div>
       </div>
     </div>

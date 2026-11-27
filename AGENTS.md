@@ -50,3 +50,4 @@ godot_console --headless --path . -s res://tests/run_tests.gd
 - Keys never reach the web page in game: the CEF browser has `FOCUS_NONE` and `_set_panel_input` only frees the mouse. Keyboard shortcuts for a screen (Enter, Esc, Tab) are handled in Godot (`Main._unhandled_input`) and forwarded; page key handlers only work in the dev preview.
 - The Hud is a `CanvasLayer` (layer 1) whose full-screen browser texture eats clicks while a panel is open: native Godot UI that must show above it needs its own `CanvasLayer` with a higher layer (constant in `GameConst`).
 - `Hud.page_ready`-style signals fire on every page load (also after boot, e.g. Vite reloads with `--ui-dev`): handlers for one-off flows must null-check their state object.
+- Run `npm run test` (vitest) from PowerShell with a `d:\...` path. From Git Bash the cwd is `D:/...`; the drive-letter case mismatch loads vitest twice and every suite fails with "Vitest failed to find the current suite".
