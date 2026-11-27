@@ -1,6 +1,7 @@
 import type { InventoryItem } from '@/lib/ipc/protocol'
-import { EQUIP_COL, EQUIP_SLOTS, GAP, TILE } from '../layout'
-import { ItemTile } from './ItemTile'
+import { EQUIP_COL, EQUIP_SLOTS } from '../layout'
+import { GAP, TILE } from '@/lib/grid/gridLayout'
+import { ItemTile } from '@/lib/grid/ItemTile'
 
 type Props = {
   gear: InventoryItem[]

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { InventoryView } from '@/lib/ipc/protocol'
-import { BAG_COLUMNS } from './layout'
-import { moveBagItem } from './placement'
+import { BAG_COLUMNS } from '@/lib/grid/gridLayout'
+import { moveBagItem } from '@/lib/grid/placement'
 
 type InventoryStore = {
   inventory: InventoryView | null

@@ -1,8 +1,8 @@
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 import type { InventoryItem } from '@/lib/ipc/protocol'
-import { BAG_COLUMNS, cellBox } from '../layout'
-import { occupancy, placeBagItems } from '../placement'
-import { ItemTile } from './ItemTile'
+import { BAG_COLUMNS, cellBox } from '@/lib/grid/gridLayout'
+import { occupancy, placeBagItems } from '@/lib/grid/placement'
+import { ItemTile } from '@/lib/grid/ItemTile'
 
 type Props = {
   items: InventoryItem[]

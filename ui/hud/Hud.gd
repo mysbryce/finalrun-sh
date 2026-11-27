@@ -288,7 +288,7 @@ func set_player(player: Node3D) -> void:
 
 func set_money(state: Dictionary) -> void:
 	_money = state.duplicate()
-	if is_inventory_open():
+	if is_inventory_open() or is_search_open():
 		_send_inventory()
 
 
@@ -378,7 +378,7 @@ func _on_ipc_message(message: String) -> void:
 		_send_json(JSON.stringify({"type": "route", "to": _route}))
 		if _search_target != 0:
 			_send_json(JSON.stringify({"type": "search", "data": search_view(_search_target, _search_items)}))
-		if is_inventory_open():
+		if is_inventory_open() or is_search_open():
 			_send_inventory()
 	elif type == "request":
 		var routed := route_request(parsed, _search_target)
@@ -396,11 +396,10 @@ func _on_ipc_message(message: String) -> void:
 
 ## Body search contents arrived (first open or a change).
 func open_search(target_peer_id: int, items: Array) -> void:
-	if is_inventory_open():
-		close_inventory()
 	_search_target = target_peer_id
 	_search_items = items.duplicate(true)
 	_send_json(JSON.stringify({"type": "search", "data": search_view(_search_target, _search_items)}))
+	_send_inventory()
 	if _route != "/search":
 		_navigate("/search")
 		_set_panel_input(true)

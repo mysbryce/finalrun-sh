@@ -1,6 +1,6 @@
 import type { InventoryItem } from '@/lib/ipc/protocol'
 import { formatMoney } from '@/lib/format'
-import { RARITY_TILE, rarityOf } from '../rarity'
+import { RARITY_TILE, rarityOf } from './rarity'
 
 type Props = {
   item?: InventoryItem
