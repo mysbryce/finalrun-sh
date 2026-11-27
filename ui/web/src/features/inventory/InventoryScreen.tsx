@@ -6,27 +6,14 @@ import { request } from '@/lib/ipc/bridge'
 import { formatMoney } from '@/lib/format'
 import type { InventoryView } from '@/lib/ipc/protocol'
 import { useInventoryStore } from './inventoryStore'
-import {
-  BAG,
-  BAG_COLUMNS,
-  BAG_GRID,
-  CASH,
-  DETAILS,
-  EQUIPMENT,
-  FOOTER_HEIGHT,
-  HEADER_GAP,
-  TABS,
-  TITLE,
-  cellBox,
-} from './layout'
+import { BAG_COL, BAG_COLUMNS, BAG_GRID, EQUIP_COL, PANEL, cellBox } from './layout'
 import { moveBagItem, placeBagItems, slotFromDropId, targetSlot } from './placement'
 import { unzoomModifier } from './dragZoom'
+import { rarityOf } from './rarity'
 import { BagGrid } from './components/BagGrid'
-import { DetailsPanel } from './components/DetailsPanel'
 import { EquipmentPanel } from './components/EquipmentPanel'
 import { ItemTile } from './components/ItemTile'
 import { KeyHint } from './components/KeyHint'
-import { PanelHeader } from './components/PanelHeader'
 
 type Preview = { slot: number; w: number; h: number; ok: boolean }
 
@@ -115,41 +102,35 @@ export function InventoryScreen() {
   const activeItem = activeUid === null ? undefined : inventory.bag.find((i) => i.uid === activeUid)
 
   return (
-    <div className="pointer-events-auto fixed inset-0 bg-gradient-to-br from-[#3b3b3b]/95 via-[#303030]/95 to-[#262626]/95 text-white">
+    <div className="pointer-events-none fixed inset-0 text-white">
       <div
-        className="absolute text-[44px] font-black uppercase leading-none tracking-tight"
-        style={{ left: TITLE.left, top: TITLE.top }}
+        className="pointer-events-auto absolute overflow-hidden bg-black/60 backdrop-blur-md"
+        style={{ right: PANEL.right, top: PANEL.top, width: PANEL.width, height: PANEL.height }}
       >
-        INVENTORY
-      </div>
-      <div className="absolute" style={{ left: TABS.left, top: TABS.top }}>
-        <div
-          className="grid place-items-center bg-amber-400 text-sm font-bold uppercase text-zinc-900"
-          style={{ width: TABS.width, height: TABS.height }}
-        >
-          BAG
+        <div className="absolute inset-x-0 top-0 bg-black/40" style={{ height: PANEL.header }}>
+          <div
+            className="absolute flex items-center justify-between"
+            style={{ left: BAG_COL.left, width: BAG_GRID.width, height: PANEL.header }}
+          >
+            <span className="text-lg font-bold uppercase tracking-wide">BAG</span>
+            <span className="text-sm font-semibold text-white/80">{formatMoney(inventory.bagValue)}</span>
+          </div>
+          <div
+            className="absolute flex items-center"
+            style={{ left: EQUIP_COL.left, width: EQUIP_COL.width, height: PANEL.header }}
+          >
+            <span className="text-lg font-bold uppercase tracking-wide">EQUIPMENT</span>
+          </div>
         </div>
-      </div>
-      <div
-        className="absolute flex items-center rounded-sm bg-black/40 px-2 text-sm font-bold"
-        style={{ right: CASH.right, top: CASH.top, height: CASH.height }}
-      >
-        {formatMoney(inventory.cash)}
-      </div>
-      <div className="absolute" style={{ left: DETAILS.left, top: DETAILS.top, width: DETAILS.width }}>
-        <DetailsPanel item={selected} />
-      </div>
-      <DndContext
-        sensors={sensors}
-        collisionDetection={pointerWithin}
-        onDragStart={onDragStart}
-        onDragOver={onDragOver}
-        onDragEnd={onDragEnd}
-        onDragCancel={clearDrag}
-      >
-        <div className="absolute" style={{ left: BAG.left, top: BAG.top }}>
-          <PanelHeader title="BAG" right={formatMoney(inventory.bagValue)} width={BAG_GRID.width} />
-          <div style={{ marginTop: HEADER_GAP }}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={pointerWithin}
+          onDragStart={onDragStart}
+          onDragOver={onDragOver}
+          onDragEnd={onDragEnd}
+          onDragCancel={clearDrag}
+        >
+          <div className="absolute" style={{ left: BAG_COL.left, top: BAG_COL.top }}>
             <BagGrid
               items={inventory.bag}
               slots={inventory.bagSlots}
@@ -158,32 +139,43 @@ export function InventoryScreen() {
               preview={preview}
             />
           </div>
+          <DragOverlay modifiers={[unzoomModifier]}>
+            {activeItem ? (
+              <ItemTile
+                item={activeItem}
+                size={{ w: cellBox(0, activeItem.w, activeItem.h).width, h: cellBox(0, activeItem.w, activeItem.h).height }}
+              />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+        <div className="absolute" style={{ left: EQUIP_COL.left, top: EQUIP_COL.top }}>
+          <EquipmentPanel gear={inventory.gear} selectedUid={selectedUid} onSelect={select} />
         </div>
-        <DragOverlay modifiers={[unzoomModifier]}>
-          {activeItem ? (
-            <ItemTile
-              item={activeItem}
-              size={{ w: cellBox(0, activeItem.w, activeItem.h).width, h: cellBox(0, activeItem.w, activeItem.h).height }}
-            />
-          ) : null}
-        </DragOverlay>
-      </DndContext>
-      <div className="absolute" style={{ left: EQUIPMENT.left, top: EQUIPMENT.top, width: EQUIPMENT.width }}>
-        <EquipmentPanel gear={inventory.gear} selectedUid={selectedUid} onSelect={select} />
-      </div>
-      <div
-        className="absolute inset-x-0 bottom-0 flex items-center gap-8 bg-[#1b1b1b] px-[30px]"
-        style={{ height: FOOTER_HEIGHT }}
-      >
-        <button
-          type="button"
-          className="flex h-[22px] items-center rounded-sm bg-white/10 px-2"
-          onClick={() => void request('inventory.close', {})}
+        <div
+          className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-black/40"
+          style={{ height: PANEL.footer, paddingLeft: PANEL.inset, paddingRight: PANEL.inset }}
         >
-          <KeyHint k="ESC" label="Back" />
-        </button>
-        <KeyHint k="TAB" label="Close" />
-        <KeyHint k="LMB" label="Select" />
+          {selected ? (
+            <div className="flex items-baseline gap-2">
+              <span className="text-sm font-bold">{selected.label}</span>
+              <span className="text-xs font-semibold">{formatMoney(selected.value)}</span>
+              <span className="text-[10px] uppercase text-white/60">{rarityOf(selected.value)}</span>
+            </div>
+          ) : (
+            <span className="text-xs text-white/50">Select an item</span>
+          )}
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              className="flex h-[22px] items-center rounded-sm bg-white/10 px-2"
+              onClick={() => void request('inventory.close', {})}
+            >
+              <KeyHint k="ESC" label="Back" />
+            </button>
+            <KeyHint k="TAB" label="Close" />
+            <KeyHint k="LMB" label="Select" />
+          </div>
+        </div>
       </div>
     </div>
   )

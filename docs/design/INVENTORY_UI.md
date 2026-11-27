@@ -1,26 +1,25 @@
 # Inventory screen (TAB)
 
-Owner request 2026-11-27: an inventory screen as close as possible to the ROB RUN bag/equipment screen (studied from its Steam screenshot of the Black Market, which shows the same BAG and EQUIPMENT panels). We match the **structure**: where panels sit, the slot grid, tile sizes, rarity-tinted tiles, header bars, footer key hints. We do **not** copy its look: no condensed italic display font, no lime accent, no giant watermark title, no icons or art. Our style is the one in `docs/design/HUD_LAYOUT.md` ("Visual style"). Once the owner approves the result, this screen becomes the template for a UI skill.
+Owner request 2026-11-27: the TAB inventory as close as possible to ROB RUN's. The owner exported ROB RUN's UI layout data (Unity RectTransforms) to `E:/ROBRUN/rrui-export/out`; the in-raid inventory is the tree `KeyboardMouseInventoryDialog` in `space-battle_assets_all/ui.json` (body/loot search: `KeyboardMouseExternalInventoryDialog`). We copy its **geometry** (panel placement, sizes, grid, slot layout). We do **not** copy its look or assets: no sprites, icons, fonts, condensed italic text, lime accent or art from the export or the game. Our style is the one in `docs/design/HUD_LAYOUT.md` ("Visual style"). Once the owner approves the result, this screen becomes the template for a UI skill.
 
-## Reference structure (observed)
-- Full-screen dark backdrop over the game.
-- Top-left: big screen title; under it a row of tabs, the active one filled with the accent color.
-- Top-right: cash chip.
-- Left: a wide panel with a header bar (list of things to pick from).
-- Right: `BAG` panel: header bar, then a grid of square slots (6 columns); items fill from the top-left; empty slots show a faint `×`; some items are bigger than one slot.
-- Far right: `EQUIPMENT` panel: header bar, two wide weapon slots stacked, then two square slots (armor, bag) side by side, then a `POUCH` label with a 2x2 block of small slots.
-- Tiles: background tinted by rarity (green, purple, gold) with a darker gradient; a count or value in the bottom-right corner.
-- Bottom: full-width footer bar with key hints (`ESC BACK`, mouse `ACTIONS`).
+(First version followed the Black Market screenshot, a full-screen shop; the export shows the in-raid inventory is a compact panel on the right with the game visible.)
 
-## Ours
+## Reference layout (from the export, 1920x1080 canvas)
+- `ContentPanel` 784 x 804, anchored right-middle, 38 px from the right edge; blurred dark background inside the panel only; the rest of the screen shows the game.
+- Header bar 54 high across the panel: over the bag column the title (`BAG`) with the bag's total value right-aligned; over the equipment column a second title (`EQUIPMENT`).
+- Bag column: 18 px from the left, 456 wide, starts under the header; grid 6 columns x 9 rows, cells 74 px with a 2 px gap (76 px pitch), 682 high.
+- Equipment column: 18 px from the right, 274 wide, starts under the header, 606 high: `weapon_0` 274 x 132 at top; `weapon_1` 274 x 132 at y 142; `vest` 132 x 132 at (0, 284); `backpack` 132 x 132 at (142, 284); bottom row (150 high, at the bottom of the column): `belt` 108 x 150 on the left, four `pocket` cells 74 x 74 (76 pitch, 2x2) on the right.
+- Footer bar 54 high across the panel: key hints right-aligned 20 px from the right; an owner label on the left (off in the own inventory).
+- Search dialog (`External...`): a second panel 491 x 804 to the left of the inventory panel (right edge 836 px from the screen's right edge, so a 14 px gap), same header/footer, its own 454-wide grid.
+
+## Ours (1280x720 base: reference x 2/3, rounded to our 50 px cell / 1 px gap grid)
 | Part | Content |
 |---|---|
-| Title | `INVENTORY`, tab row with one active tab `BAG` |
-| Top-right | cash chip `formatMoney(cash)` |
-| Left panel `DETAILS` | the selected tile: big tile, label, value, source (`BAG` / `GEAR`); "Select an item" when none |
-| `BAG` panel | header shows bag value; 6 x 9 grid (54 slots, 50 px cells, 1 px gap); items take `w x h` cells (see "Item sizes") |
-| `EQUIPMENT` panel | slots in order: `PRIMARY` (wide), `SECONDARY` (wide), `ARMOR`, `BAG`, then a `POUCH` row: one tall pouch slot and a 2x2 block of small slots; gear items fill these slots in order; empty big slots show the slot name faintly, empty small slots a faint X |
-| Footer | `[ESC] BACK` (clickable, closes), `[TAB] CLOSE`, `[LMB] SELECT` |
+| Panel | 524 x 536, right 25, top 92; `bg-black/60 backdrop-blur-md`; no full-screen backdrop, no big title, no tabs |
+| Header (36) | left: `BAG` + `formatMoney(bagValue)` right-aligned over the bag column; right: `EQUIPMENT` over the equipment column |
+| Bag column | left 12, under the header: 6 x 9 grid (54 slots, 50 px cells, 1 px gap, 305 x 458); items take `w x h` cells (see "Item sizes") |
+| Equipment column | right 12, width 183, under the header: `PRIMARY` 183 x 88; `SECONDARY` 183 x 88 at y 95; `ARMOR` 88 x 88 at (0, 190) and `BAG` 88 x 88 at (95, 190); `POUCH` label; bottom row at y 304: `POUCH` 72 x 100 on the left, 2x2 `Pocket` cells (50 px, 1 px gap) right-aligned; gear fills these 9 slots in that order |
+| Footer (36) | left: the selected item (`label · $value · RARITY`) or `Select an item`; right-aligned hints `[ESC] BACK` (clickable, closes), `[TAB] CLOSE`, `[LMB] SELECT` |
 
 Rarity (display only, by value): `value <= 0` issued (zinc), `< 250` common (emerald), `< 600` rare (violet), else epic (amber).
 
@@ -43,6 +42,7 @@ Source: `PlayerService.hud_state_of` adds `bag_items` (`loot_bag`) and `gear` (`
 - Each bag item carries `"slot": int` (0-based grid index). A new or received item gets the first free slot; a received item never keeps the slot it had in another inventory.
 - Page request `inventory.move {uid, slot}` -> `Hud` validates shape (`uid > 0`, `0 <= slot < INVENTORY_BAG_SLOTS`, else `bad_params`) and emits `inventory_move_requested(uid, slot)` -> `Main` -> `ServerManager.request_move_bag_item(uid, slot)` -> RPC `server_request_move_bag_item` (alive-gated) -> `PlayerRoleController.move_bag_item(uid, slot)` (swap if occupied) -> `inventory_changed` -> new `client_hud_state` -> new `inventory` message.
 - The page moves the tile at once (optimistic) and the next `inventory` message from Godot is the truth.
+- Drag uses pointer events (`@dnd-kit/core`), not native HTML5 drag and drop: CEF off-screen rendering does not run native drag sessions.
 - Move rule (same on server and page): `slot` is the item's top-left cell. The move succeeds when the item's footprint at `slot` stays inside the grid and covers no other item. Otherwise it is a swap when the footprint covers exactly one other item B, and after the swap (B at the moving item's old slot) both footprints are inside the grid, do not overlap each other and cover nothing else. Anything else is rejected (the tile snaps back).
 
 ## Item sizes
@@ -51,16 +51,3 @@ Source: `PlayerService.hud_state_of` adds `bag_items` (`loot_bag`) and `gear` (`
 - A new or received bag item takes the first slot (row by row) where its footprint fits.
 - Bag full: picking up a lootable, taking a bag item from a body or a loot drop is refused with the notification `Bag full` when no slot fits. Gear never needs bag space.
 - Grid: `INVENTORY_BAG_COLUMNS = 6`, `INVENTORY_BAG_SLOTS = 54` (6 x 9, as in the reference).
-
-## Visual measurements (reference 1920x1080 -> our 1280x720 base, x 2/3)
-| Part | Position / size (CSS px) |
-|---|---|
-| Title | left 25, top 32 |
-| Tabs | left 25, top 95; tab 132 x 27 |
-| Cash chip | right 23, top 29, height 25 |
-| Panels | top 155; header bar 33 high; 11 px gap to content |
-| `DETAILS` | left 80, width 405; body as tall as the bag grid (458) |
-| `BAG` | left 701; grid 305 x 458 |
-| `EQUIPMENT` | left 1017, width 183; wide slots 183 x 88; armor/bag 88 x 88; 7 px gaps; pouch row: tall slot 72 x 101, 11 px gap, 2x2 block of 50 px cells |
-| Footer | height 36, near-black; outlined key chips; the `BACK` hint sits in a light box |
-- Drag uses pointer events (`@dnd-kit/core`), not native HTML5 drag and drop: CEF off-screen rendering does not run native drag sessions.

@@ -26,9 +26,8 @@ describe('InventoryScreen', () => {
   it('shows the demo inventory', () => {
     useInventoryStore.setState({ inventory: DEMO_INVENTORY })
     render(<InventoryScreen />)
-    expect(screen.getByText('INVENTORY')).toBeInTheDocument()
-    expect(screen.getByText('$79,900')).toBeInTheDocument()
     expect(screen.getByText('$3,530')).toBeInTheDocument()
+    expect(screen.getByText('EQUIPMENT')).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: 'Empty slot' })).toHaveLength(33)
     expect(screen.queryByRole('button', { name: 'SECONDARY' })).toBeNull()
     expect(screen.getByRole('button', { name: 'BAG' })).toBeInTheDocument()

@@ -1,7 +1,6 @@
 import type { InventoryItem } from '@/lib/ipc/protocol'
-import { EQUIPMENT, GAP, HEADER_GAP, TILE } from '../layout'
+import { EQUIP_COL, EQUIP_SLOTS, GAP, TILE } from '../layout'
 import { ItemTile } from './ItemTile'
-import { PanelHeader } from './PanelHeader'
 
 type Props = {
   gear: InventoryItem[]
@@ -11,8 +10,10 @@ type Props = {
 
 const SLOTS = ['PRIMARY', 'SECONDARY', 'ARMOR', 'BAG', 'POUCH', 'POCKET', 'POCKET', 'POCKET', 'POCKET']
 
+type Box = { left: number; top: number; w: number; h: number }
+
 export function EquipmentPanel({ gear, selectedUid, onSelect }: Props) {
-  const slot = (i: number, size: { w: number; h: number }, pocket = false) => (
+  const tile = (i: number, size: { w: number; h: number }, pocket = false) => (
     <ItemTile
       key={i}
       item={gear[i]}
@@ -23,24 +24,27 @@ export function EquipmentPanel({ gear, selectedUid, onSelect }: Props) {
       emptyName={pocket ? 'Pocket' : undefined}
     />
   )
+  const slot = (i: number, box: Box) => (
+    <div className="absolute" style={{ left: box.left, top: box.top }}>
+      {tile(i, { w: box.w, h: box.h })}
+    </div>
+  )
   return (
-    <div className="flex flex-col">
-      <PanelHeader title="EQUIPMENT" />
-      <div className="flex flex-col" style={{ marginTop: HEADER_GAP, gap: EQUIPMENT.gap }}>
-        {slot(0, EQUIPMENT.wide)}
-        {slot(1, EQUIPMENT.wide)}
-        <div className="flex" style={{ gap: EQUIPMENT.gap }}>
-          {slot(2, EQUIPMENT.square)}
-          {slot(3, EQUIPMENT.square)}
-        </div>
-      </div>
-      <div className="text-sm font-bold uppercase" style={{ marginTop: 8, marginBottom: 6 }}>
+    <div className="relative" style={{ width: EQUIP_COL.width, height: EQUIP_SLOTS.pouch.top + EQUIP_SLOTS.pouch.h }}>
+      {slot(0, EQUIP_SLOTS.primary)}
+      {slot(1, EQUIP_SLOTS.secondary)}
+      {slot(2, EQUIP_SLOTS.armor)}
+      {slot(3, EQUIP_SLOTS.bag)}
+      <div
+        className="absolute text-xs font-bold uppercase text-white/70"
+        style={{ left: EQUIP_SLOTS.pouchLabel.left, top: EQUIP_SLOTS.pouchLabel.top }}
+      >
         POUCH
       </div>
-      <div className="flex" style={{ gap: EQUIPMENT.pouchGap }}>
-        {slot(4, EQUIPMENT.pouch)}
-        <div className="grid grid-cols-2" style={{ gap: GAP, width: 2 * TILE + GAP }}>
-          {[5, 6, 7, 8].map((i) => slot(i, { w: TILE, h: TILE }, true))}
+      {slot(4, EQUIP_SLOTS.pouch)}
+      <div className="absolute" style={{ left: EQUIP_SLOTS.pockets.left, top: EQUIP_SLOTS.pockets.top }}>
+        <div className="grid grid-cols-2" style={{ gap: GAP }}>
+          {[5, 6, 7, 8].map((i) => tile(i, { w: TILE, h: TILE }, true))}
         </div>
       </div>
     </div>
