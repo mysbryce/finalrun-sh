@@ -10,6 +10,14 @@ signal search_take_requested(target_peer_id: int, item_uid: int)
 signal search_close_requested(target_peer_id: int)
 ## The page dragged a bag item to a slot. Main forwards it to the server.
 signal inventory_move_requested(item_uid: int, slot: int)
+## The page asked to skip the boot title dwell.
+signal boot_skip_requested
+## The page asked to retry the failed boot stage.
+signal boot_retry_requested
+## The page asked to quit the game.
+signal quit_requested
+## The page sent `ready` (every page load, also after boot).
+signal page_ready
 
 
 static func role_text(role: int) -> String:
@@ -215,6 +223,8 @@ static func _ok_reply(id: int, data: Dictionary, action: Array) -> Dictionary:
 
 
 ## Reply and optional action for one page request.
+## ponytail: boot.skip / boot.retry / app.quit always reply ok; the contract's
+## not_available / busy errors are deferred (Main ignores requests that do not apply).
 static func route_request(request: Dictionary, open_target: int) -> Dictionary:
 	var id := int(request.get("id", 0))
 	var method := String(request.get("method", ""))
@@ -242,6 +252,12 @@ static func route_request(request: Dictionary, open_target: int) -> Dictionary:
 		if uid <= 0 or slot < 0 or slot >= GameConst.INVENTORY_BAG_SLOTS:
 			return _error_reply(id, "bad_params")
 		return _ok_reply(id, {}, ["move", uid, slot])
+	if method == "boot.skip":
+		return _ok_reply(id, {}, ["boot_skip"])
+	if method == "boot.retry":
+		return _ok_reply(id, {}, ["boot_retry"])
+	if method == "app.quit":
+		return _ok_reply(id, {}, ["quit"])
 	return _error_reply(id, "unknown_method")
 
 
@@ -383,6 +399,7 @@ func _on_ipc_message(message: String) -> void:
 			_send_json(JSON.stringify({"type": "search", "data": search_view(_search_target, _search_items)}))
 		if is_inventory_open() or is_search_open():
 			_send_inventory()
+		page_ready.emit()
 	elif type == "request":
 		var routed := route_request(parsed, _search_target)
 		_send_json(JSON.stringify(routed["reply"]))
@@ -395,6 +412,12 @@ func _on_ipc_message(message: String) -> void:
 			search_close_requested.emit(int(action[1]))
 		elif action.size() == 1 and action[0] == "inventory_close":
 			close_inventory()
+		elif action.size() == 1 and action[0] == "boot_skip":
+			boot_skip_requested.emit()
+		elif action.size() == 1 and action[0] == "boot_retry":
+			boot_retry_requested.emit()
+		elif action.size() == 1 and action[0] == "quit":
+			quit_requested.emit()
 
 
 ## Sends a snapshot message for `boot`, `lobby`, `party`, `settings`, `transfer`
@@ -407,6 +430,32 @@ func publish(type: String, data: Variant) -> void:
 		_snapshots.erase(type)
 	else:
 		_snapshots[type] = json
+
+
+## Shows the splash route with the current BootView.
+func show_boot(view: Dictionary) -> void:
+	publish("boot", view)
+	if _route != "/splash":
+		_navigate("/splash")
+		_set_panel_input(true)
+
+
+## Boot is over: clear the boot snapshot and return to the HUD.
+func end_boot() -> void:
+	_snapshots.erase("boot")
+	_navigate("/")
+	_set_panel_input(false)
+
+
+## Loads the page again (boot retry after a CEF timeout). Waits for a new `ready`.
+func reload_page() -> void:
+	_page_ready = false
+	if _browser == null or not is_instance_valid(_browser):
+		return
+	if _browser.has_method("reload"):
+		_browser.call("reload")
+	else:
+		_browser.set("url", page_url(OS.get_cmdline_user_args()))
 
 
 ## Body search contents arrived (first open or a change).

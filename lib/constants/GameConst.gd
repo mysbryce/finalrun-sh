@@ -130,3 +130,11 @@ const HUD_MINIMAP_HEIGHT: float = 80.0             # camera height above the pla
 const UI_PAGE_URL: String = "res://ui/dist/index.html"  # built web UI (ui/web/ -> ui/dist/)
 const UI_DEV_URL: String = "http://localhost:5173/"     # Vite dev server
 const UI_DEV_FLAG: String = "--ui-dev"                  # client user arg: load UI_DEV_URL
+
+# Boot
+const BOOT_TITLE_DWELL_MS: int = 800        # minimum title card time
+const BOOT_SKIP_AFTER_MS: int = 250         # Enter skips the title only after this
+const BOOT_CEF_TIMEOUT_MS: int = 15000      # page must send `ready` within this per attempt
+const BOOT_CONNECT_TIMEOUT_MS: int = 12000  # connection attempt timeout
+const BOOT_FALLBACK_LAYER: int = 10         # CanvasLayer of the native fallback (above the Hud)
+const DEFAULT_SERVER_HOST: String = "127.0.0.1"  # client connects here unless `--connect host:port`

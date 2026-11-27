@@ -1,7 +1,10 @@
 extends Node
 ## Boot scene. `--server` starts an ENet dedicated server on port 7777 and binds
 ## the instance root. Without the flag the process becomes a client connecting
-## to 127.0.0.1:7777.
+## to GameConst.DEFAULT_SERVER_HOST:GameConst.PORT (127.0.0.1:7777), or to the
+## user arg `--connect host:port` / `--connect=host:port`. With CEF the client
+## first runs the splash boot flow (BootFlow) and connects once the page is ready
+## and the title dwell is over; without CEF it connects immediately.
 
 const InstanceScript = preload("res://features/instance/Instance.gd")
 
@@ -13,6 +16,11 @@ var _hud: Hud = null
 var _last_life_state: int = -1
 var _last_bleedout_seconds: int = -1
 var _next_net_ms: int = 0
+var _endpoint: Dictionary = {}
+var _boot: BootFlow = null
+var _last_boot_json: String = ""
+var _last_boot_phase: String = ""
+var _fallback: CanvasLayer = null
 
 
 func _ready() -> void:
@@ -52,17 +60,11 @@ func _start_client() -> void:
 	_hud.search_take_requested.connect(ServerManager.request_search_take)
 	_hud.search_close_requested.connect(ServerManager.request_search_close)
 	_hud.inventory_move_requested.connect(ServerManager.request_move_bag_item)
-	var peer := ENetMultiplayerPeer.new()
-	var error := peer.create_client("127.0.0.1", GameConst.PORT)
-	if error != OK:
-		push_error("Could not create client (error %d)" % error)
-		get_tree().quit(1)
-		return
-	_peer = peer
-	multiplayer.connected_to_server.connect(_on_connected_to_server)
-	multiplayer.connection_failed.connect(_on_connection_failed)
-	multiplayer.server_disconnected.connect(_on_server_disconnected)
-	multiplayer.multiplayer_peer = peer
+	_hud.boot_skip_requested.connect(_on_boot_skip)
+	_hud.boot_retry_requested.connect(_on_boot_retry)
+	_hud.quit_requested.connect(_on_quit)
+	_hud.page_ready.connect(_on_page_ready)
+	_endpoint = BootFlow.parse_endpoint(OS.get_cmdline_user_args())
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	ServerManager.search_contents_received.connect(_on_search_contents)
 	ServerManager.search_closed_received.connect(_on_search_closed)
@@ -70,12 +72,147 @@ func _start_client() -> void:
 	ServerManager.hud_state_received.connect(_on_hud_state)
 	ServerManager.mask_channel_received.connect(_on_hud_mask_channel)
 	ServerManager.party_changed_client.connect(_on_hud_party)
-	print("[Main] Connecting to 127.0.0.1:%d" % GameConst.PORT)
+	if not Hud.can_use_browser():
+		_connect_to_server()
+	else:
+		_boot = BootFlow.new()
+		_boot.start(Time.get_ticks_msec(), BootFlow.build_id())
+		_hud.show_boot(_boot.view())
 	print(
 		"[Main] Controls: 1 Motel | 2 LootyBay | 3 House | 4 Center | 5 sell loot | "
 		+ "F mask | G cop duty | H surrender | P create party | R revive | X finish | "
 		+ "C cuff | E lockpick/search | V smash | T take | Q close | LMB fire (mouse captured, Esc frees it)"
 	)
+
+
+## Starts the ENet client for `_endpoint`. During boot a failure goes to BootFlow;
+## without boot it quits as before.
+func _connect_to_server() -> void:
+	if not bool(_endpoint.get("ok", false)):
+		if _boot != null:
+			_boot.on_connection_failed("invalid_endpoint")
+			return
+		push_error("Invalid --connect endpoint")
+		get_tree().quit(1)
+		return
+	var host := String(_endpoint.get("host", GameConst.DEFAULT_SERVER_HOST))
+	var port := int(_endpoint.get("port", GameConst.PORT))
+	var peer := ENetMultiplayerPeer.new()
+	var error := peer.create_client(host, port)
+	if error != OK:
+		if _boot != null:
+			_boot.on_connection_failed("connection_failed")
+			return
+		push_error("Could not create client (error %d)" % error)
+		get_tree().quit(1)
+		return
+	_peer = peer
+	if not multiplayer.connected_to_server.is_connected(_on_connected_to_server):
+		multiplayer.connected_to_server.connect(_on_connected_to_server)
+	if not multiplayer.connection_failed.is_connected(_on_connection_failed):
+		multiplayer.connection_failed.connect(_on_connection_failed)
+	if not multiplayer.server_disconnected.is_connected(_on_server_disconnected):
+		multiplayer.server_disconnected.connect(_on_server_disconnected)
+	multiplayer.multiplayer_peer = peer
+	print("[Main] Connecting to %s:%d" % [host, port])
+
+
+func _on_boot_skip() -> void:
+	if _boot == null:
+		return
+	_boot.skip(Time.get_ticks_msec())
+
+
+func _on_boot_retry() -> void:
+	if _boot == null:
+		return
+	match _boot.retry(Time.get_ticks_msec()):
+		"connect":
+			_connect_to_server()
+		"reload":
+			_hide_native_fallback()
+			if _hud != null:
+				_hud.reload_page()
+
+
+func _on_quit() -> void:
+	get_tree().quit()
+
+
+func _on_page_ready() -> void:
+	if _boot == null:
+		return
+	_boot.on_page_ready(Time.get_ticks_msec())
+	_hide_native_fallback()
+
+
+## Runs BootFlow actions and pushes the BootView to the page when it changed.
+func _process_boot() -> void:
+	var now := Time.get_ticks_msec()
+	match _boot.tick(now):
+		"connect":
+			_connect_to_server()
+		"fail_cef":
+			_show_native_fallback()
+		"abort_connect":
+			_abort_connect()
+	if _boot == null:
+		return
+	if _boot.phase != _last_boot_phase:
+		_last_boot_phase = _boot.phase
+		if _boot.phase == "failed":
+			print("[Main] Boot failed: %s" % String(_boot.error))
+	var view := _boot.view()
+	var json := JSON.stringify(view)
+	if json != _last_boot_json:
+		_last_boot_json = json
+		_hud.show_boot(view)
+
+
+func _abort_connect() -> void:
+	if _peer != null:
+		_peer.close()
+	multiplayer.multiplayer_peer = null
+
+
+## Plain Godot recovery UI shown when the page never sent `ready`.
+func _show_native_fallback() -> void:
+	if _fallback == null:
+		_fallback = CanvasLayer.new()
+		_fallback.name = "BootFallback"
+		_fallback.layer = GameConst.BOOT_FALLBACK_LAYER
+		var background := ColorRect.new()
+		background.color = Color.BLACK
+		background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_fallback.add_child(background)
+		var center := CenterContainer.new()
+		center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		background.add_child(center)
+		var column := VBoxContainer.new()
+		center.add_child(column)
+		var label := Label.new()
+		label.text = "The interface could not load."
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		column.add_child(label)
+		var buttons := HBoxContainer.new()
+		buttons.alignment = BoxContainer.ALIGNMENT_CENTER
+		column.add_child(buttons)
+		var retry := Button.new()
+		retry.text = "Retry"
+		retry.pressed.connect(_on_boot_retry)
+		buttons.add_child(retry)
+		var quit := Button.new()
+		quit.text = "Quit"
+		quit.pressed.connect(_on_quit)
+		buttons.add_child(quit)
+		add_child(_fallback)
+	_fallback.visible = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+func _hide_native_fallback() -> void:
+	if _fallback != null:
+		_fallback.visible = false
 
 
 func _create_client_view_container() -> void:
@@ -133,11 +270,17 @@ func _on_peer_disconnected(peer_id: int) -> void:
 
 func _on_connected_to_server() -> void:
 	print("[Main] Connected to server as peer %d" % multiplayer.get_unique_id())
+	if _boot != null:
+		_boot.on_connected()
+		_hud.end_boot()
+		_boot = null
 
 
 func _on_connection_failed() -> void:
 	push_error("[Main] Connection failed")
 	multiplayer.multiplayer_peer = null
+	if _boot != null:
+		_boot.on_connection_failed("connection_failed")
 
 
 func _on_server_disconnected() -> void:
@@ -155,6 +298,8 @@ func _on_viewport_size_changed() -> void:
 func _process(_delta: float) -> void:
 	if _server_mode:
 		return
+	if _boot != null:
+		_process_boot()
 	var player := _local_player()
 	if _hud != null:
 		_hud.set_player(player)
@@ -297,6 +442,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	var key_event := event as InputEventKey
 	if not key_event.pressed or key_event.echo:
+		return
+	if _boot != null and (key_event.keycode == KEY_ENTER or key_event.keycode == KEY_KP_ENTER):
+		_boot.skip(Time.get_ticks_msec())
+		get_viewport().set_input_as_handled()
 		return
 	match key_event.physical_keycode:
 		KEY_1:

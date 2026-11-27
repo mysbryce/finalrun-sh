@@ -235,6 +235,18 @@ func test_inventory_view() -> void:
 	assert_eq(empty["gear"], [], "empty gear")
 
 
+func test_route_boot_and_quit() -> void:
+	var skip := Hud.route_request({"id": 9, "method": "boot.skip", "params": {}}, 0)
+	var retry := Hud.route_request({"id": 10, "method": "boot.retry", "params": {}}, 0)
+	var quit := Hud.route_request({"id": 11, "method": "app.quit", "params": {}}, 0)
+	assert_eq(skip["reply"], {"type": "reply", "id": 9, "ok": true, "data": {}}, "boot.skip ok reply")
+	assert_eq(skip["action"], ["boot_skip"], "boot.skip action")
+	assert_eq(retry["reply"]["ok"], true, "boot.retry ok")
+	assert_eq(retry["action"], ["boot_retry"], "boot.retry action")
+	assert_eq(quit["reply"]["ok"], true, "app.quit ok")
+	assert_eq(quit["action"], ["quit"], "app.quit action")
+
+
 func test_route_inventory_close() -> void:
 	var routed := Hud.route_request({"id": 4, "method": "inventory.close", "params": {}}, 0)
 	assert_eq(routed["reply"]["ok"], true, "inventory.close is ok")

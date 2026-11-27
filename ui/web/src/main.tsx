@@ -10,6 +10,8 @@ import { useSearchStore } from '@/features/search/searchStore'
 import { DEMO_SEARCH } from '@/features/search/demoSearch'
 import { useInventoryStore } from '@/features/inventory/inventoryStore'
 import { DEMO_INVENTORY } from '@/features/inventory/demoInventory'
+import { useSplashStore } from '@/features/splash/splashStore'
+import { DEMO_BOOT } from '@/features/splash/demoBoot'
 import { App } from '@/app/App'
 
 applyUiScale()
@@ -22,6 +24,7 @@ installBridge({
   },
   setSearch: (v) => useSearchStore.getState().setSearch(v),
   setInventory: (v) => useInventoryStore.getState().setInventory(v),
+  setBoot: (v) => useSplashStore.getState().setBoot(v),
 })
 
 if (import.meta.env.DEV && !window.sendIpcMessage) {
@@ -33,6 +36,10 @@ if (import.meta.env.DEV && !window.sendIpcMessage) {
   if (window.location.hash === '#inventory') {
     useInventoryStore.getState().setInventory(DEMO_INVENTORY)
     void router.navigate({ to: '/inventory' })
+  }
+  if (window.location.hash === '#splash') {
+    useSplashStore.getState().setBoot(DEMO_BOOT)
+    void router.navigate({ to: '/splash' })
   }
 }
 

@@ -9,12 +9,13 @@ import {
 import { HudScreen } from '@/features/hud/HudScreen'
 import { InventoryScreen } from '@/features/inventory/InventoryScreen'
 import { SearchScreen } from '@/features/search/SearchScreen'
+import { SplashScreen } from '@/features/splash/SplashScreen'
 
 function RootLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   return (
     <>
-      {pathname !== '/inventory' && <HudScreen />}
+      {pathname !== '/inventory' && pathname !== '/splash' && <HudScreen />}
       <Outlet />
     </>
   )
@@ -40,8 +41,14 @@ const inventoryRoute = createRoute({
   component: InventoryScreen,
 })
 
+const splashRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/splash',
+  component: SplashScreen,
+})
+
 export const router = createRouter({
-  routeTree: rootRoute.addChildren([hudRoute, searchRoute, inventoryRoute]),
+  routeTree: rootRoute.addChildren([hudRoute, searchRoute, inventoryRoute, splashRoute]),
   history: createMemoryHistory({ initialEntries: ['/'] }),
 })
 
