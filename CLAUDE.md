@@ -28,9 +28,10 @@ Folder structure, lib/utils placement, and reuse rules: `docs/CONVENTIONS.md` (b
 - Never filter what a review or check depends on: `git diff`, `git show`, `godot_console` (import/tests), `dsh` runs and their logs. These are in `exclude_commands` in `%APPDATA%\rtk\config.toml`; in PowerShell just call them without `rtk`.
 - If rtk trims output it prints `[full output: rtk recall <hash>]`. Run that before drawing conclusions. `rtk bypass <cmd>` runs a command unfiltered.
 
-## Worker effort
-- Default `reasoningEffort: high` (briefs carry the design, the worker only implements).
-- Switch to `max` when a task fails review/tests twice in a row, or for hard problems: networking race conditions, sync bugs, large multi-file refactors.
+## Worker effort (task cards)
+- Supervisor thinks, worker types. Split each brief into small step-by-step task cards (`docs/tasks/<topic>/NN-<slug>.md`, template in the `dsh-worker` skill) and run one card per dsh run.
+- Default `medium`; `low` for mechanical edits; `high` after one failure; `max` after two failures or for net races the card cannot spell out.
+- Write the next card while the current one runs. Parallel runs only when file lists do not overlap.
 
 ## Memory
 - Auto memory is off for this project (`.claude/settings.json`).
@@ -52,11 +53,10 @@ Run as subagents (`subagent_type: egm:<name>`), pointing them at the file path. 
 Skip EGM for tiny fixes (one file, obvious change).
 
 ## What to give dsh
-dsh starts fresh each run. It auto-loads `AGENTS.md`; everything else must be named in the prompt or the brief:
-- The brief path (`docs/BRIEF_<topic>.md`), and `docs/CONVENTIONS.md`.
-- `docs/ARCHITECTURE.md` when the task touches net, instances, players.
-- The design doc (`docs/design/*.md`) the brief implements.
-- Exact file paths to create or change, existing helpers in `lib/` to reuse, and constants to add to `GameConst`.
-- Acceptance: test cases to add, verification commands, what the final answer must report.
-- For fix runs: the failing output and the reviewer findings, pasted into the brief.
+dsh starts fresh each run. It auto-loads `AGENTS.md`; everything else must be in the task card:
+- Exact file paths to create or change, numbered steps with exact names, signatures, constants and values.
+- The relevant rules copied from `docs/CONVENTIONS.md` / `docs/ARCHITECTURE.md` (not "read the whole doc").
+- Existing helpers in `lib/` to reuse.
+- Tests to add, Done-when commands, what the final answer must report.
+- For fix cards: the failing output and the reviewer findings, pasted in.
 Do not give dsh: chat history, open design questions (decide them first), or Thai text.

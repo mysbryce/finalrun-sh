@@ -3,9 +3,9 @@
 You are the implementer for FinalRun, a Godot 4.7 GDScript multiplayer game. A supervisor writes briefs in `docs/BRIEF_*.md` and reviews your work.
 
 ## Always
-- Read `docs/CONVENTIONS.md` before writing code. It is binding (folder layout, `lib/`, reuse rules, naming).
-- Read `docs/ARCHITECTURE.md` before touching networking, instances, or players.
-- Implement the brief exactly. If the brief conflicts with CONVENTIONS or ARCHITECTURE, follow the brief and say so in your final answer.
+- Most runs give you a task card (`docs/tasks/<topic>/NN-<slug>.md`). The card is self-contained: do its steps in order, nothing more, and do not redesign. Read `docs/CONVENTIONS.md` or `docs/ARCHITECTURE.md` only if the card tells you to.
+- If a step cannot be done as written (missing function, wrong path), stop and report it. Do not invent a workaround.
+- For a full brief (`docs/BRIEF_*.md`): read `docs/CONVENTIONS.md` first, and `docs/ARCHITECTURE.md` before touching networking, instances, or players. If the brief conflicts with them, follow the brief and say so.
 - Do not run git. Do not delete files outside the brief's scope.
 - English only: docs, comments, identifiers, final answer.
 - Finish with: files changed, verification command output, anything you could not do.
