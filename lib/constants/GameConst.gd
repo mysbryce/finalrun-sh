@@ -77,3 +77,18 @@ const PLAYER_SPEED: float = 5.0
 const PLAYER_GRAVITY: float = 18.0
 const PLAYER_INPUT_SEND_INTERVAL: float = 0.05
 const PLAYER_MAX_HEALTH: int = 100
+
+# --- Downed state ------------------------------------------------------------
+
+const DOWNED_BLEEDOUT_SECONDS: float = 60.0
+const DOWNED_HIT_PENALTY_SECONDS: float = 5.0
+const DOWNED_CRAWL_SPEED: float = 1.2
+const REDOWN_WINDOW_SECONDS: float = 30.0
+const REVIVE_SECONDS: float = 5.0
+const REVIVE_HP_RATIO: float = 0.25
+const FINISH_SECONDS: float = 2.0
+const CUFF_SECONDS: float = 3.0
+const SEARCH_OPEN_SECONDS: float = 1.5
+const SEIZURE_COP_REWARD_RATIO: float = 0.25
+const INTERACT_RANGE: float = 2.5
+const DOWNED_CHANNEL_MAX_MOVE: float = 0.75
