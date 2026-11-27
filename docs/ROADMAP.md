@@ -28,6 +28,7 @@ Status: `[x]` done · `[~]` in progress · `[ ]` planned. Each item ships as one
 - [ ] Shared `LootContainer` component for downed bodies, `LootDrop`, `Lootable`
 - [ ] Fix: criminal death respawns as Citizen
 - [ ] Interact system (`lib/components/InteractArea`), basic HUD (role, mask timer, bag value)
+- [ ] Base character: CC0 low-poly modular humanoid + animations, male/female on one skeleton ([art direction](design/ART_DIRECTION.md))
 - [ ] Appearance foundation: `AppearanceData` Resource (body type, slot → item id), synced once on spawn, modular character rig with swappable slots. Built now so later cosmetics are data only, no code changes.
 - [ ] Local 1 server + 3 clients smoke test script
 
