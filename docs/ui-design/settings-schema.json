@@ -2,6 +2,7 @@
   {
     "key": "display_mode",
     "tab": "graphics",
+    "group": "Display",
     "type": "enum",
     "default": "borderless",
     "min": null,
@@ -21,6 +22,7 @@
   {
     "key": "resolution",
     "tab": "graphics",
+    "group": "Display",
     "type": "enum",
     "default": "native",
     "min": null,
@@ -43,6 +45,7 @@
   {
     "key": "vsync",
     "tab": "graphics",
+    "group": "Display",
     "type": "boolean",
     "default": true,
     "min": null,
@@ -58,6 +61,7 @@
   {
     "key": "frame_cap",
     "tab": "graphics",
+    "group": "Display",
     "type": "enum",
     "default": "120",
     "min": null,
@@ -82,6 +86,7 @@
   {
     "key": "render_scale",
     "tab": "graphics",
+    "group": "Quality",
     "type": "integer",
     "default": 100,
     "min": 50,
@@ -97,6 +102,7 @@
   {
     "key": "quality_preset",
     "tab": "graphics",
+    "group": "Quality",
     "type": "enum",
     "default": "medium",
     "min": null,
@@ -117,6 +123,7 @@
   {
     "key": "shadows",
     "tab": "graphics",
+    "group": "Quality",
     "type": "enum",
     "default": "medium",
     "min": null,
@@ -137,6 +144,7 @@
   {
     "key": "textures",
     "tab": "graphics",
+    "group": "Quality",
     "type": "enum",
     "default": "medium",
     "min": null,
@@ -156,6 +164,7 @@
   {
     "key": "anti_aliasing",
     "tab": "graphics",
+    "group": "Quality",
     "type": "enum",
     "default": "fxaa",
     "min": null,
@@ -176,6 +185,7 @@
   {
     "key": "view_distance",
     "tab": "graphics",
+    "group": "Quality",
     "type": "enum",
     "default": "medium",
     "min": null,
@@ -195,6 +205,7 @@
   {
     "key": "gamma",
     "tab": "graphics",
+    "group": "Accessibility",
     "type": "number",
     "default": 1,
     "min": 0.7,
@@ -210,6 +221,7 @@
   {
     "key": "fov",
     "tab": "graphics",
+    "group": "Accessibility",
     "type": "integer",
     "default": 75,
     "min": 60,
@@ -225,6 +237,7 @@
   {
     "key": "ui_scale",
     "tab": "graphics",
+    "group": "Accessibility",
     "type": "integer",
     "default": 100,
     "min": 90,
@@ -240,6 +253,7 @@
   {
     "key": "colorblind_mode",
     "tab": "graphics",
+    "group": "Accessibility",
     "type": "enum",
     "default": "off",
     "min": null,
@@ -260,6 +274,7 @@
   {
     "key": "mouse_sensitivity",
     "tab": "controls",
+    "group": "Mouse",
     "type": "number",
     "default": 0.003,
     "min": 0.0005,
@@ -275,6 +290,7 @@
   {
     "key": "ads_sensitivity",
     "tab": "controls",
+    "group": "Mouse",
     "type": "number",
     "default": 0.75,
     "min": 0.1,
@@ -290,6 +306,7 @@
   {
     "key": "invert_y",
     "tab": "controls",
+    "group": "Mouse",
     "type": "boolean",
     "default": false,
     "min": null,
@@ -305,6 +322,7 @@
   {
     "key": "aim_mode",
     "tab": "controls",
+    "group": "Mouse",
     "type": "enum",
     "default": "hold",
     "min": null,
@@ -323,6 +341,7 @@
   {
     "key": "crouch_mode",
     "tab": "controls",
+    "group": "Mouse",
     "type": "enum",
     "default": "hold",
     "min": null,
@@ -341,6 +360,7 @@
   {
     "key": "sprint_mode",
     "tab": "controls",
+    "group": "Mouse",
     "type": "enum",
     "default": "hold",
     "min": null,
@@ -359,6 +379,7 @@
   {
     "key": "bind_move_forward",
     "tab": "controls",
+    "group": "Movement",
     "type": "binding",
     "default": "KeyW",
     "min": null,
@@ -374,6 +395,7 @@
   {
     "key": "bind_move_left",
     "tab": "controls",
+    "group": "Movement",
     "type": "binding",
     "default": "KeyA",
     "min": null,
@@ -389,6 +411,7 @@
   {
     "key": "bind_move_back",
     "tab": "controls",
+    "group": "Movement",
     "type": "binding",
     "default": "KeyS",
     "min": null,
@@ -404,6 +427,7 @@
   {
     "key": "bind_move_right",
     "tab": "controls",
+    "group": "Movement",
     "type": "binding",
     "default": "KeyD",
     "min": null,
@@ -419,6 +443,7 @@
   {
     "key": "bind_jump",
     "tab": "controls",
+    "group": "Movement",
     "type": "binding",
     "default": "Space",
     "min": null,
@@ -434,6 +459,7 @@
   {
     "key": "bind_sprint",
     "tab": "controls",
+    "group": "Movement",
     "type": "binding",
     "default": "ShiftLeft",
     "min": null,
@@ -449,6 +475,7 @@
   {
     "key": "bind_crouch",
     "tab": "controls",
+    "group": "Movement",
     "type": "binding",
     "default": "ControlLeft",
     "min": null,
@@ -464,6 +491,7 @@
   {
     "key": "bind_look",
     "tab": "controls",
+    "group": "Mouse",
     "type": "binding",
     "default": "MouseMotion",
     "min": null,
@@ -479,6 +507,7 @@
   {
     "key": "bind_aim",
     "tab": "controls",
+    "group": "Combat",
     "type": "binding",
     "default": "MouseRight",
     "min": null,
@@ -494,6 +523,7 @@
   {
     "key": "bind_fire",
     "tab": "controls",
+    "group": "Combat",
     "type": "binding",
     "default": "MouseLeft",
     "min": null,
@@ -509,6 +539,7 @@
   {
     "key": "bind_reload",
     "tab": "controls",
+    "group": "Combat",
     "type": "binding",
     "default": "KeyB",
     "min": null,
@@ -524,6 +555,7 @@
   {
     "key": "bind_mask",
     "tab": "controls",
+    "group": "Combat",
     "type": "binding",
     "default": "KeyF",
     "min": null,
@@ -539,6 +571,7 @@
   {
     "key": "bind_cop_duty",
     "tab": "controls",
+    "group": "Combat",
     "type": "binding",
     "default": "KeyG",
     "min": null,
@@ -554,6 +587,7 @@
   {
     "key": "bind_surrender",
     "tab": "controls",
+    "group": "Combat",
     "type": "binding",
     "default": "KeyH",
     "min": null,
@@ -569,6 +603,7 @@
   {
     "key": "bind_interact",
     "tab": "controls",
+    "group": "Interactions",
     "type": "binding",
     "default": "KeyE",
     "min": null,
@@ -584,6 +619,7 @@
   {
     "key": "bind_smash",
     "tab": "controls",
+    "group": "Interactions",
     "type": "binding",
     "default": "KeyV",
     "min": null,
@@ -599,6 +635,7 @@
   {
     "key": "bind_revive",
     "tab": "controls",
+    "group": "Interactions",
     "type": "binding",
     "default": "KeyR",
     "min": null,
@@ -614,6 +651,7 @@
   {
     "key": "bind_finish",
     "tab": "controls",
+    "group": "Interactions",
     "type": "binding",
     "default": "KeyX",
     "min": null,
@@ -629,6 +667,7 @@
   {
     "key": "bind_cuff",
     "tab": "controls",
+    "group": "Interactions",
     "type": "binding",
     "default": "KeyC",
     "min": null,
@@ -644,6 +683,7 @@
   {
     "key": "bind_search_take",
     "tab": "controls",
+    "group": "Interactions",
     "type": "binding",
     "default": "KeyT",
     "min": null,
@@ -659,6 +699,7 @@
   {
     "key": "bind_search_close",
     "tab": "controls",
+    "group": "Interactions",
     "type": "binding",
     "default": "KeyQ",
     "min": null,
@@ -674,6 +715,7 @@
   {
     "key": "bind_sell_loot",
     "tab": "controls",
+    "group": "Interactions",
     "type": "binding",
     "default": "KeyY",
     "min": null,
@@ -689,6 +731,7 @@
   {
     "key": "bind_inventory",
     "tab": "controls",
+    "group": "Inventory and map",
     "type": "binding",
     "default": "Tab",
     "min": null,
@@ -704,6 +747,7 @@
   {
     "key": "bind_hotbar_1",
     "tab": "controls",
+    "group": "Inventory and map",
     "type": "binding",
     "default": "Digit1",
     "min": null,
@@ -719,6 +763,7 @@
   {
     "key": "bind_hotbar_2",
     "tab": "controls",
+    "group": "Inventory and map",
     "type": "binding",
     "default": "Digit2",
     "min": null,
@@ -734,6 +779,7 @@
   {
     "key": "bind_hotbar_3",
     "tab": "controls",
+    "group": "Inventory and map",
     "type": "binding",
     "default": "Digit3",
     "min": null,
@@ -749,6 +795,7 @@
   {
     "key": "bind_hotbar_4",
     "tab": "controls",
+    "group": "Inventory and map",
     "type": "binding",
     "default": "Digit4",
     "min": null,
@@ -764,6 +811,7 @@
   {
     "key": "bind_hotbar_5",
     "tab": "controls",
+    "group": "Inventory and map",
     "type": "binding",
     "default": "Digit5",
     "min": null,
@@ -779,6 +827,7 @@
   {
     "key": "bind_hotbar_6",
     "tab": "controls",
+    "group": "Inventory and map",
     "type": "binding",
     "default": "Digit6",
     "min": null,
@@ -794,6 +843,7 @@
   {
     "key": "bind_map",
     "tab": "controls",
+    "group": "Inventory and map",
     "type": "binding",
     "default": "KeyM",
     "min": null,
@@ -809,6 +859,7 @@
   {
     "key": "bind_ping",
     "tab": "controls",
+    "group": "Communication",
     "type": "binding",
     "default": "MouseMiddle",
     "min": null,
@@ -824,6 +875,7 @@
   {
     "key": "bind_push_to_talk",
     "tab": "controls",
+    "group": "Communication",
     "type": "binding",
     "default": "AltLeft",
     "min": null,
@@ -839,6 +891,7 @@
   {
     "key": "bind_chat",
     "tab": "controls",
+    "group": "Communication",
     "type": "binding",
     "default": "Enter",
     "min": null,
@@ -854,6 +907,7 @@
   {
     "key": "bind_emote",
     "tab": "controls",
+    "group": "Communication",
     "type": "binding",
     "default": "KeyJ",
     "min": null,
@@ -869,6 +923,7 @@
   {
     "key": "bind_help",
     "tab": "controls",
+    "group": "Communication",
     "type": "binding",
     "default": "KeyK",
     "min": null,
@@ -884,6 +939,7 @@
   {
     "key": "bind_party_create",
     "tab": "controls",
+    "group": "Social and travel",
     "type": "binding",
     "default": "KeyP",
     "min": null,
@@ -899,6 +955,7 @@
   {
     "key": "bind_join_motel",
     "tab": "controls",
+    "group": "Social and travel",
     "type": "binding",
     "default": "Ctrl+Digit1",
     "min": null,
@@ -914,6 +971,7 @@
   {
     "key": "bind_join_lootybay",
     "tab": "controls",
+    "group": "Social and travel",
     "type": "binding",
     "default": "Ctrl+Digit2",
     "min": null,
@@ -929,6 +987,7 @@
   {
     "key": "bind_join_house",
     "tab": "controls",
+    "group": "Social and travel",
     "type": "binding",
     "default": "Ctrl+Digit3",
     "min": null,
@@ -944,6 +1003,7 @@
   {
     "key": "bind_join_center",
     "tab": "controls",
+    "group": "Social and travel",
     "type": "binding",
     "default": "Ctrl+Digit4",
     "min": null,
@@ -959,6 +1019,7 @@
   {
     "key": "bind_pause",
     "tab": "controls",
+    "group": "Interface",
     "type": "binding",
     "default": "Escape",
     "min": null,
@@ -974,6 +1035,7 @@
   {
     "key": "reset_controls",
     "tab": "controls",
+    "group": "Interface",
     "type": "action",
     "default": null,
     "min": null,
@@ -989,6 +1051,7 @@
   {
     "key": "party_invites",
     "tab": "social",
+    "group": "Party and names",
     "type": "enum",
     "default": "everyone",
     "min": null,
@@ -1007,6 +1070,7 @@
   {
     "key": "show_player_names",
     "tab": "social",
+    "group": "Party and names",
     "type": "boolean",
     "default": true,
     "min": null,
@@ -1022,6 +1086,7 @@
   {
     "key": "chat_filter",
     "tab": "social",
+    "group": "Party and names",
     "type": "boolean",
     "default": true,
     "min": null,
@@ -1037,6 +1102,7 @@
   {
     "key": "voice_chat",
     "tab": "social",
+    "group": "Voice",
     "type": "boolean",
     "default": false,
     "min": null,
@@ -1052,6 +1118,7 @@
   {
     "key": "voice_mode",
     "tab": "social",
+    "group": "Voice",
     "type": "enum",
     "default": "push_to_talk",
     "min": null,
@@ -1070,6 +1137,7 @@
   {
     "key": "voice_input_threshold",
     "tab": "social",
+    "group": "Voice",
     "type": "integer",
     "default": -40,
     "min": -60,
@@ -1085,6 +1153,7 @@
   {
     "key": "voice_input_device",
     "tab": "social",
+    "group": "Voice",
     "type": "device",
     "default": "system_default",
     "min": null,
@@ -1102,6 +1171,7 @@
   {
     "key": "voice_output_device",
     "tab": "social",
+    "group": "Voice",
     "type": "device",
     "default": "system_default",
     "min": null,
@@ -1119,6 +1189,7 @@
   {
     "key": "voice_receive_volume",
     "tab": "social",
+    "group": "Voice",
     "type": "integer",
     "default": 100,
     "min": 0,
@@ -1134,6 +1205,7 @@
   {
     "key": "muted_players",
     "tab": "social",
+    "group": "Voice",
     "type": "integer_array",
     "default": [],
     "min": null,
@@ -1149,6 +1221,7 @@
   {
     "key": "streamer_mode",
     "tab": "social",
+    "group": "Privacy",
     "type": "boolean",
     "default": false,
     "min": null,
@@ -1164,6 +1237,7 @@
   {
     "key": "master_volume",
     "tab": "others",
+    "group": "Audio",
     "type": "integer",
     "default": 100,
     "min": 0,
@@ -1179,6 +1253,7 @@
   {
     "key": "music_volume",
     "tab": "others",
+    "group": "Audio",
     "type": "integer",
     "default": 70,
     "min": 0,
@@ -1194,6 +1269,7 @@
   {
     "key": "sfx_volume",
     "tab": "others",
+    "group": "Audio",
     "type": "integer",
     "default": 100,
     "min": 0,
@@ -1209,6 +1285,7 @@
   {
     "key": "ui_volume",
     "tab": "others",
+    "group": "Audio",
     "type": "integer",
     "default": 80,
     "min": 0,
@@ -1224,6 +1301,7 @@
   {
     "key": "voice_volume",
     "tab": "others",
+    "group": "Audio",
     "type": "integer",
     "default": 100,
     "min": 0,
@@ -1239,6 +1317,7 @@
   {
     "key": "language",
     "tab": "others",
+    "group": "General",
     "type": "enum",
     "default": "en",
     "min": null,
@@ -1256,6 +1335,7 @@
   {
     "key": "minimap_rotate",
     "tab": "others",
+    "group": "HUD",
     "type": "boolean",
     "default": false,
     "min": null,
@@ -1271,6 +1351,7 @@
   {
     "key": "show_compass",
     "tab": "others",
+    "group": "HUD",
     "type": "boolean",
     "default": true,
     "min": null,
@@ -1286,6 +1367,7 @@
   {
     "key": "show_damage_numbers",
     "tab": "others",
+    "group": "HUD",
     "type": "boolean",
     "default": false,
     "min": null,
@@ -1301,6 +1383,7 @@
   {
     "key": "notifications_duration",
     "tab": "others",
+    "group": "HUD",
     "type": "integer",
     "default": 4,
     "min": 2,
@@ -1316,6 +1399,7 @@
   {
     "key": "telemetry",
     "tab": "others",
+    "group": "Privacy",
     "type": "boolean",
     "default": false,
     "min": null,
@@ -1331,6 +1415,7 @@
   {
     "key": "crash_reports",
     "tab": "others",
+    "group": "Privacy",
     "type": "boolean",
     "default": false,
     "min": null,
@@ -1346,6 +1431,7 @@
   {
     "key": "credits",
     "tab": "others",
+    "group": "General",
     "type": "action",
     "default": null,
     "min": null,
@@ -1361,6 +1447,7 @@
   {
     "key": "reset_all",
     "tab": "others",
+    "group": "General",
     "type": "action",
     "default": null,
     "min": null,
