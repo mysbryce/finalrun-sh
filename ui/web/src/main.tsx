@@ -3,7 +3,9 @@ import { createRoot } from 'react-dom/client'
 import '@/styles/index.css'
 import { installBridge } from '@/lib/ipc/bridge'
 import { router } from '@/app/router'
-import { applyUiScale } from '@/app/uiScale'
+import { applyPrefs, applyUiScale } from '@/app/uiScale'
+import { prefsFromValues, usePrefs } from '@/lib/prefs'
+import type { SettingsView } from '@/lib/ipc/protocol'
 import { useHudStore } from '@/features/hud/hudStore'
 import { DEMO_HUD } from '@/features/hud/demoHud'
 import { useSearchStore } from '@/features/search/searchStore'
@@ -22,6 +24,13 @@ import { App } from '@/app/App'
 
 applyUiScale()
 window.addEventListener('resize', applyUiScale)
+applyPrefs(usePrefs.getState())
+usePrefs.subscribe(applyPrefs)
+
+function onSettings(view: SettingsView): void {
+  useSettingsStore.getState().setView(view)
+  usePrefs.setState(prefsFromValues(view.values))
+}
 
 installBridge({
   setHud: (h) => useHudStore.getState().setHud(h),
@@ -33,7 +42,7 @@ installBridge({
   setBoot: (v) => useSplashStore.getState().setBoot(v),
   setLobby: (v) => useLobbyStore.getState().setLobby(v),
   setParty: (v) => usePartyStore.getState().setParty(v),
-  setSettings: (v) => useSettingsStore.getState().setView(v),
+  setSettings: onSettings,
 })
 
 if (import.meta.env.DEV && !window.sendIpcMessage) {
@@ -59,7 +68,7 @@ if (import.meta.env.DEV && !window.sendIpcMessage) {
     void router.navigate({ to: '/pause' })
   }
   if (window.location.hash === '#settings') {
-    useSettingsStore.getState().setView(DEMO_SETTINGS)
+    onSettings(DEMO_SETTINGS)
     void router.navigate({ to: '/settings/graphics' })
   }
 }

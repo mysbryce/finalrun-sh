@@ -12,7 +12,7 @@ export function SearchItemRow({
 }) {
   const chip = item.source === 'bag' ? 'bg-amber-500/20 text-amber-300' : 'bg-white/10 text-white/70'
   return (
-    <div className="flex h-12 items-center gap-3 px-3 border-b border-white/5">
+    <div className="flex h-[48px] items-center gap-3 px-3 border-b border-white/5">
       <span className="text-sm font-semibold flex-1 truncate">{item.label}</span>
       <span className={`text-[10px] uppercase tracking-wider rounded px-1.5 py-0.5 ${chip}`}>
         {item.source}

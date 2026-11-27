@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { applyUiScale, uiScale } from './uiScale'
+import { DEFAULT_PREFS } from '@/lib/prefs'
+import { applyPrefs, applyUiScale, rootFontPx, uiScale } from './uiScale'
 
 describe('uiScale', () => {
   it('matches the Godot canvas scale at 1600 px', () => {
@@ -18,5 +19,24 @@ describe('uiScale', () => {
     Object.defineProperty(window, 'innerWidth', { value: 1920, configurable: true })
     applyUiScale()
     expect(document.documentElement.style.zoom).toBe('1.5')
+  })
+})
+
+describe('applyPrefs', () => {
+  it('maps the ui_scale percent to a root font size', () => {
+    expect(rootFontPx(110)).toBe(17.6)
+    expect(rootFontPx(90)).toBe(14.4)
+  })
+
+  it('sets the root font size', () => {
+    applyPrefs({ ...DEFAULT_PREFS, uiScale: 110 })
+    expect(document.documentElement.style.fontSize).toBe('17.6px')
+  })
+
+  it('sets and removes the colorblind data attribute', () => {
+    applyPrefs({ ...DEFAULT_PREFS, colorblind: 'tritanopia' })
+    expect(document.documentElement.dataset.colorblind).toBe('tritanopia')
+    applyPrefs({ ...DEFAULT_PREFS, colorblind: 'off' })
+    expect(document.documentElement.dataset.colorblind).toBeUndefined()
   })
 })

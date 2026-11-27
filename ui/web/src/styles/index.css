@@ -15,6 +15,25 @@ html {
   font-variant-numeric: normal;
 }
 
+/* Colorblind status tints (Okabe-Ito), set by applyPrefs on <html>. Amber (buttons, focus ring) stays.
+   ponytail: rarity tile gradients keep their hex colours (the value text stays). */
+html[data-colorblind='protanopia'],
+html[data-colorblind='deuteranopia'] {
+  --color-emerald-400: #56b4e9;
+  --color-red-400: #e69f00;
+  --color-red-500: #d55e00;
+  --color-red-600: #d55e00;
+  --color-sky-400: #0072b2;
+}
+
+html[data-colorblind='tritanopia'] {
+  --color-emerald-400: #009e73;
+  --color-red-400: #d55e00;
+  --color-red-500: #d55e00;
+  --color-red-600: #d55e00;
+  --color-sky-400: #cc79a7;
+}
+
 .tabular {
   font-variant-numeric: tabular-nums;
 }
