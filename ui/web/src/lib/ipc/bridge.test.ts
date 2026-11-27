@@ -5,12 +5,35 @@ import type { HudState } from './protocol'
 const sample: HudState = {
   role: 'CRIMINAL',
   life: 'ALIVE',
+  health: 75,
+  maxHealth: 100,
   cash: 1250,
   bag: 3,
   notoriety: 7,
-  timer: { label: 'Bleeding out', seconds: 12 },
-  prompt: 'Press E to loot',
+  heading: 312,
+  timer: { label: 'Masking', seconds: 2 },
+  interact: {
+    title: 'Loot crate',
+    actions: [
+      { key: 'E', label: 'lockpick' },
+      { key: 'V', label: 'smash' },
+    ],
+  },
   notifications: ['Bag secured'],
+  self: { name: 'Player 2' },
+  party: [
+    {
+      name: 'Player 3',
+      health: 100,
+      maxHealth: 100,
+      life: 'ALIVE',
+      leader: true,
+      away: false,
+    },
+  ],
+  hotbar: [{ label: 'Pistol' }, null, null, null, null, null],
+  activeSlot: 0,
+  net: { fps: 60, ping: 40 },
 }
 
 function makeDeps(): BridgeDeps {

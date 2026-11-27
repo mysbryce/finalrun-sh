@@ -4,6 +4,7 @@ import '@/styles/index.css'
 import { installBridge } from '@/lib/ipc/bridge'
 import { router } from '@/app/router'
 import { useHudStore } from '@/features/hud/hudStore'
+import { DEMO_HUD } from '@/features/hud/demoHud'
 import { App } from '@/app/App'
 
 installBridge({
@@ -12,6 +13,8 @@ installBridge({
     void router.navigate({ to })
   },
 })
+
+if (import.meta.env.DEV && !window.sendIpcMessage) useHudStore.getState().setHud(DEMO_HUD)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

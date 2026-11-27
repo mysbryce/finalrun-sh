@@ -1,17 +1,32 @@
-export type HudTimer = {
-  label: string
-  seconds: number
+export type HudTimer = { label: string; seconds: number }
+export type InteractAction = { key: string; label: string }
+export type HudInteract = { title: string; actions: InteractAction[] }
+export type PartyMember = {
+  name: string
+  health: number
+  maxHealth: number
+  life: string
+  leader: boolean
+  away: boolean
 }
-
+export type HotbarSlot = { label: string; count?: number } | null
 export type HudState = {
   role: string
   life: string
+  health: number
+  maxHealth: number
   cash: number
   bag: number
   notoriety: number
+  heading: number
   timer: HudTimer | null
-  prompt: string
+  interact: HudInteract | null
   notifications: string[]
+  self: { name: string }
+  party: PartyMember[]
+  hotbar: HotbarSlot[]
+  activeSlot: number
+  net: { fps: number; ping: number }
 }
 
 export type GodotToPage =
