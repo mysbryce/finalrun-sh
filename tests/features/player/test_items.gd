@@ -59,8 +59,7 @@ func test_remove_item_lowers_victim_notoriety() -> void:
 	assert_eq(victim.loot_bag.size(), 1, "only the removed item leaves the bag")
 	var gear: Dictionary = victim.grant_gear("rifle", 900)
 	victim.remove_item_by_uid(int(gear["uid"]))
-	assert_eq(victim.notoriety, 0.0, "removing gear cannot push notoriety below zero")
-	assert_true(victim.notoriety >= 0.0, "notoriety is clamped at zero")
+	assert_eq(victim.notoriety, 400.0, "removing gear leaves notoriety unchanged")
 	victim.free()
 
 

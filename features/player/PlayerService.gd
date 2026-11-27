@@ -58,6 +58,11 @@ func get_controller(peer_id: int) -> PlayerRoleController:
 	return _controller_for(_get_player(peer_id))
 
 
+## Party rule for invite/accept: the two sides may not mix COP and CRIMINAL.
+func can_party_together(peer_a: int, peer_b: int) -> bool:
+	return not parties_role_conflict(_party_roles(peer_a), _party_roles(peer_b))
+
+
 func current_instance(peer_id: int) -> GameInstance:
 	return _instances.current_instance_for_peer(peer_id)
 
@@ -341,6 +346,13 @@ static func party_role_conflict(member_roles: Array, requested_role: int) -> boo
 	return false
 
 
+## True when joining two role sets would put a COP and a CRIMINAL together.
+static func parties_role_conflict(roles_a: Array, roles_b: Array) -> bool:
+	var cop := RoleControllerScript.Role.COP
+	var criminal := RoleControllerScript.Role.CRIMINAL
+	return (roles_a.has(cop) and roles_b.has(criminal)) or (roles_a.has(criminal) and roles_b.has(cop))
+
+
 func surrender(peer_id: int) -> void:
 	if _transfers.has_transfer(peer_id):
 		return
@@ -581,6 +593,13 @@ func _refresh_police_vehicle(instance: GameInstance) -> void:
 	instance.set_police_vehicle_active(on_duty_count > 0)
 
 
+## A CITIZEN holding the mask channel counts as CRIMINAL for party rules.
+func _effective_role(controller: PlayerRoleController) -> int:
+	if controller.is_mask_channel_active():
+		return RoleControllerScript.Role.CRIMINAL
+	return controller.role
+
+
 ## Current roles of every party member (including the requester). Members that
 ## are between instances fall back to their persisted state snapshot.
 func _party_roles(peer_id: int) -> Array:
@@ -589,12 +608,12 @@ func _party_roles(peer_id: int) -> Array:
 		var own_controller := get_controller(peer_id)
 		if own_controller == null:
 			return []
-		return [own_controller.role]
+		return [_effective_role(own_controller)]
 	var roles: Array = []
 	for member: int in party.members:
 		var controller := get_controller(member)
 		if controller != null:
-			roles.append(controller.role)
+			roles.append(_effective_role(controller))
 			continue
 		var state: Variant = _states.get(member)
 		if state is Dictionary:

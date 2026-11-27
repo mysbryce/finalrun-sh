@@ -140,6 +140,9 @@ func server_request_party_invite(target_peer_id: int) -> void:
 	var sender: int = multiplayer.get_remote_sender_id()
 	if not _can_accept_alive_request(sender):
 		return
+	if not _players.can_party_together(sender, target_peer_id):
+		_notify(sender, "A party cannot mix COP and CRIMINAL")
+		return
 	if not _parties.invite_to_party(sender, target_peer_id):
 		_notify(sender, "Cannot invite that player")
 
@@ -148,6 +151,9 @@ func server_request_party_invite(target_peer_id: int) -> void:
 func server_request_party_accept(inviter_peer_id: int) -> void:
 	var sender: int = multiplayer.get_remote_sender_id()
 	if not _can_accept_alive_request(sender):
+		return
+	if not _players.can_party_together(sender, inviter_peer_id):
+		_notify(sender, "A party cannot mix COP and CRIMINAL")
 		return
 	if not _parties.accept_party_invite(sender, inviter_peer_id):
 		_notify(sender, "Invite is no longer valid")

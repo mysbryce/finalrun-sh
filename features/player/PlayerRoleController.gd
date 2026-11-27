@@ -593,15 +593,17 @@ func receive_item(item: Dictionary, source: String) -> Dictionary:
 	return received
 
 
-## Removes an item by uid from bag or gear. The victim's notoriety falls by the
-## item value (clamped at 0), so stealing loot also lowers their heat.
+## The victim's notoriety falls by the value of a removed bag item (clamped at 0);
+## gear removal leaves notoriety unchanged.
 func remove_item_by_uid(uid: int) -> Dictionary:
 	var removed: Dictionary = ItemUtils.remove_by_uid(loot_bag, uid)
-	if removed.is_empty():
+	var from_bag := not removed.is_empty()
+	if not from_bag:
 		removed = ItemUtils.remove_by_uid(equipped_gear, uid)
 	if removed.is_empty():
 		return {}
-	notoriety = maxf(notoriety - float(int(removed.get("value", 0))), 0.0)
+	if from_bag:
+		notoriety = maxf(notoriety - float(int(removed.get("value", 0))), 0.0)
 	inventory_changed.emit()
 	return removed
 
