@@ -1,0 +1,31 @@
+; Engine configuration file.
+; Godot 4.7 project for the FinalRun extraction sandbox.
+; Edit through the Godot editor when possible.
+
+config_version=5
+
+[application]
+
+config/name="FinalRun"
+config/description="Server-authoritative multiplayer extraction crime sandbox."
+run/main_scene="res://main/Main.tscn"
+config/features=PackedStringArray("4.7", "Forward Plus")
+
+[autoload]
+
+ServerManager="*res://autoload/ServerManager.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+
+[layer_names]
+
+3d_physics/layer_1="world"
+3d_physics/layer_2="players"
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
