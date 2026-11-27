@@ -41,3 +41,29 @@ func test_turn_toward_moves_partway() -> void:
 func test_turn_toward_large_delta_reaches_target() -> void:
 	var result: float = PlayerScript.turn_toward(0.0, 1.0, 1.0)
 	assert_true(absf(result - 1.0) < EPSILON, "large delta reaches the target yaw")
+
+
+func test_smoothed_position_slides_partway() -> void:
+	var result: Vector3 = PlayerScript.smoothed_position(Vector3.ZERO, Vector3(1, 0, 0), 0.016)
+	assert_true(result.x > 0.0 and result.x < 1.0, "small gap slides partway")
+
+
+func test_smoothed_position_snaps_when_far() -> void:
+	var result: Vector3 = PlayerScript.smoothed_position(Vector3.ZERO, Vector3(10, 0, 0), 0.016)
+	assert_eq(result, Vector3(10, 0, 0), "large gap snaps to the target")
+
+
+func test_interp_weight_bounds() -> void:
+	assert_true(absf(PlayerScript.interp_weight(0.0)) < EPSILON, "zero delta has zero weight")
+	assert_true(absf(PlayerScript.interp_weight(10.0) - 1.0) < EPSILON, "large delta approaches full weight")
+
+
+func test_player_scene_replicates_snapshot() -> void:
+	var packed: PackedScene = load("res://features/player/Player.tscn") as PackedScene
+	var player: Node = packed.instantiate()
+	var sync := player.get_node("MultiplayerSynchronizer") as MultiplayerSynchronizer
+	var paths: Array[NodePath] = sync.replication_config.get_properties()
+	player.free()
+	assert_true(paths.has(NodePath(".:sync_position")), "replicates sync_position")
+	assert_true(paths.has(NodePath(".:sync_yaw")), "replicates sync_yaw")
+	assert_false(paths.has(NodePath(".:position")), "no longer replicates position")

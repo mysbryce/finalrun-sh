@@ -77,6 +77,9 @@ const PLAYER_SPEED: float = 5.0
 const PLAYER_GRAVITY: float = 18.0
 const PLAYER_INPUT_SEND_INTERVAL: float = 0.05
 const PLAYER_MAX_HEALTH: int = 100
+const PLAYER_SYNC_INTERVAL: float = 0.05   # seconds between position snapshots (20 Hz)
+const PLAYER_INTERP_RATE: float = 15.0     # exponential smoothing rate per second
+const PLAYER_SNAP_DISTANCE: float = 3.0    # metres; larger gaps teleport instead of sliding
 
 # Camera
 const CAMERA_PIVOT_HEIGHT: float = 1.6

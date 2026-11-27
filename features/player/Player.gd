@@ -32,6 +32,10 @@ const MAX_HEALTH: int = GameConst.PLAYER_MAX_HEALTH
 
 @export var downed_deadline_ms: int = 0
 
+## Server-written snapshot of the authoritative transform. Clients smooth toward it.
+@export var sync_position: Vector3 = Vector3.ZERO
+@export var sync_yaw: float = 0.0
+
 var instance_id: String = ""
 var map_name: String = ""
 var health: int = MAX_HEALTH
@@ -42,6 +46,7 @@ var _movement_sent: bool = false
 var _send_accumulator: float = 0.0
 var _input_enabled: bool = false
 var _camera: PlayerCamera = null
+var _has_snapshot: bool = false
 
 
 func _ready() -> void:
@@ -51,6 +56,7 @@ func _ready() -> void:
 	var sync := get_node_or_null("MultiplayerSynchronizer") as MultiplayerSynchronizer
 	if sync != null:
 		sync.public_visibility = false
+		sync.replication_interval = GameConst.PLAYER_SYNC_INTERVAL
 	_update_control_state()
 
 
@@ -83,6 +89,8 @@ func setup_server(instance_node: Node, state: Dictionary) -> void:
 	var spawn_transform: Variant = instance_node.call("get_spawn_transform", peer_id)
 	if spawn_transform is Transform3D:
 		position = (spawn_transform as Transform3D).origin
+	sync_position = position
+	sync_yaw = rotation.y
 
 
 ## Client-side spawn setup. Called by the client's MultiplayerSpawner custom
@@ -181,6 +189,18 @@ func _physics_process(delta: float) -> void:
 		_client_input_tick(delta)
 
 
+func _process(delta: float) -> void:
+	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
+		return
+	if not _has_snapshot:
+		position = sync_position
+		rotation.y = sync_yaw
+		_has_snapshot = true
+		return
+	position = smoothed_position(position, sync_position, delta)
+	rotation.y = lerp_angle(rotation.y, sync_yaw, interp_weight(delta))
+
+
 func _server_physics(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= GRAVITY * delta
@@ -201,6 +221,8 @@ func _server_physics(delta: float) -> void:
 	velocity.x = direction.x * speed
 	velocity.z = direction.z * speed
 	move_and_slide()
+	sync_position = position
+	sync_yaw = rotation.y
 
 
 func _client_input_tick(delta: float) -> void:
@@ -272,6 +294,17 @@ static func facing_yaw(direction: Vector3) -> float:
 
 static func turn_toward(current_yaw: float, target_yaw: float, delta: float) -> float:
 	return lerp_angle(current_yaw, target_yaw, clampf(GameConst.PLAYER_TURN_SPEED * delta, 0.0, 1.0))
+
+
+static func interp_weight(delta: float) -> float:
+	return 1.0 - exp(-GameConst.PLAYER_INTERP_RATE * delta)
+
+
+## Next client position: snap when far (spawn, teleport), otherwise slide.
+static func smoothed_position(current: Vector3, target: Vector3, delta: float) -> Vector3:
+	if current.distance_to(target) > GameConst.PLAYER_SNAP_DISTANCE:
+		return target
+	return current.lerp(target, interp_weight(delta))
 
 
 func _now_ms() -> int:
