@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="system-ui, sans-serif" role="img" aria-labelledby="title">
+  <title id="title">Map transfer</title>
+  <defs>
+    <pattern id="own-cells" x="743" y="128" width="51" height="51" patternUnits="userSpaceOnUse"><rect x="0" y="0" width="50" height="50" fill="none" stroke="#555" stroke-width="0.75"/></pattern>
+    <pattern id="body-cells" x="406" y="128" width="51" height="51" patternUnits="userSpaceOnUse"><rect x="0" y="0" width="50" height="50" fill="none" stroke="#555" stroke-width="0.75"/></pattern>
+    <clipPath id="clip-A01"><rect x="2" y="1" width="1276" height="718"/></clipPath>
+    <clipPath id="clip-A02"><rect x="410" y="239" width="460" height="242"/></clipPath>
+    <clipPath id="clip-A03"><rect x="434" y="263" width="412" height="30"/></clipPath>
+    <clipPath id="clip-A04"><rect x="434" y="307" width="412" height="42"/></clipPath>
+    <clipPath id="clip-A05"><rect x="434" y="363" width="412" height="30"/></clipPath>
+    <clipPath id="clip-A06"><rect x="434" y="419" width="412" height="38"/></clipPath>
+  </defs>
+  <rect width="1280" height="720" fill="#191919"/>
+  <g>
+    <title>World dim</title>
+    <rect data-layout="A01" x="0" y="0" width="1280" height="720" rx="3" fill="#111" stroke="#777"/>
+    <g clip-path="url(#clip-A01)"><text x="8" y="18" font-size="14" font-weight="600" fill="#eee">World dim</text></g>
+  </g>
+  <g>
+    <title>Transfer panel</title>
+    <rect data-layout="A02" x="408" y="238" width="464" height="244" rx="3" fill="#292929" stroke="#777"/>
+    <g clip-path="url(#clip-A02)"></g>
+  </g>
+  <g>
+    <title>Overlay title</title>
+    <rect data-layout="A03" x="432" y="262" width="416" height="32" rx="3" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A03)"><text x="440" y="280" font-size="14" font-weight="600" fill="#eee">Loading Motel</text></g>
+  </g>
+  <g>
+    <title>Outcome summary</title>
+    <rect data-layout="A04" x="432" y="306" width="416" height="44" rx="3" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A04)"><text x="440" y="324" font-size="14" font-weight="600" fill="#eee">Loading map · waiting for spawn</text></g>
+  </g>
+  <g>
+    <title>Overlay status</title>
+    <rect data-layout="A05" x="432" y="362" width="416" height="32" rx="3" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A05)"><text x="440" y="380" font-size="14" font-weight="600" fill="#eee">Server status</text></g>
+  </g>
+  <g>
+    <title>Overlay footer</title>
+    <rect data-layout="A06" x="432" y="418" width="416" height="40" rx="3" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A06)"><text x="440" y="436" font-size="14" font-weight="600" fill="#eee">Context action or wait</text></g>
+  </g>
+</svg>

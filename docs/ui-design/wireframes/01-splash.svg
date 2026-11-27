@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="system-ui, sans-serif" role="img" aria-labelledby="title">
+  <title id="title">Splash and boot</title>
+  <defs>
+    <pattern id="own-cells" x="743" y="128" width="51" height="51" patternUnits="userSpaceOnUse"><rect x="0" y="0" width="50" height="50" fill="none" stroke="#555" stroke-width="0.75"/></pattern>
+    <pattern id="body-cells" x="406" y="128" width="51" height="51" patternUnits="userSpaceOnUse"><rect x="0" y="0" width="50" height="50" fill="none" stroke="#555" stroke-width="0.75"/></pattern>
+    <clipPath id="clip-A01"><rect x="2" y="1" width="1276" height="718"/></clipPath>
+    <clipPath id="clip-A02"><rect x="402" y="209" width="476" height="126"/></clipPath>
+    <clipPath id="clip-A03"><rect x="434" y="225" width="412" height="22"/></clipPath>
+    <clipPath id="clip-A04"><rect x="434" y="259" width="412" height="54"/></clipPath>
+    <clipPath id="clip-A05"><rect x="402" y="369" width="476" height="118"/></clipPath>
+    <clipPath id="clip-A06"><rect x="418" y="381" width="444" height="22"/></clipPath>
+    <clipPath id="clip-A07"><rect x="418" y="413" width="444" height="10"/></clipPath>
+    <clipPath id="clip-A08"><rect x="418" y="441" width="444" height="30"/></clipPath>
+    <clipPath id="clip-A09"><rect x="418" y="505" width="212" height="38"/></clipPath>
+    <clipPath id="clip-A10"><rect x="650" y="505" width="212" height="38"/></clipPath>
+    <clipPath id="clip-A11"><rect x="26" y="665" width="244" height="30"/></clipPath>
+    <clipPath id="clip-A12"><rect x="1010" y="665" width="244" height="30"/></clipPath>
+    <clipPath id="clip-A13"><rect x="418" y="557" width="444" height="38"/></clipPath>
+    <clipPath id="clip-A14"><rect x="418" y="557" width="140" height="38"/></clipPath>
+    <clipPath id="clip-A15"><rect x="570" y="557" width="140" height="38"/></clipPath>
+    <clipPath id="clip-A16"><rect x="722" y="557" width="140" height="38"/></clipPath>
+  </defs>
+  <rect width="1280" height="720" fill="#191919"/>
+  <g>
+    <title>Splash surface</title>
+    <rect data-layout="A01" x="0" y="0" width="1280" height="720" rx="3" fill="#111" stroke="#777"/>
+    <g clip-path="url(#clip-A01)"><text x="8" y="18" font-size="14" font-weight="600" fill="#eee">Splash surface</text></g>
+  </g>
+  <g>
+    <title>Title card</title>
+    <rect data-layout="A02" x="400" y="208" width="480" height="128" rx="3" fill="#292929" stroke="#777"/>
+    <g clip-path="url(#clip-A02)"></g>
+  </g>
+  <g>
+    <title>Studio label</title>
+    <rect data-layout="A03" x="432" y="224" width="416" height="24" rx="3" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A03)"><text x="440" y="242" font-size="11" font-weight="600" fill="#eee">Studio name</text></g>
+  </g>
+  <g>
+    <title>Game title</title>
+    <rect data-layout="A04" x="432" y="258" width="416" height="56" rx="3" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A04)"><text x="440" y="276" font-size="14" font-weight="600" fill="#eee">FinalRun</text></g>
+  </g>
+  <g>
+    <title>Boot state</title>
+    <rect data-layout="A05" x="400" y="368" width="480" height="120" rx="3" fill="#292929" stroke="#777"/>
+    <g clip-path="url(#clip-A05)"></g>
+  </g>
+  <g>
+    <title>Stage label</title>
+    <rect data-layout="A06" x="416" y="380" width="448" height="24" rx="3" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A06)"><text x="424" y="398" font-size="11" font-weight="600" fill="#eee">Loading assets / Loading interface</text></g>
+  </g>
+  <g>
+    <title>Loading progress</title>
+    <rect data-layout="A07" x="416" y="412" width="448" height="12" rx="1" fill="#333" stroke="#fbbf24"/>
+    <g clip-path="url(#clip-A07)"><rect x="418" y="415" width="275" height="6" fill="#fbbf24"/></g>
+  </g>
+  <g>
+    <title>Boot detail</title>
+    <rect data-layout="A08" x="416" y="440" width="448" height="32" rx="3" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A08)"><text x="424" y="458" font-size="14" font-weight="600" fill="#eee">Percent, indeterminate label or error</text></g>
+  </g>
+  <g>
+    <title>Primary action</title>
+    <rect data-layout="A09" x="416" y="504" width="216" height="40" rx="3" fill="#292929" stroke="#777"/>
+    <g clip-path="url(#clip-A09)"><text x="424" y="522" font-size="11" font-weight="600" fill="#eee">Retry</text></g>
+  </g>
+  <g>
+    <title>Offline action</title>
+    <rect data-layout="A10" x="648" y="504" width="216" height="40" rx="3" fill="#292929" stroke="#777"/>
+    <g clip-path="url(#clip-A10)"><text x="656" y="522" font-size="11" font-weight="600" fill="#eee">Continue offline</text></g>
+  </g>
+  <g>
+    <title>Skip hint</title>
+    <rect data-layout="A11" x="24" y="664" width="248" height="32" rx="3" fill="#292929" stroke="#777"/>
+    <g clip-path="url(#clip-A11)"><text x="32" y="682" font-size="11" font-weight="600" fill="#eee">Skip hint</text></g>
+  </g>
+  <g>
+    <title>Version</title>
+    <rect data-layout="A12" x="1008" y="664" width="248" height="32" rx="3" fill="#292929" stroke="#777"/>
+    <g clip-path="url(#clip-A12)"><text x="1016" y="682" font-size="11" font-weight="600" fill="#eee">Version + build ID</text></g>
+  </g>
+  <g>
+    <title>Boot stage rail</title>
+    <rect data-layout="A13" x="416" y="556" width="448" height="40" rx="3" fill="#292929" stroke="#777"/>
+    <g clip-path="url(#clip-A13)"></g>
+  </g>
+  <g>
+    <title>Assets stage</title>
+    <rect data-layout="A14" x="416" y="556" width="144" height="40" rx="3" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A14)"><text x="424" y="574" font-size="11" font-weight="600" fill="#eee">Assets stage</text></g>
+  </g>
+  <g>
+    <title>Interface stage</title>
+    <rect data-layout="A15" x="568" y="556" width="144" height="40" rx="3" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A15)"><text x="576" y="574" font-size="11" font-weight="600" fill="#eee">Interface stage</text></g>
+  </g>
+  <g>
+    <title>Connection stage</title>
+    <rect data-layout="A16" x="720" y="556" width="144" height="40" rx="3" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A16)"><text x="728" y="574" font-size="11" font-weight="600" fill="#eee">Connection stage</text></g>
+  </g>
+</svg>

@@ -15,3 +15,7 @@ logs/
 # Godot CEF binaries (~430 MB per platform). Install with tools/install_godot_cef.ps1
 addons/godot_cef/bin/
 ui/web/node_modules/
+
+# Codex completion markers
+docs/ui-design/.success
+docs/ui-design/.failed

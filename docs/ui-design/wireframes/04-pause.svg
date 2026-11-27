@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="system-ui, sans-serif" role="img" aria-labelledby="title">
+  <title id="title">Pause menu</title>
+  <defs>
+    <pattern id="own-cells" x="743" y="128" width="51" height="51" patternUnits="userSpaceOnUse"><rect x="0" y="0" width="50" height="50" fill="none" stroke="#555" stroke-width="0.75"/></pattern>
+    <pattern id="body-cells" x="406" y="128" width="51" height="51" patternUnits="userSpaceOnUse"><rect x="0" y="0" width="50" height="50" fill="none" stroke="#555" stroke-width="0.75"/></pattern>
+    <clipPath id="clip-A01"><rect x="2" y="1" width="1276" height="718"/></clipPath>
+    <clipPath id="clip-A02"><rect x="462" y="161" width="356" height="398"/></clipPath>
+    <clipPath id="clip-A03"><rect x="486" y="185" width="308" height="34"/></clipPath>
+    <clipPath id="clip-A04"><rect x="486" y="229" width="308" height="38"/></clipPath>
+    <clipPath id="clip-A05"><rect x="486" y="281" width="308" height="38"/></clipPath>
+    <clipPath id="clip-A06"><rect x="486" y="333" width="308" height="38"/></clipPath>
+    <clipPath id="clip-A07"><rect x="486" y="385" width="308" height="38"/></clipPath>
+    <clipPath id="clip-A08"><rect x="486" y="437" width="308" height="38"/></clipPath>
+    <clipPath id="clip-A09"><rect x="486" y="489" width="308" height="46"/></clipPath>
+  </defs>
+  <rect width="1280" height="720" fill="#191919"/>
+  <g>
+    <title>Pause dim</title>
+    <rect data-layout="A01" x="0" y="0" width="1280" height="720" rx="3" fill="#111" stroke="#777"/>
+    <g clip-path="url(#clip-A01)"><text x="8" y="18" font-size="14" font-weight="600" fill="#eee">Pause dim</text></g>
+  </g>
+  <g>
+    <title>Pause panel</title>
+    <rect data-layout="A02" x="460" y="160" width="360" height="400" rx="3" fill="#292929" stroke="#777"/>
+    <g clip-path="url(#clip-A02)"></g>
+  </g>
+  <g>
+    <title>Pause title</title>
+    <rect data-layout="A03" x="484" y="184" width="312" height="36" rx="3" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A03)"><text x="492" y="202" font-size="14" font-weight="600" fill="#eee">Pause title</text></g>
+  </g>
+  <g>
+    <title>Pause context</title>
+    <rect data-layout="A04" x="484" y="228" width="312" height="40" rx="3" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A04)"><text x="492" y="246" font-size="14" font-weight="600" fill="#eee">Pause context</text></g>
+  </g>
+  <g>
+    <title>Resume</title>
+    <rect data-layout="A05" x="484" y="280" width="312" height="40" rx="3" fill="#333" stroke="#fbbf24"/>
+    <g clip-path="url(#clip-A05)"><text x="492" y="298" font-size="14" font-weight="600" fill="#fbbf24">Resume</text></g>
+  </g>
+  <g>
+    <title>Settings</title>
+    <rect data-layout="A06" x="484" y="332" width="312" height="40" rx="3" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A06)"><text x="492" y="350" font-size="14" font-weight="600" fill="#eee">Settings</text></g>
+  </g>
+  <g>
+    <title>Leave to Lobby</title>
+    <rect data-layout="A07" x="484" y="384" width="312" height="40" rx="3" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A07)"><text x="492" y="402" font-size="14" font-weight="600" fill="#eee">Leave to Lobby</text></g>
+  </g>
+  <g>
+    <title>Quit</title>
+    <rect data-layout="A08" x="484" y="436" width="312" height="40" rx="3" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A08)"><text x="492" y="454" font-size="14" font-weight="600" fill="#eee">Quit</text></g>
+  </g>
+  <g>
+    <title>Pause feedback</title>
+    <rect data-layout="A09" x="484" y="488" width="312" height="48" rx="3" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A09)"><text x="492" y="506" font-size="14" font-weight="600" fill="#eee">Pause feedback</text></g>
+  </g>
+</svg>

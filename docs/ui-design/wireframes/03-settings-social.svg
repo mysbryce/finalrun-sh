@@ -1,0 +1,182 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="system-ui, sans-serif" role="img" aria-labelledby="title">
+  <title id="title">Social settings</title>
+  <defs>
+    <pattern id="own-cells" x="743" y="128" width="51" height="51" patternUnits="userSpaceOnUse"><rect x="0" y="0" width="50" height="50" fill="none" stroke="#555" stroke-width="0.75"/></pattern>
+    <pattern id="body-cells" x="406" y="128" width="51" height="51" patternUnits="userSpaceOnUse"><rect x="0" y="0" width="50" height="50" fill="none" stroke="#555" stroke-width="0.75"/></pattern>
+    <clipPath id="clip-A01"><rect x="98" y="33" width="1084" height="54"/></clipPath>
+    <clipPath id="clip-A02"><rect x="114" y="41" width="92" height="38"/></clipPath>
+    <clipPath id="clip-A03"><rect x="226" y="41" width="580" height="38"/></clipPath>
+    <clipPath id="clip-A04"><rect x="978" y="41" width="188" height="38"/></clipPath>
+    <clipPath id="clip-A05"><rect x="98" y="101" width="1084" height="42"/></clipPath>
+    <clipPath id="clip-A06"><rect x="98" y="101" width="268" height="42"/></clipPath>
+    <clipPath id="clip-A07"><rect x="370" y="101" width="268" height="42"/></clipPath>
+    <clipPath id="clip-A08"><rect x="642" y="101" width="268" height="42"/></clipPath>
+    <clipPath id="clip-A09"><rect x="914" y="101" width="268" height="42"/></clipPath>
+    <clipPath id="clip-A10"><rect x="98" y="157" width="1084" height="462"/></clipPath>
+    <clipPath id="clip-A11"><rect x="114" y="173" width="180" height="430"/></clipPath>
+    <clipPath id="clip-A12"><rect x="314" y="173" width="836" height="430"/></clipPath>
+    <clipPath id="clip-A13"><rect x="314" y="173" width="836" height="46"/></clipPath>
+    <clipPath id="clip-A14"><rect x="330" y="173" width="292" height="46"/></clipPath>
+    <clipPath id="clip-A15"><rect x="642" y="179" width="492" height="34"/></clipPath>
+    <clipPath id="clip-A16"><rect x="314" y="225" width="836" height="46"/></clipPath>
+    <clipPath id="clip-A17"><rect x="314" y="277" width="836" height="46"/></clipPath>
+    <clipPath id="clip-A18"><rect x="314" y="329" width="836" height="46"/></clipPath>
+    <clipPath id="clip-A19"><rect x="314" y="381" width="836" height="46"/></clipPath>
+    <clipPath id="clip-A20"><rect x="314" y="433" width="836" height="46"/></clipPath>
+    <clipPath id="clip-A21"><rect x="314" y="485" width="836" height="46"/></clipPath>
+    <clipPath id="clip-A22"><rect x="314" y="537" width="836" height="46"/></clipPath>
+    <clipPath id="clip-A23"><rect x="314" y="589" width="836" height="14"/></clipPath>
+    <clipPath id="clip-A24"><rect x="1162" y="173" width="4" height="430"/></clipPath>
+    <clipPath id="clip-A25"><rect x="98" y="633" width="1084" height="54"/></clipPath>
+    <clipPath id="clip-A26"><rect x="114" y="641" width="644" height="38"/></clipPath>
+    <clipPath id="clip-A27"><rect x="786" y="641" width="116" height="38"/></clipPath>
+    <clipPath id="clip-A28"><rect x="914" y="641" width="116" height="38"/></clipPath>
+    <clipPath id="clip-A29"><rect x="1042" y="641" width="124" height="38"/></clipPath>
+  </defs>
+  <rect width="1280" height="720" fill="#191919"/>
+  <g>
+    <title>Settings header</title>
+    <rect data-layout="A01" x="96" y="32" width="1088" height="56" rx="3" fill="#222" stroke="#777"/>
+    <g clip-path="url(#clip-A01)"></g>
+  </g>
+  <g>
+    <title>Back</title>
+    <rect data-layout="A02" x="112" y="40" width="96" height="40" rx="3" fill="#292929" stroke="#777"/>
+    <g clip-path="url(#clip-A02)"><text x="120" y="58" font-size="11" font-weight="600" fill="#eee">Back</text></g>
+  </g>
+  <g>
+    <title>Settings title</title>
+    <rect data-layout="A03" x="224" y="40" width="584" height="40" rx="3" fill="#292929" stroke="#777"/>
+    <g clip-path="url(#clip-A03)"><text x="232" y="58" font-size="14" font-weight="600" fill="#eee">Settings title</text></g>
+  </g>
+  <g>
+    <title>Context label</title>
+    <rect data-layout="A04" x="976" y="40" width="192" height="40" rx="3" fill="#292929" stroke="#777"/>
+    <g clip-path="url(#clip-A04)"><text x="984" y="58" font-size="11" font-weight="600" fill="#eee">Context label</text></g>
+  </g>
+  <g>
+    <title>Settings tabs</title>
+    <rect data-layout="A05" x="96" y="100" width="1088" height="44" rx="3" fill="#222" stroke="#777"/>
+    <g clip-path="url(#clip-A05)"></g>
+  </g>
+  <g>
+    <title>Graphics tab</title>
+    <rect data-layout="A06" x="96" y="100" width="272" height="44" rx="3" fill="#292929" stroke="#777"/>
+    <g clip-path="url(#clip-A06)"><text x="104" y="118" font-size="14" font-weight="600" fill="#eee">Graphics tab</text></g>
+  </g>
+  <g>
+    <title>Controls tab</title>
+    <rect data-layout="A07" x="368" y="100" width="272" height="44" rx="3" fill="#292929" stroke="#777"/>
+    <g clip-path="url(#clip-A07)"><text x="376" y="118" font-size="14" font-weight="600" fill="#eee">Controls tab</text></g>
+  </g>
+  <g>
+    <title>Social tab</title>
+    <rect data-layout="A08" x="640" y="100" width="272" height="44" rx="3" fill="#292929" stroke="#fbbf24"/>
+    <g clip-path="url(#clip-A08)"><rect x="648" y="140" width="256" height="2" fill="#fbbf24"/><text x="648" y="118" font-size="14" font-weight="600" fill="#fbbf24">Social tab</text><text x="648" y="134" font-size="11" fill="#bbb">Selected</text></g>
+  </g>
+  <g>
+    <title>Others tab</title>
+    <rect data-layout="A09" x="912" y="100" width="272" height="44" rx="3" fill="#292929" stroke="#777"/>
+    <g clip-path="url(#clip-A09)"><text x="920" y="118" font-size="14" font-weight="600" fill="#eee">Others tab</text></g>
+  </g>
+  <g>
+    <title>Settings body</title>
+    <rect data-layout="A10" x="96" y="156" width="1088" height="464" rx="3" fill="#222" stroke="#777"/>
+    <g clip-path="url(#clip-A10)"></g>
+  </g>
+  <g>
+    <title>Settings groups</title>
+    <rect data-layout="A11" x="112" y="172" width="184" height="432" rx="3" fill="#292929" stroke="#777"/>
+    <g clip-path="url(#clip-A11)"><text x="120" y="190" font-size="11" font-weight="600" fill="#eee">Settings groups</text><text x="120" y="206" font-size="11" fill="#bbb">Social groups</text></g>
+  </g>
+  <g>
+    <title>Control list</title>
+    <rect data-layout="A12" x="312" y="172" width="840" height="432" rx="3" fill="#292929" stroke="#777"/>
+    <g clip-path="url(#clip-A12)"></g>
+  </g>
+  <g>
+    <title>Setting row 1</title>
+    <rect data-layout="A13" x="312" y="172" width="840" height="48" rx="3" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A13)"></g>
+  </g>
+  <g>
+    <title>Setting label</title>
+    <rect data-layout="A14" x="328" y="172" width="296" height="48" rx="3" fill="#383838" stroke="#666"/>
+    <g clip-path="url(#clip-A14)"><text x="336" y="190" font-size="14" font-weight="600" fill="#eee">Setting label</text><text x="336" y="206" font-size="11" fill="#bbb">Party invites</text></g>
+  </g>
+  <g>
+    <title>Control</title>
+    <rect data-layout="A15" x="640" y="178" width="496" height="36" rx="3" fill="#383838" stroke="#666"/>
+    <g clip-path="url(#clip-A15)"><text x="648" y="196" font-size="14" font-weight="600" fill="#eee">Control</text></g>
+  </g>
+  <g>
+    <title>Setting row 2</title>
+    <rect data-layout="A16" x="312" y="224" width="840" height="48" rx="3" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A16)"><text x="320" y="242" font-size="14" font-weight="600" fill="#eee">Setting row 2</text><text x="320" y="258" font-size="11" fill="#bbb">Show player names</text></g>
+  </g>
+  <g>
+    <title>Setting row 3</title>
+    <rect data-layout="A17" x="312" y="276" width="840" height="48" rx="3" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A17)"><text x="320" y="294" font-size="14" font-weight="600" fill="#eee">Setting row 3</text><text x="320" y="310" font-size="11" fill="#bbb">Chat filter</text></g>
+  </g>
+  <g>
+    <title>Setting row 4</title>
+    <rect data-layout="A18" x="312" y="328" width="840" height="48" rx="3" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A18)"><text x="320" y="346" font-size="14" font-weight="600" fill="#eee">Setting row 4</text><text x="320" y="362" font-size="11" fill="#bbb">Voice chat</text></g>
+  </g>
+  <g>
+    <title>Setting row 5</title>
+    <rect data-layout="A19" x="312" y="380" width="840" height="48" rx="3" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A19)"><text x="320" y="398" font-size="14" font-weight="600" fill="#eee">Setting row 5</text><text x="320" y="414" font-size="11" fill="#bbb">Voice activation</text></g>
+  </g>
+  <g>
+    <title>Setting row 6</title>
+    <rect data-layout="A20" x="312" y="432" width="840" height="48" rx="3" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A20)"><text x="320" y="450" font-size="14" font-weight="600" fill="#eee">Setting row 6</text><text x="320" y="466" font-size="11" fill="#bbb">Input device</text></g>
+  </g>
+  <g>
+    <title>Setting row 7</title>
+    <rect data-layout="A21" x="312" y="484" width="840" height="48" rx="3" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A21)"><text x="320" y="502" font-size="14" font-weight="600" fill="#eee">Setting row 7</text><text x="320" y="518" font-size="11" fill="#bbb">Output device</text></g>
+  </g>
+  <g>
+    <title>Setting row 8</title>
+    <rect data-layout="A22" x="312" y="536" width="840" height="48" rx="3" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A22)"><text x="320" y="554" font-size="14" font-weight="600" fill="#eee">Setting row 8</text><text x="320" y="570" font-size="11" fill="#bbb">Voice receive volume</text></g>
+  </g>
+  <g>
+    <title>Partial row</title>
+    <rect data-layout="A23" x="312" y="588" width="840" height="16" rx="1" fill="#333" stroke="#666"/>
+    <g clip-path="url(#clip-A23)"><text x="320" y="601" font-size="11" font-weight="600" fill="#eee">Partial row</text></g>
+  </g>
+  <g>
+    <title>Scroll track</title>
+    <rect data-layout="A24" x="1160" y="172" width="8" height="432" rx="1" fill="#292929" stroke="#777"/>
+    <g clip-path="url(#clip-A24)"></g>
+  </g>
+  <g>
+    <title>Settings footer</title>
+    <rect data-layout="A25" x="96" y="632" width="1088" height="56" rx="3" fill="#222" stroke="#777"/>
+    <g clip-path="url(#clip-A25)"></g>
+  </g>
+  <g>
+    <title>Settings status</title>
+    <rect data-layout="A26" x="112" y="640" width="648" height="40" rx="3" fill="#292929" stroke="#777"/>
+    <g clip-path="url(#clip-A26)"><text x="120" y="658" font-size="14" font-weight="600" fill="#eee">Settings status</text></g>
+  </g>
+  <g>
+    <title>Reset</title>
+    <rect data-layout="A27" x="784" y="640" width="120" height="40" rx="3" fill="#292929" stroke="#777"/>
+    <g clip-path="url(#clip-A27)"><text x="792" y="658" font-size="11" font-weight="600" fill="#eee">Reset</text></g>
+  </g>
+  <g>
+    <title>Discard</title>
+    <rect data-layout="A28" x="912" y="640" width="120" height="40" rx="3" fill="#292929" stroke="#777"/>
+    <g clip-path="url(#clip-A28)"><text x="920" y="658" font-size="11" font-weight="600" fill="#eee">Discard</text></g>
+  </g>
+  <g>
+    <title>Apply</title>
+    <rect data-layout="A29" x="1040" y="640" width="128" height="40" rx="3" fill="#292929" stroke="#fbbf24"/>
+    <g clip-path="url(#clip-A29)"><text x="1048" y="658" font-size="11" font-weight="600" fill="#fbbf24">Apply</text></g>
+  </g>
+</svg>
