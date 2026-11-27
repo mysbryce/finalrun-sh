@@ -39,3 +39,5 @@ godot_console --headless --path . -s res://tests/run_tests.gd
 - Test rule functions with real node shapes too, not only controllers (a `has_node_or_null` crash slipped through controller-only tests).
 - Services are `RefCounted`: they own no Nodes or Timers. Tick them from `ServerManager._process` with an injected `now_ms`.
 - `lib/utils` stays stateless: counters and ids live in a service.
+- A failed assertion aborts the test method, so nodes freed at its end leak (`ObjectDB instances leaked`). Free test nodes before asserting, or create and free them in a helper.
+- Smoke drivers you write for a run must live under `tools/smoke/` and stay in the repo, so the supervisor can rerun them. Do not delete them.

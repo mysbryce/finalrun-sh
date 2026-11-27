@@ -26,6 +26,7 @@ res://
   addons/              # Third-party code and Godot plugins only. Never edit vendored code in place.
   main/                # Boot scene (Main.tscn, Main.gd): server/client entry.
   tests/               # Mirrors source tree: tests/lib/utils/test_xxx.gd, tests/features/party/test_party.gd
+  tools/               # Dev-only scripts and scenes (smoke drivers in tools/smoke/). Never loaded by the game.
     run_tests.gd       # Single entry: runs every test_*.gd, prints ALL TESTS PASSED, exits 0/1.
 ```
 
