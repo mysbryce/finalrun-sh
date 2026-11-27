@@ -29,8 +29,12 @@ export type HudState = {
   net: { fps: number; ping: number }
 }
 
+export type SearchItem = { uid: number; id: string; label: string; value: number; source: string }
+export type SearchView = { target: number; title: string; items: SearchItem[] }
+
 export type GodotToPage =
   | { type: 'hud'; data: HudState }
+  | { type: 'search'; data: SearchView | null }
   | { type: 'route'; to: string }
   | { type: 'reply'; id: number; ok: boolean; data?: unknown; error?: string }
 

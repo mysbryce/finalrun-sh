@@ -1,4 +1,4 @@
-import { formatMoney } from '../format'
+import { formatMoney } from '@/lib/format'
 
 export function CashBox({ cash }: { cash: number }) {
   return (

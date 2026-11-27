@@ -1,5 +1,5 @@
 import type { HudState } from '@/lib/ipc/protocol'
-import { formatClock } from '../format'
+import { formatClock } from '@/lib/format'
 import { MINIMAP } from '../layout'
 
 const PANEL = 'bg-zinc-950/60 rounded-md ring-1 ring-white/10'

@@ -1,4 +1,4 @@
-import type { HudState, PageToGodot } from './protocol'
+import type { HudState, PageToGodot, SearchView } from './protocol'
 
 declare global {
   interface Window {
@@ -40,6 +40,7 @@ export function request<T>(
 export type BridgeDeps = {
   setHud: (hud: HudState) => void
   navigate: (to: string) => void
+  setSearch: (view: SearchView | null) => void
 }
 
 export function handleMessage(text: string, deps: BridgeDeps): void {
@@ -55,6 +56,9 @@ export function handleMessage(text: string, deps: BridgeDeps): void {
   switch (message.type) {
     case 'hud':
       deps.setHud(message.data as HudState)
+      break
+    case 'search':
+      deps.setSearch((message.data ?? null) as SearchView | null)
       break
     case 'route':
       deps.navigate(message.to as string)

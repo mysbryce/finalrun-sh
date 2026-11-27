@@ -37,7 +37,7 @@ const sample: HudState = {
 }
 
 function makeDeps(): BridgeDeps {
-  return { setHud: vi.fn(), navigate: vi.fn() }
+  return { setHud: vi.fn(), navigate: vi.fn(), setSearch: vi.fn() }
 }
 
 describe('bridge', () => {
@@ -56,6 +56,15 @@ describe('bridge', () => {
     const deps = makeDeps()
     handleMessage(JSON.stringify({ type: 'route', to: '/' }), deps)
     expect(deps.navigate).toHaveBeenCalledWith('/')
+  })
+
+  it('search message calls setSearch', () => {
+    const deps = makeDeps()
+    const view = { target: 7, title: 'Body', items: [{ uid: 1, id: 'a', label: 'A', value: 5, source: 'bag' }] }
+    handleMessage(JSON.stringify({ type: 'search', data: view }), deps)
+    expect(deps.setSearch).toHaveBeenCalledWith(view)
+    handleMessage(JSON.stringify({ type: 'search', data: null }), deps)
+    expect(deps.setSearch).toHaveBeenLastCalledWith(null)
   })
 
   it('bad json is ignored', () => {

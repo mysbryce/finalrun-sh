@@ -1,5 +1,5 @@
 import type { HotbarSlot } from '@/lib/ipc/protocol'
-import { formatMoney } from '../format'
+import { formatMoney } from '@/lib/format'
 
 export function Hotbar({
   slots,
