@@ -11,13 +11,17 @@ import { InventoryScreen } from '@/features/inventory/InventoryScreen'
 import { LobbyScreen } from '@/features/lobby/LobbyScreen'
 import { PauseScreen } from '@/features/pause/PauseScreen'
 import { SearchScreen } from '@/features/search/SearchScreen'
+import { SettingsScreen } from '@/features/settings/SettingsScreen'
 import { SplashScreen } from '@/features/splash/SplashScreen'
+import type { SettingsTab } from '@/lib/ipc/protocol'
 
 function RootLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   return (
     <>
-      {pathname !== '/inventory' && pathname !== '/splash' && pathname !== '/lobby' && <HudScreen />}
+      {pathname !== '/inventory' && pathname !== '/splash' && pathname !== '/lobby' && !pathname.startsWith('/settings') && (
+        <HudScreen />
+      )}
       <Outlet />
     </>
   )
@@ -62,8 +66,27 @@ const pauseRoute = createRoute({
   component: PauseScreen,
 })
 
+const SETTINGS_TABS: SettingsTab[] = ['graphics', 'controls', 'social', 'others']
+
+// One static route per tab: Godot navigates between them after `settings.tab`.
+const settingsRoutes = SETTINGS_TABS.map((tab) =>
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: `/settings/${tab}`,
+    component: () => <SettingsScreen tab={tab} />,
+  }),
+)
+
 export const router = createRouter({
-  routeTree: rootRoute.addChildren([hudRoute, searchRoute, inventoryRoute, splashRoute, lobbyRoute, pauseRoute]),
+  routeTree: rootRoute.addChildren([
+    hudRoute,
+    searchRoute,
+    inventoryRoute,
+    splashRoute,
+    lobbyRoute,
+    pauseRoute,
+    ...settingsRoutes,
+  ]),
   history: createMemoryHistory({ initialEntries: ['/'] }),
 })
 

@@ -51,12 +51,13 @@ describe('PauseScreen', () => {
     expect(request).toHaveBeenCalledWith('app.quit')
   })
 
-  it('Settings is disabled with a Coming later hint', () => {
+  it('Settings is enabled and sends settings.open', () => {
     render(<PauseScreen />)
     const settings = screen.getByRole('button', { name: 'Settings' })
-    expect(settings).toBeDisabled()
-    expect(settings.parentElement).toHaveAttribute('title', 'Coming later')
-    expect(screen.getByText('Coming later')).toBeInTheDocument()
+    expect(settings).toBeEnabled()
+    expect(screen.queryByText('Coming later')).toBeNull()
+    fireEvent.click(settings)
+    expect(request).toHaveBeenCalledWith('settings.open')
   })
 
   it('a rejected request shows feedback, cleared on the next action', async () => {

@@ -55,11 +55,8 @@ export function PauseScreen() {
         <div style={box(24, 120, 312, 40)} className={ROW}>
           <Button label="Resume" variant="primary" onPress={() => send('pause.resume', 'Could not resume.')} />
         </div>
-        <div style={box(24, 172, 312, 40)} title="Coming later" className={ROW}>
-          <Button label="Settings" variant="secondary" disabled />
-          <span className="pointer-events-none absolute top-0 right-3 flex h-full items-center text-[11px] leading-4 text-zinc-300">
-            Coming later
-          </span>
+        <div style={box(24, 172, 312, 40)} className={ROW}>
+          <Button label="Settings" variant="secondary" onPress={() => send('settings.open', 'Could not open settings.')} />
         </div>
         <div style={box(24, 224, 312, 40)} className={ROW}>
           <Button label="Leave to Lobby" variant="secondary" onPress={() => open('leave')} />

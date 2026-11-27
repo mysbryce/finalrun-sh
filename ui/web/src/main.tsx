@@ -16,6 +16,8 @@ import { useLobbyStore } from '@/features/lobby/lobbyStore'
 import { DEMO_LOBBY } from '@/features/lobby/demoLobby'
 import { usePartyStore } from '@/features/pause/partyStore'
 import { DEMO_PARTY } from '@/features/pause/demoParty'
+import { useSettingsStore } from '@/features/settings/settingsStore'
+import { DEMO_SETTINGS } from '@/features/settings/demoSettings'
 import { App } from '@/app/App'
 
 applyUiScale()
@@ -31,6 +33,7 @@ installBridge({
   setBoot: (v) => useSplashStore.getState().setBoot(v),
   setLobby: (v) => useLobbyStore.getState().setLobby(v),
   setParty: (v) => usePartyStore.getState().setParty(v),
+  setSettings: (v) => useSettingsStore.getState().setView(v),
 })
 
 if (import.meta.env.DEV && !window.sendIpcMessage) {
@@ -54,6 +57,10 @@ if (import.meta.env.DEV && !window.sendIpcMessage) {
   if (window.location.hash === '#pause') {
     usePartyStore.getState().setParty(DEMO_PARTY)
     void router.navigate({ to: '/pause' })
+  }
+  if (window.location.hash === '#settings') {
+    useSettingsStore.getState().setView(DEMO_SETTINGS)
+    void router.navigate({ to: '/settings/graphics' })
   }
 }
 

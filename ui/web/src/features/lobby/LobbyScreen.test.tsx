@@ -95,12 +95,13 @@ describe('LobbyScreen', () => {
     expect(request).not.toHaveBeenCalled()
   })
 
-  it('Settings is disabled with a Coming later hint', () => {
+  it('Settings is enabled and sends settings.open', () => {
     useLobbyStore.setState({ lobby: DEMO_LOBBY })
     render(<LobbyScreen />)
     const settings = screen.getByRole('button', { name: 'Settings' })
-    expect(settings).toBeDisabled()
-    expect(settings.parentElement).toHaveAttribute('title', 'Coming later')
-    expect(screen.getByText('Coming later')).toBeInTheDocument()
+    expect(settings).toBeEnabled()
+    expect(screen.queryByText('Coming later')).toBeNull()
+    fireEvent.click(settings)
+    expect(request).toHaveBeenCalledWith('settings.open')
   })
 })

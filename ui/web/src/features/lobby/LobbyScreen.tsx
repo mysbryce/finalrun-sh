@@ -85,6 +85,9 @@ export function LobbyScreen() {
   const retryNews = () => {
     void request('lobby.news_retry').catch(() => undefined)
   }
+  const openSettings = () => {
+    void request('settings.open').catch(() => undefined)
+  }
   const quit = () => {
     setQuitting(true)
     void request('app.quit').catch(() => setQuitting(false))
@@ -155,11 +158,8 @@ export function LobbyScreen() {
       </Panel>
 
       <footer style={box(48, 652, 1184, 44)}>
-        <div style={box(776, 2, 112, 40)} className="flex items-center justify-end text-[11px] leading-4 text-zinc-300">
-          Coming later
-        </div>
-        <div style={box(896, 2, 128, 40)} title="Coming later" className="grid [&>button]:w-full">
-          <Button label="Settings" variant="secondary" disabled />
+        <div style={box(896, 2, 128, 40)} className="grid [&>button]:w-full">
+          <Button label="Settings" variant="secondary" onPress={openSettings} />
         </div>
         <div style={box(1040, 2, 128, 40)} className="grid [&>button]:w-full">
           <Button label="Quit" variant="secondary" onPress={() => setConfirmQuit(true)} />
