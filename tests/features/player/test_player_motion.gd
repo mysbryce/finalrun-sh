@@ -67,3 +67,17 @@ func test_player_scene_replicates_snapshot() -> void:
 	assert_true(paths.has(NodePath(".:sync_position")), "replicates sync_position")
 	assert_true(paths.has(NodePath(".:sync_yaw")), "replicates sync_yaw")
 	assert_false(paths.has(NodePath(".:position")), "no longer replicates position")
+
+
+func test_can_fire_locally_after_interval() -> void:
+	assert_true(
+		PlayerCharacter.can_fire_locally(GameConst.FIRE_INTERVAL_MS, 0),
+		"a shot is allowed once the fire interval has elapsed"
+	)
+
+
+func test_can_fire_locally_blocked() -> void:
+	assert_false(
+		PlayerCharacter.can_fire_locally(GameConst.FIRE_INTERVAL_MS - 1, 0),
+		"a shot is blocked before the fire interval has elapsed"
+	)

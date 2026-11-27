@@ -57,10 +57,17 @@ func _unhandled_input(event: InputEvent) -> void:
 			and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE
 		):
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+			get_viewport().set_input_as_handled()
 
 
 func get_yaw() -> float:
 	return rotation.y
+
+
+func get_aim_direction() -> Vector3:
+	if _camera == null or not is_instance_valid(_camera):
+		return Vector3.ZERO
+	return -_camera.global_transform.basis.z
 
 
 func _exit_tree() -> void:

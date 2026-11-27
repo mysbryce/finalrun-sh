@@ -47,6 +47,7 @@ var _send_accumulator: float = 0.0
 var _input_enabled: bool = false
 var _camera: PlayerCamera = null
 var _has_snapshot: bool = false
+var _last_fire_local_ms: int = 0
 
 
 func _ready() -> void:
@@ -201,6 +202,30 @@ func _process(delta: float) -> void:
 	rotation.y = lerp_angle(rotation.y, sync_yaw, interp_weight(delta))
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	if not _input_enabled:
+		return
+	if not (event is InputEventMouseButton):
+		return
+	var button := event as InputEventMouseButton
+	if not button.pressed or button.button_index != MOUSE_BUTTON_LEFT:
+		return
+	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		return
+	if _camera == null or not is_instance_valid(_camera):
+		return
+	var now_ms: int = Time.get_ticks_msec()
+	if not can_fire_locally(now_ms, _last_fire_local_ms):
+		return
+	_last_fire_local_ms = now_ms
+	var aim := _camera.get_aim_direction()
+	if aim == Vector3.ZERO:
+		return
+	var server_manager := get_node_or_null("/root/ServerManager")
+	if server_manager != null and server_manager.has_method("request_fire"):
+		server_manager.request_fire(aim)
+
+
 func _server_physics(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= GRAVITY * delta
@@ -280,6 +305,11 @@ func _sync_camera() -> void:
 	elif not _input_enabled and _camera != null:
 		_camera.queue_free()
 		_camera = null
+
+
+## Client-side fire gate; the server enforces the same interval again.
+static func can_fire_locally(now_ms: int, last_fire_ms: int) -> bool:
+	return now_ms - last_fire_ms >= GameConst.FIRE_INTERVAL_MS
 
 
 ## Turns raw WASD (x = right, y = back) into a world XZ direction for a camera yaw.
