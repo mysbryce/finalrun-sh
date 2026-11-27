@@ -1,2 +1,27 @@
 @import "tailwindcss";
 html, body, #root { margin: 0; height: 100%; background: transparent; overflow: hidden; user-select: none; }
+
+@theme {
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+@utility focus-ring {
+  outline: 2px solid var(--color-amber-400);
+  outline-offset: 2px;
+}
+
+html {
+  font-family: var(--font-sans);
+  font-variant-numeric: normal;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+}

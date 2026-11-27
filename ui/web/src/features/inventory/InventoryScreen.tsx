@@ -14,7 +14,7 @@ import { rarityOf } from '@/lib/grid/rarity'
 import { BagGrid } from './components/BagGrid'
 import { EquipmentPanel } from './components/EquipmentPanel'
 import { ItemTile } from '@/lib/grid/ItemTile'
-import { KeyHint } from './components/KeyHint'
+import { KeyHint } from '@/lib/ui/KeyHint'
 
 type Preview = { slot: number; w: number; h: number; ok: boolean }
 
