@@ -1,55 +1,85 @@
 # Brief: Downed (Knock) State (Phase 2)
 
-Implement `docs/design/DOWNED_STATE.md` exactly. That doc is the spec; this brief says where the code goes.
+Implement `docs/design/DOWNED_STATE.md`. That doc is the gameplay spec; this brief fixes where code goes and resolves every open detail. If the two disagree, **this brief wins**.
 Read first: `docs/CONVENTIONS.md`, `docs/ARCHITECTURE.md`, `docs/design/DOWNED_STATE.md`.
+Revised after `egm-implementation-readiness` and `egm-codebase-details` reviews.
+
+**Implement in this order:** §1, §2 (bug fixes), §3, §5, §4, §6, §7, §8, §9, §10, §11.
 
 ## 1. Constants (`lib/constants/GameConst.gd`)
-Add every number from the design doc: `DOWNED_BLEEDOUT_SECONDS`, `DOWNED_HIT_PENALTY_SECONDS`, `DOWNED_CRAWL_SPEED` (1.2), `REDOWN_WINDOW_SECONDS`, `REVIVE_SECONDS`, `REVIVE_HP_RATIO`, `FINISH_SECONDS`, `CUFF_SECONDS`, `SEARCH_OPEN_SECONDS`, `SEIZURE_COP_REWARD_RATIO`, `INTERACT_RANGE` (2.5). No literals for these anywhere else.
+Add: `DOWNED_BLEEDOUT_SECONDS = 60.0`, `DOWNED_HIT_PENALTY_SECONDS = 5.0`, `DOWNED_CRAWL_SPEED = 1.2`, `REDOWN_WINDOW_SECONDS = 30.0`, `REVIVE_SECONDS = 5.0`, `REVIVE_HP_RATIO = 0.25`, `FINISH_SECONDS = 2.0`, `CUFF_SECONDS = 3.0`, `SEARCH_OPEN_SECONDS = 1.5`, `SEIZURE_COP_REWARD_RATIO = 0.25`, `INTERACT_RANGE = 2.5`, `DOWNED_CHANNEL_MAX_MOVE = 0.75`. No literals for these anywhere else.
 
-## 2. Life state (`features/player/`)
-- `PlayerRoleController`: `enum LifeState { ALIVE, DOWNED, DEAD }` and the single entry `server_set_life_state(new_state: int, cause: String) -> void` (idempotent). It cancels all channels on this player and closes search sessions on its body (signal `life_state_changed(old, new, cause)`; other services listen).
-- `Player.gd`: add replicated `life_state` (setter callback like `role`) and `downed_deadline_ms`. Add both to the `SceneReplicationConfig` in `Player.tscn`. `take_damage` at 0 HP → DOWNED (not death). Damage while DOWNED applies the bleed-out penalty. Server physics uses `DOWNED_CRAWL_SPEED` while DOWNED.
-- `server_request_move` becomes `@rpc("any_peer", "call_remote", "unreliable")`.
-- `setup_server` starts ALIVE with full HP; `life_state` is not in `export_state`.
-- Re-down window: track last revive time; DOWNED within `REDOWN_WINDOW_SECONDS` → DEAD.
+## 2. Existing bugs to fix first
+- `features/player/PlayerRoleController.gd:138` calls `target.has_node_or_null(...)` (not a Node method) → use `get_node_or_null`. Add a test that calls `can_attack` with a real `PlayerCharacter`-shaped node, not only controllers.
+- `Player.gd` client input: today input is sent only on change (`Player.gd:142-145`). When §3 makes the RPC unreliable, resend current input every `PLAYER_INPUT_SEND_INTERVAL` while non-zero, plus one zero vector when it stops.
 
-## 3. Channel component (`lib/components/ChannelTimer.gd`)
-Generic, no feature imports: `start(duration, actor_node, max_move, cancel_check: Callable)`, signals `completed`, `cancelled(reason)`. Cancels on actor move > `max_move`, on `cancel_check()` returning a reason, or `cancel(reason)`. Move the existing mask channel in `PlayerRoleController` onto it (behavior unchanged, existing mask tests must pass).
+## 3. Life state (`features/player/`)
+- `PlayerRoleController`: `enum LifeState { ALIVE, DOWNED, DEAD }`, signal `life_state_changed(old, new, cause)`, and the single writer `server_set_life_state(new_state: int, cause: String, now_ms: int) -> void` (idempotent). Allowed causes: `damage`, `bleedout`, `finish`, `disconnect`, `redown`, `revive`, `cuff`, `respawn`.
+- `Player.gd`: replicated `life_state` (setter callback like `role`) and `downed_deadline_ms`. Add both to the `SceneReplicationConfig` in `Player.tscn` with `REPLICATION_MODE_ON_CHANGE`.
+- Clock: all server time comparisons take `now_ms: int` as a parameter. Source = `int(Time.get_unix_time_from_system() * 1000.0)`. Client shows bleed-out seconds as `max(0, downed_deadline_ms - client_unix_ms) / 1000`.
+- `Player.take_damage` (`Player.gd:94-103`): remove the direct `handle_player_death` call. In `LootyBay`: ALIVE at 0 HP → DOWNED (`damage`), unless the last revive was within `REDOWN_WINDOW_SECONDS` → DEAD (`redown`). DOWNED + damage → HP stays 0, deadline moves `DOWNED_HIT_PENALTY_SECONDS` earlier; if deadline <= now → DEAD (`bleedout`). Outside `LootyBay` 0 HP goes straight to the death path.
+- `server_request_move` (in `Player.gd`) becomes `@rpc("any_peer", "call_remote", "unreliable")`. Server physics uses `DOWNED_CRAWL_SPEED` while DOWNED, zero while DEAD.
+- `setup_server` starts ALIVE with full HP. `life_state` is not in `PlayerRoleController.export_state`.
 
-## 4. Downed actions (`features/downed/DownedService.gd`, owned by `ServerManager` like the other services)
-- New RPCs on `ServerManager` (thin, delegate to `DownedService`): `server_request_revive(target_peer_id)`, `server_request_finish(target_peer_id)`, `server_request_cuff(target_peer_id)`, `server_request_search_open(target_peer_id)`, `server_request_search_take(target_peer_id, item_uid)`, `server_request_search_close(target_peer_id)`. Matching client helpers `request_*`.
-- Every request: validate sender, same instance, both ALIVE/DOWNED as the spec requires, range `INTERACT_RANGE`, LOS (reuse the existing LOS helper; move it to a shared place if a second caller needs it).
-- Permissions and payouts as **pure static functions** (testable): `can_revive`, `can_finish`, `can_cuff`, `can_search`, `seizure_reward`. Follow spec §3-§5 exactly (revive: same party + same role, one reviver; search: CRIMINAL any body, COP only CRIMINAL bodies, never CITIZEN).
-- Bleed-out timer per downed player on the server; expiry → DEAD.
-- Cuff → reuse the surrender outcome path (`surrender_outcome` / `server_apply_surrender`), sending the criminal to Motel as CITIZEN.
-- DEAD → existing death path (`handle_player_death`), with spec §6 changes: dead CRIMINAL respawns as CITIZEN; COP issued items are removed and never dropped.
-- Disconnect while DOWNED (`PlayerService.handle_peer_left`) → DEAD outcome + LootDrop before despawn.
-- Extraction (`PlayerService._handle_extraction` / zone enter) requires ALIVE; on revive, re-check `ExtractZone` overlapping bodies.
-- Reject every request listed in spec §7 from non-ALIVE senders (add the check where each request is handled).
+## 4. Channel component (`lib/components/ChannelTimer.gd`)
+- A `Node` (no feature imports) parented under the actor's player node. `start(duration: float, actor: Node3D, max_move: float, cancel_check: Callable)`. `cancel_check()` returns `""` to continue or a reason string. Signals `completed`, `cancelled(reason: String)`. `cancel(reason)` public.
+- Reason strings exactly: `moved`, `out_of_range`, `no_los`, `damaged`, `disconnected`, `target_state`, `actor_state`, `left_instance`, `invalid_state`.
+- Move the mask channel (`_mask_timer` / `MaskChannelTimer`, `_process` move/map check, `notify_damage`) onto ChannelTimer. Keep signals `mask_channel_started` / `mask_channel_cancelled` and reasons `moved`, `damaged`, `left_instance`, `invalid_state`. There are no mask tests today: add them.
+- On `completed`, the owner must re-check permission and target state before applying (first finished timer wins; later ones fail the re-check).
 
-## 5. Items and LootContainer
-- Items become `{uid, id, value, issued}`. Server assigns `uid` (unique per server run) in `grant_loot`/`grant_gear`/loadout. Extend `lib/utils/ItemUtils.gd` (e.g. `make_item`, `find_by_uid`, `remove_by_uid`, `lootable_only`). Old saved states without `uid` get one assigned on `apply_state`.
-- COP loadout items have `issued: true`. Issued items are never shown in a search or dropped.
-- `features/heist/LootContainer.gd`: item list + viewers + take-by-uid, with injected `can_access: Callable` and `on_take: Callable`. Used by the downed body and by `LootDrop` (refactor `LootDrop` to use it). `Lootable` stays as is.
-- Search contents go only to the viewer (`rpc_id` via `lib/net/NetUtil`), and updates go only to open viewers. Taking: CRIMINAL → item moves to taker via `grant_loot`/`grant_gear`; COP → seizure (item destroyed, cop paid `seizure_reward`).
+## 5. Items
+- Item format `{uid: int, id: String, value: int, issued: bool, source: "bag"|"gear"}` (`source` is set when listed for search, not stored).
+- uid counter `_next_item_uid` lives in `PlayerService` (stateful). `lib/utils/ItemUtils.gd` stays stateless: `make_item(uid, id, value, issued := false)`, `find_by_uid`, `remove_by_uid`, `lootable_only(items)` (drops `issued`). Assign uids to items missing one in `apply_state` (transfer snapshots).
+- `PlayerRoleController`: add `receive_item(item: Dictionary, source: String)` (keeps the uid) and `remove_item_by_uid(uid: int) -> Dictionary` (also lowers this player's notoriety by the item value, clamped at 0). Keep `grant_loot` / `grant_gear` as wrappers that build an item via `ItemUtils.make_item` with a uid from `PlayerService`. Update callers: `Lootable.gd:55`, tests in `tests/features/player/test_role_outcomes.gd`.
+- Cop loadout: `COP_LOADOUT` (`PlayerRoleController.gd:22-26`) and `server_go_on_duty` mark items `issued: true` with uids. Update `test_cop_death_goes_off_duty` setup so the cop pistol is `issued`.
 
-## 6. Party rules (`features/party/`, `features/player/`)
-- `can_attack_roles` gains a `same_party: bool` input → false when true. `can_attack` passes it.
-- Mask request rejected if any party member is COP; cop duty rejected if any party member is CRIMINAL. Pure static check `party_role_conflict(member_roles: Array, requested_role) -> bool`.
+## 6. Line of sight
+Move `PlayerService._has_line_of_sight(instance, from, target)` (`PlayerService.gd:356`) to a public static `PlayerService.has_line_of_sight(...)`. Existing callers (lines ~203, ~348) and the new downed actions all use it.
 
-## 7. Client test controls (`main/Main.gd`, temporary)
-Target = nearest other player in the instance. `R` revive, `X` finish, `C` cuff, `E` open search (print contents), `T` take first lootable item, `Q` close search. Show own life state and bleed-out seconds in the existing debug label.
+## 7. Downed actions (`features/downed/DownedService.gd`)
+- `RefCounted`, owned by `ServerManager` like the other services. It owns no Nodes: channels are `ChannelTimer` nodes under the actor's player; bleed-out is checked in `DownedService.tick(now_ms)` called from `ServerManager._process`.
+- RPCs on `ServerManager` (thin, delegate): `server_request_revive(target_peer_id)`, `server_request_finish(target_peer_id)`, `server_request_cuff(target_peer_id)`, `server_request_search_open(target_peer_id)`, `server_request_search_take(target_peer_id, item_uid)`, `server_request_search_close(target_peer_id)`. Client-side: `client_search_contents(target_peer_id, items: Array)`, `client_search_closed(target_peer_id, reason: String)`. Matching `request_*` helpers. Use `NetUtil.rpc_to_peer`.
+- Non-ALIVE sender gate: add `_can_accept_alive_request(sender)` next to `_can_accept_request` in `ServerManager` and use it for every request in spec §7. The downed actions use their own checks (actor must be ALIVE, target must be DOWNED).
+- Pure static rules on `DownedService` (exact signatures):
+  - `can_revive(actor_role, actor_life, target_role, target_life, same_party: bool, has_active_reviver: bool) -> bool` (same party, same role, actor ALIVE, target DOWNED, no other reviver)
+  - `can_finish(attack_allowed: bool, actor_life, target_life) -> bool`
+  - `can_cuff(actor_role, actor_life, target_role, target_life) -> bool` (COP on CRIMINAL)
+  - `can_search(actor_role, actor_life, target_role, target_life) -> bool` (actor CRIMINAL: any downed body; actor COP: CRIMINAL body only; CITIZEN actor: never)
+  - `seizure_reward(item: Dictionary, source: String) -> int` = `floori(value * SEIZURE_COP_REWARD_RATIO)` for `bag`, `0` for `gear`
+- Every request and every take re-checks: same instance, `INTERACT_RANGE`, LOS, permission. A search session closes (`client_search_closed`) when any of those fail, when either side's life state changes, or on disconnect.
+- Search list = `lootable_only(loot_bag)` tagged `bag` + `lootable_only(equipped_gear)` tagged `gear`. Contents go only to the viewer; updates only to open viewers.
+- Take: CRIMINAL → `remove_item_by_uid` on victim, `receive_item` on taker (same uid; taker gains notoriety for bag items via the normal rule). COP → seizure: item removed and destroyed, cop `cash += seizure_reward`.
+- Cuff: call `server_apply_surrender(cop)` on the criminal with the cuffing cop (do NOT call `PlayerService.surrender`, it searches for a cop itself), then `transfer_to_motel` and `_refresh_police_vehicle`. The cuffed player never becomes DEAD and gets no LootDrop; `setup_server` resets them to ALIVE.
+- Finish / bleed-out / disconnect → DEAD.
 
-## 8. Tests (add under `tests/`, mirror source; keep all 107 existing assertions)
-Cover every bullet in spec §8: state machine, permission matrix (role × party × life state), payout ordering (cuff 50% > seizure 25% > finish 0), issued items never lootable, party FF off, party role conflict, double-take of one uid fails, outcomes table, ChannelTimer cancel reasons.
+## 8. Death path (`features/player/PlayerService.gd`, `PlayerRoleController.gd`)
+- Extract `PlayerService.gd:248-260` into `_resolve_death(player, instance)`: apply death outcome and spawn the LootDrop, no transfer. `handle_player_death` = `_resolve_death` + transfer to Motel. `handle_peer_left` calls `_resolve_death` **before** `detach_peer` when the player is DOWNED.
+- Order on DEAD: cancel channels where the player is actor or target → close search sessions (body or viewer) → LootDrop → despawn (`call_deferred`) → transfer. Never despawn inside a `life_state_changed` handler.
+- `death_outcome` / `server_apply_death` (`PlayerRoleController.gd:293-342`): dead CRIMINAL → role CITIZEN. Dead COP → issued items removed (never dropped), non-issued items drop like anyone else's, off duty, CITIZEN. Keep `_saved_civilian_gear` restore. Update the doc comment.
+- LootDrop is created even if empty only when the body had items; if nothing is left, no drop.
 
-## 9. Docs
-Update `docs/ARCHITECTURE.md` (English): new life state, DownedService, RPC list, §8.2 death table (criminal → CITIZEN), item format. Do not edit the design doc.
+## 9. LootContainer (`features/heist/LootContainer.gd`)
+- Items + viewers + take-by-uid, with injected `can_access: Callable` and `on_take: Callable`. Used by the downed-body search and by `LootDrop`.
+- `LootDrop`: keep its current pickup behavior through `can_access` / `on_take`; no new RPC. Stop sending full item lists to every member: `Instance.spawn_loot_drop`, `sync_state_to_peer`, `client_add_loot_drop` mirror only position + placeholder. Call `client_remove_loot_drop` when a drop is emptied.
+
+## 10. Party rules and extraction
+- `can_attack_roles(..., same_party: bool = false)` (appended, default keeps existing tests valid) → false when `same_party`. `PlayerService.attack` computes `same_party` via `_parties.get_party(peer_id)` and `has_member(target)`, and passes it to `can_attack(target, same_party)`.
+- Pure static `party_role_conflict(member_roles: Array, requested_role: int) -> bool`. Mask is rejected if any party member is COP; cop duty is rejected if any is CRIMINAL.
+- Extraction: ALIVE check inside `PlayerService._handle_extraction` (it runs deferred). Add `GameInstance.get_zone(name) -> Area3D`; after a revive, if the player overlaps `ExtractZone`, run extraction.
+
+## 11. Client test controls (`main/Main.gd`)
+Update the controls `print` line. Target = nearest other player. `R` revive, `X` finish, `C` cuff, `E` open search (print contents), `T` take first item, `Q` close search, `K` attack target (calls `request_attack`). Print own life state and bleed-out seconds when they change.
+
+## 12. Tests (mirror source; keep all existing assertions)
+Spec §8 list, plus: `can_attack` with real node shape (§2), mask channel cancel reasons, ChannelTimer reasons, `same_party` default, item uid kept on transfer, victim notoriety lowered, seizure gear = 0, cuff never creates LootDrop, dead COP drops no issued item, redown → DEAD, deadline penalty math with injected `now_ms`.
+
+## 13. Docs
+Update `docs/ARCHITECTURE.md` (English): life state, DownedService, ChannelTimer, RPC list, item format, death table §8.2 (dead CRIMINAL → CITIZEN; COP drops non-issued items), LootDrop privacy. Fix the `handle_peer_left` owner (PlayerService). Do not edit the design doc.
 
 ## Verification (must pass)
 ```
 godot_console --headless --path . --import
 godot_console --headless --path . -s res://tests/run_tests.gd
 ```
-Plus a headless server + 2 clients smoke test (driver under `logs/`, delete after): clients A and B, not in a party, both join LootyBay and both mask up (CRIMINAL). B gets one loot item. A attacks B until DOWNED, A opens search on B, takes the item, then finishes B → B is DEAD, a LootDrop exists, B respawns in Motel as CITIZEN. Report the output.
-Final answer: files changed/created, new RPC list, test summary, smoke output, any spec point you could not implement.
+Smoke test: headless server + 2 clients, driver under `logs/` (delete after). The driver may call a **server-side test hook** (behind a `--smoke` cmdline flag only) to grant B one bag item and one gear item and to teleport A next to B. Steps: A and B (no party) join LootyBay, both mask (CRIMINAL); A attacks B until DOWNED; A opens search, takes the bag item; A finishes B. Driver prints exactly: `DOWNED`, `SEARCH_TAKE ok`, `DEAD`, `LOOTDROP`, `RESPAWN Motel CITIZEN`.
+Final answer: files changed/created, RPC list, test summary, smoke output, anything not implemented.

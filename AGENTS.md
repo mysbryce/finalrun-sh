@@ -29,3 +29,6 @@ godot_console --headless --path . -s res://tests/run_tests.gd
 - Never broadcast `rpc()` for gameplay. Use the instance member helpers. Every `any_peer` RPC validates `multiplayer.get_remote_sender_id()` first.
 - Per-tick input RPCs should be `unreliable`, not `reliable`.
 - Life/role state changes go through one idempotent server function; every other path calls it (no direct writes).
+- Test rule functions with real node shapes too, not only controllers (a `has_node_or_null` crash slipped through controller-only tests).
+- Services are `RefCounted`: they own no Nodes or Timers. Tick them from `ServerManager._process` with an injected `now_ms`.
+- `lib/utils` stays stateless: counters and ids live in a service.
