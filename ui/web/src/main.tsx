@@ -58,6 +58,7 @@ if (import.meta.env.DEV && !window.sendIpcMessage) {
   useHudStore.getState().setHud(DEMO_HUD)
   if (window.location.hash === '#search') {
     useSearchStore.getState().setSearch(DEMO_SEARCH)
+    useInventoryStore.getState().setInventory(DEMO_INVENTORY)
     void router.navigate({ to: '/search' })
   }
   if (window.location.hash === '#inventory') {

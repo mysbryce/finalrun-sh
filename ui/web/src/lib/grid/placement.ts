@@ -119,3 +119,35 @@ export function slotFromDropId(id: string | number | null | undefined): number |
   const m = /^slot-(\d+)$/.exec(id)
   return m ? Number(m[1]) : null
 }
+
+// Packs items in input order into the first free slot, scanning row-first; rows are
+// added as needed. Items wider than `cols` are skipped. rows = max(minRows, last used row + 1).
+export function packRows<T extends { uid: number; w: number; h: number }>(
+  items: T[],
+  cols: number,
+  minRows: number,
+): { packed: { item: T; slot: number }[]; rows: number } {
+  const used: boolean[] = []
+  const packed: { item: T; slot: number }[] = []
+  const free = (slot: number, w: number, h: number) => {
+    const col = slot % cols
+    if (col + w > cols) return false
+    for (let r = 0; r < h; r++) {
+      for (let c = 0; c < w; c++) if (used[slot + r * cols + c]) return false
+    }
+    return true
+  }
+  let lastRow = -1
+  for (const item of items) {
+    if (!Number.isInteger(item.w) || !Number.isInteger(item.h) || item.w < 1 || item.h < 1 || item.w > cols) continue
+    let slot = 0
+    while (!free(slot, item.w, item.h)) slot++
+    for (let r = 0; r < item.h; r++) {
+      for (let c = 0; c < item.w; c++) used[slot + r * cols + c] = true
+    }
+    packed.push({ item, slot })
+    lastRow = Math.max(lastRow, Math.floor(slot / cols) + item.h - 1)
+  }
+  const rows = Math.max(minRows, lastRow + 1)
+  return { packed, rows }
+}

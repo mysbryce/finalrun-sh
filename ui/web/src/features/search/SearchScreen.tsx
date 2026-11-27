@@ -1,77 +1,119 @@
-import { useRef } from 'react'
-import { useMutation } from '@tanstack/react-query'
-import { useVirtualizer } from '@tanstack/react-virtual'
+import { useEffect, useRef, useState } from 'react'
 import { request } from '@/lib/ipc/bridge'
+import { KeyHint } from '@/lib/ui/KeyHint'
 import { useSearchStore } from './searchStore'
-import { SearchItemRow } from './components/SearchItemRow'
+import { BodyGrid } from './components/BodyGrid'
+import {
+  BODY_VIEWPORT,
+  FOOTER_CLOSE,
+  FOOTER_ERROR,
+  FOOTER_ROW,
+  FOOTER_TAKE,
+  SEARCH_COUNT,
+  SEARCH_FOOTER,
+  SEARCH_HEADER,
+  SEARCH_PANEL,
+  SEARCH_TITLE,
+} from './layout'
+
+function takeError(e: unknown): string {
+  const code = e instanceof Error ? e.message : ''
+  if (code === 'no_search') return 'Search closed.'
+  if (code === 'timeout') return 'No answer from the game.'
+  return 'Could not take the item.'
+}
 
 export function SearchScreen() {
   const search = useSearchStore((s) => s.search)
-  const parentRef = useRef<HTMLDivElement>(null)
-  const take = useMutation({
-    mutationFn: (uid: number) => request('search.take', { target: search?.target, uid }),
-  })
-  const rows = useVirtualizer({
-    count: search?.items.length ?? 0,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 48,
-    overscan: 6,
-  })
-  if (!search) return null
+  const pendingRef = useRef<Set<number>>(new Set())
+  const [pending, setPending] = useState<ReadonlySet<number>>(pendingRef.current)
+  const [error, setError] = useState<string | null>(null)
 
-  const close = () => {
-    void request('search.close', { target: search.target })
+  const updatePending = (next: Set<number>) => {
+    pendingRef.current = next
+    setPending(next)
   }
 
+  // A new snapshot clears the error and drops pending uids that are gone.
+  useEffect(() => {
+    setError(null)
+    const present = new Set(search?.items.map((i) => i.uid) ?? [])
+    const next = new Set([...pendingRef.current].filter((uid) => present.has(uid)))
+    if (next.size !== pendingRef.current.size) updatePending(next)
+  }, [search])
+
+  // ponytail: "Bag full" shows as a HUD notification after the search closes.
+  const take = (uid: number) => {
+    if (!search || pendingRef.current.has(uid)) return
+    setError(null)
+    updatePending(new Set(pendingRef.current).add(uid))
+    request('search.take', { target: search.target, uid })
+      .catch((e: unknown) => setError(takeError(e)))
+      .finally(() => {
+        if (!pendingRef.current.has(uid)) return
+        const next = new Set(pendingRef.current)
+        next.delete(uid)
+        updatePending(next)
+      })
+  }
+
+  const close = () => {
+    if (search) void request('search.close', { target: search.target })
+  }
+
+  const row = { top: FOOTER_ROW.top, height: FOOTER_ROW.height }
+
   return (
-    <div className="pointer-events-auto absolute left-1/2 top-1/2 w-[460px] -translate-x-1/2 -translate-y-1/2 rounded-md bg-zinc-950/95 ring-1 ring-white/10 text-white">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-        <span className="text-lg font-bold uppercase tracking-wider">{search.title}</span>
-        <div className="flex items-center gap-3">
-          <span className="text-[11px] text-white/60">{search.items.length} ITEMS</span>
-          <button type="button" className="h-7 w-7 rounded-sm bg-white/10 hover:bg-white/20" onClick={close}>
-            ×
-          </button>
-        </div>
+    <div className="pointer-events-none fixed inset-0 text-white">
+      <div className="pointer-events-auto absolute bg-black/60 backdrop-blur-md" style={SEARCH_PANEL}>
+        <div
+          className="absolute inset-x-0 bg-black/40"
+          style={{ top: SEARCH_HEADER.top - SEARCH_PANEL.top, height: SEARCH_HEADER.height }}
+        />
+        <div
+          className="absolute inset-x-0 bg-black/40"
+          style={{ top: SEARCH_FOOTER.top - SEARCH_PANEL.top, height: SEARCH_FOOTER.height }}
+        />
       </div>
-      {search.items.length === 0 ? (
-        <div className="px-4 py-10 text-center text-sm text-white/60">Nothing left to take</div>
-      ) : (
-        <div ref={parentRef} className="h-[336px] overflow-y-auto">
-          <div style={{ height: rows.getTotalSize(), position: 'relative' }}>
-            {rows.getVirtualItems().map((row) => {
-              const item = search.items[row.index]
-              return (
-                <div
-                  key={item.uid}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: row.size,
-                    transform: `translateY(${row.start}px)`,
-                  }}
-                >
-                  <SearchItemRow
-                    item={item}
-                    pending={take.isPending && take.variables === item.uid}
-                    onTake={() => take.mutate(item.uid)}
-                  />
-                </div>
-              )
-            })}
-          </div>
+      <div
+        className="absolute flex items-center truncate text-lg font-bold uppercase tracking-wide"
+        style={{ ...SEARCH_TITLE, top: SEARCH_HEADER.top, height: SEARCH_HEADER.height }}
+      >
+        {search ? search.title : 'Searching…'}
+      </div>
+      {search && (
+        <div
+          className="absolute flex items-center justify-end text-sm font-semibold text-white/80"
+          style={{ ...SEARCH_COUNT, top: SEARCH_HEADER.top, height: SEARCH_HEADER.height }}
+        >
+          {search.items.length} items
         </div>
       )}
-      {take.isError && <div className="px-4 pb-2 text-xs text-red-400">{take.error.message}</div>}
-      <div className="flex gap-4 px-4 py-2 border-t border-white/10 text-[11px] text-white/60">
-        <span className="flex items-center gap-1.5">
-          <span className="grid h-5 w-5 place-items-center rounded-sm bg-white text-[10px] font-bold text-zinc-900">
-            Q
-          </span>
-          CLOSE
-        </span>
+      {search && <BodyGrid items={search.items} pending={pending} onTake={take} />}
+      {search && search.items.length === 0 && (
+        <div
+          className="pointer-events-none absolute grid place-items-center text-sm text-white/60"
+          style={BODY_VIEWPORT}
+        >
+          Nothing left to take
+        </div>
+      )}
+      {error && (
+        <div className="absolute flex items-center truncate text-xs text-red-400" style={{ ...FOOTER_ERROR, ...row }}>
+          {error}
+        </div>
+      )}
+      <button
+        type="button"
+        className="pointer-events-auto absolute flex items-center justify-center rounded-sm bg-white/10 disabled:opacity-40"
+        style={{ ...FOOTER_CLOSE, ...row }}
+        disabled={!search}
+        onClick={close}
+      >
+        <KeyHint k="Q" label="Close" />
+      </button>
+      <div className="absolute flex items-center justify-end" style={{ ...FOOTER_TAKE, ...row }}>
+        <KeyHint k="LMB" label="Take" />
       </div>
     </div>
   )

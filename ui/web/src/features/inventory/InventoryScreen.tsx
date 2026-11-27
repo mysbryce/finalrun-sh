@@ -1,13 +1,13 @@
 import { useRef, useState } from 'react'
 import { DndContext, DragOverlay, PointerSensor, pointerWithin, useSensor, useSensors } from '@dnd-kit/core'
 import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core'
-import { useMutation } from '@tanstack/react-query'
 import { request } from '@/lib/ipc/bridge'
 import { formatMoney } from '@/lib/format'
 import type { InventoryView } from '@/lib/ipc/protocol'
 import { useInventoryStore } from './inventoryStore'
+import { useConfirmedMove } from './useConfirmedMove'
 import { BAG_COL, EQUIP_COL, PANEL } from './layout'
-import { BAG_COLUMNS, BAG_GRID, cellBox } from '@/lib/grid/gridLayout'
+import { BAG_COLUMNS, BAG_GRID, BAG_ROWS, cellBox } from '@/lib/grid/gridLayout'
 import { moveBagItem, placeBagItems, slotFromDropId, targetSlot } from '@/lib/grid/placement'
 import { unzoomModifier } from './dragZoom'
 import { rarityOf } from '@/lib/grid/rarity'
@@ -20,18 +20,16 @@ type Preview = { slot: number; w: number; h: number; ok: boolean }
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi)
 
-export function InventoryScreen() {
+export function InventoryScreen({ embedded = false }: { embedded?: boolean }) {
   const inventory = useInventoryStore((s) => s.inventory)
   const selectedUid = useInventoryStore((s) => s.selectedUid)
   const select = useInventoryStore((s) => s.select)
-  const moveLocal = useInventoryStore((s) => s.moveLocal)
+  const notice = useInventoryStore((s) => s.notice)
+  const commitMove = useConfirmedMove()
   const [activeUid, setActiveUid] = useState<number | null>(null)
   const [preview, setPreview] = useState<Preview | null>(null)
   const grab = useRef<{ offCol: number; offRow: number }>({ offCol: 0, offRow: 0 })
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
-  const move = useMutation({
-    mutationFn: (v: { uid: number; slot: number }) => request('inventory.move', v),
-  })
 
   // Target top-left slot for the dragged item, plus its current slot.
   const resolve = (inv: InventoryView, uid: number, overId: string | number | null | undefined) => {
@@ -92,15 +90,12 @@ export function InventoryScreen() {
     const res = resolve(inv, uid, event.over?.id)
     if (!res || res.target === null || res.target === res.current) return
     if (moveBagItem(inv.bag, uid, res.target, inv.bagSlots, BAG_COLUMNS) === inv.bag) return
-    moveLocal(uid, res.target)
-    move.mutate({ uid, slot: res.target })
+    commitMove(uid, res.target)
   }
 
-  if (!inventory) return null
-
   const selected =
-    inventory.bag.find((i) => i.uid === selectedUid) ?? inventory.gear.find((i) => i.uid === selectedUid)
-  const activeItem = activeUid === null ? undefined : inventory.bag.find((i) => i.uid === activeUid)
+    inventory?.bag.find((i) => i.uid === selectedUid) ?? inventory?.gear.find((i) => i.uid === selectedUid)
+  const activeItem = activeUid === null ? undefined : inventory?.bag.find((i) => i.uid === activeUid)
 
   return (
     <div className="pointer-events-none fixed inset-0 text-white">
@@ -114,7 +109,7 @@ export function InventoryScreen() {
             style={{ left: BAG_COL.left, width: BAG_GRID.width, height: PANEL.header }}
           >
             <span className="text-lg font-bold uppercase tracking-wide">BAG</span>
-            <span className="text-sm font-semibold text-white/80">{formatMoney(inventory.bagValue)}</span>
+            <span className="text-sm font-semibold text-white/80">{inventory ? formatMoney(inventory.bagValue) : '—'}</span>
           </div>
           <div
             className="absolute flex items-center"
@@ -123,40 +118,50 @@ export function InventoryScreen() {
             <span className="text-lg font-bold uppercase tracking-wide">EQUIPMENT</span>
           </div>
         </div>
-        <DndContext
-          sensors={sensors}
-          collisionDetection={pointerWithin}
-          onDragStart={onDragStart}
-          onDragOver={onDragOver}
-          onDragEnd={onDragEnd}
-          onDragCancel={clearDrag}
-        >
-          <div className="absolute" style={{ left: BAG_COL.left, top: BAG_COL.top }}>
-            <BagGrid
-              items={inventory.bag}
-              slots={inventory.bagSlots}
-              selectedUid={selectedUid}
-              onSelect={select}
-              preview={preview}
-            />
-          </div>
-          <DragOverlay modifiers={[unzoomModifier]}>
-            {activeItem ? (
-              <ItemTile
-                item={activeItem}
-                size={{ w: cellBox(0, activeItem.w, activeItem.h).width, h: cellBox(0, activeItem.w, activeItem.h).height }}
+        {inventory ? (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={pointerWithin}
+            onDragStart={onDragStart}
+            onDragOver={onDragOver}
+            onDragEnd={onDragEnd}
+            onDragCancel={clearDrag}
+          >
+            <div className="absolute" style={{ left: BAG_COL.left, top: BAG_COL.top }}>
+              <BagGrid
+                items={inventory.bag}
+                slots={inventory.bagSlots}
+                selectedUid={selectedUid}
+                onSelect={select}
+                preview={preview}
               />
-            ) : null}
-          </DragOverlay>
-        </DndContext>
+            </div>
+            <DragOverlay modifiers={[unzoomModifier]}>
+              {activeItem ? (
+                <ItemTile
+                  item={activeItem}
+                  size={{ w: cellBox(0, activeItem.w, activeItem.h).width, h: cellBox(0, activeItem.w, activeItem.h).height }}
+                />
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        ) : (
+          <div className="absolute" style={{ left: BAG_COL.left, top: BAG_COL.top }}>
+            <BagGrid items={[]} slots={BAG_COLUMNS * BAG_ROWS} selectedUid={null} onSelect={select} />
+          </div>
+        )}
         <div className="absolute" style={{ left: EQUIP_COL.left, top: EQUIP_COL.top }}>
-          <EquipmentPanel gear={inventory.gear} selectedUid={selectedUid} onSelect={select} />
+          <EquipmentPanel gear={inventory?.gear ?? []} selectedUid={selectedUid} onSelect={select} />
         </div>
         <div
           className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-black/40"
           style={{ height: PANEL.footer, paddingLeft: PANEL.inset, paddingRight: PANEL.inset }}
         >
-          {selected ? (
+          {notice ? (
+            <span className="text-xs text-amber-300">{notice}</span>
+          ) : !inventory ? (
+            <span className="text-xs text-white/50">Loading inventory…</span>
+          ) : selected ? (
             <div className="flex items-baseline gap-2">
               <span className="text-sm font-bold">{selected.label}</span>
               <span className="text-xs font-semibold">{formatMoney(selected.value)}</span>
@@ -166,14 +171,16 @@ export function InventoryScreen() {
             <span className="text-xs text-white/50">Select an item</span>
           )}
           <div className="flex items-center gap-4">
-            <button
-              type="button"
-              className="flex h-[22px] items-center rounded-sm bg-white/10 px-2"
-              onClick={() => void request('inventory.close', {})}
-            >
-              <KeyHint k="ESC" label="Back" />
-            </button>
-            <KeyHint k="TAB" label="Close" />
+            {!embedded && (
+              <button
+                type="button"
+                className="flex h-[22px] items-center rounded-sm bg-white/10 px-2"
+                onClick={() => void request('inventory.close', {})}
+              >
+                <KeyHint k="ESC" label="Back" />
+              </button>
+            )}
+            {!embedded && <KeyHint k="TAB" label="Close" />}
             <KeyHint k="LMB" label="Select" />
           </div>
         </div>

@@ -14,13 +14,29 @@ const render = (ui: ReactElement) =>
 
 describe('InventoryScreen', () => {
   beforeEach(() => {
-    useInventoryStore.setState({ inventory: null, selectedUid: null })
+    useInventoryStore.setState({ inventory: null, selectedUid: null, committed: null, notice: null, seq: 0 })
     vi.mocked(request).mockClear()
   })
 
-  it('renders nothing without data', () => {
-    const { container } = render(<InventoryScreen />)
-    expect(container).toBeEmptyDOMElement()
+  it('shows the loading state without data', () => {
+    render(<InventoryScreen />)
+    expect(screen.getByText('Loading inventory…')).toBeInTheDocument()
+    expect(screen.getByText('—')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Back/ })).toBeEnabled()
+  })
+
+  it('embedded hides Back and the close hint', () => {
+    useInventoryStore.setState({ inventory: DEMO_INVENTORY })
+    render(<InventoryScreen embedded />)
+    expect(screen.queryByRole('button', { name: /Back/ })).toBeNull()
+    expect(screen.queryByText('Close')).toBeNull()
+  })
+
+  it('the footer shows the notice when set', () => {
+    useInventoryStore.setState({ inventory: DEMO_INVENTORY, notice: 'Move could not be confirmed.' })
+    render(<InventoryScreen />)
+    expect(screen.getByText('Move could not be confirmed.')).toBeInTheDocument()
+    expect(screen.queryByText('Select an item')).toBeNull()
   })
 
   it('shows the demo inventory', () => {

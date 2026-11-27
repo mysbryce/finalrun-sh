@@ -693,8 +693,8 @@
     "restart": false,
     "label": "Take first search item",
     "storage": "config_file",
-    "capability": null,
-    "unavailable": null
+    "capability": "debug_shortcuts",
+    "unavailable": "hidden"
   },
   {
     "key": "bind_search_close",

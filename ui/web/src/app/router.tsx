@@ -58,7 +58,12 @@ const transferRoute = createRoute({
 const searchRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/search',
-  component: SearchScreen,
+  component: () => (
+    <>
+      <SearchScreen />
+      <InventoryScreen embedded />
+    </>
+  ),
 })
 
 const inventoryRoute = createRoute({

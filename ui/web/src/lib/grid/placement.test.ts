@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { InventoryItem } from '@/lib/ipc/protocol'
-import { footprint, moveBagItem, occupancy, placeBagItems, slotFromDropId, targetSlot } from './placement'
+import { footprint, moveBagItem, occupancy, packRows, placeBagItems, slotFromDropId, targetSlot } from './placement'
 
 const SLOTS = 54
 const COLS = 6
@@ -120,5 +120,33 @@ describe('slotFromDropId', () => {
     expect(slotFromDropId('slot-7')).toBe(7)
     expect(slotFromDropId('7')).toBeNull()
     expect(slotFromDropId(undefined)).toBeNull()
+  })
+})
+
+describe('packRows', () => {
+  const box = (uid: number, w: number, h: number) => ({ uid, w, h })
+
+  it('packs row-first in input order', () => {
+    const { packed } = packRows([box(1, 1, 1), box(2, 2, 1), box(3, 1, 1)], COLS, 9)
+    expect(packed.map((p) => p.slot)).toEqual([0, 1, 3])
+  })
+
+  it('puts a 2x2 after a 6x1 at slot 6', () => {
+    const { packed } = packRows([box(1, 6, 1), box(2, 2, 2)], COLS, 9)
+    expect(packed.find((p) => p.item.uid === 2)?.slot).toBe(6)
+  })
+
+  it('adds rows as needed', () => {
+    const items = Array.from({ length: 12 }, (_, i) => box(i + 1, 6, 1))
+    expect(packRows(items, COLS, 9).rows).toBe(12)
+  })
+
+  it('gives minRows for empty input', () => {
+    expect(packRows([], COLS, 9)).toEqual({ packed: [], rows: 9 })
+  })
+
+  it('skips an item wider than cols', () => {
+    const { packed } = packRows([box(1, 7, 1), box(2, 1, 1)], COLS, 9)
+    expect(packed).toEqual([{ item: box(2, 1, 1), slot: 0 }])
   })
 })
