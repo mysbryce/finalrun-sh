@@ -79,6 +79,39 @@ func test_instance_can_attack() -> void:
 	target.free()
 
 
+func test_instance_can_attack_with_real_player_node() -> void:
+	# Regression: the old code called has_node_or_null() on the target Node,
+	# which does not exist; only controller-to-controller was covered.
+	var target_player := preload("res://features/player/Player.tscn").instantiate()
+	var target_controller := target_player.get_node("PlayerRoleController") as PlayerRoleController
+	target_controller.role = RoleControllerScript.Role.COP
+	var attacker = RoleControllerScript.new()
+	attacker.role = RoleControllerScript.Role.CRIMINAL
+	attacker.map_name = "LootyBay"
+	attacker.safezone = false
+	assert_true(attacker.can_attack(target_player), "can_attack reads the controller under a Player node")
+	assert_true(
+		not attacker.can_attack(target_player, true),
+		"same_party turns a valid target into friendly fire"
+	)
+	target_controller.role = RoleControllerScript.Role.CITIZEN
+	assert_true(not attacker.can_attack(target_player), "Player-shaped target follows the role matrix")
+	attacker.free()
+	target_player.free()
+
+
+func test_same_party_default_keeps_existing_behavior() -> void:
+	var criminal: int = RoleControllerScript.Role.CRIMINAL
+	assert_true(
+		RoleControllerScript.can_attack_roles(criminal, criminal, "LootyBay", false),
+		"default same_party=false keeps the old result"
+	)
+	assert_false(
+		RoleControllerScript.can_attack_roles(criminal, criminal, "LootyBay", false, true),
+		"same_party=true disables friendly fire"
+	)
+
+
 func test_sell_multiplier() -> void:
 	assert_eq(RoleControllerScript.sell_multiplier(0.0), 1.0, "no notoriety means 1x")
 	assert_eq(RoleControllerScript.sell_multiplier(5000.0), 1.5, "halfway to the cap is 1.5x")

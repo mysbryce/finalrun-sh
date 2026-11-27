@@ -23,13 +23,22 @@ const MAX_HEALTH: int = GameConst.PLAYER_MAX_HEALTH
 		if _role_controller != null and is_instance_valid(_role_controller):
 			_role_controller.handle_replicated_role(old_role, role)
 
+@export var life_state: int = 0:
+	set(value):
+		var old_state: int = life_state
+		life_state = value
+		if _role_controller != null and is_instance_valid(_role_controller):
+			_role_controller.handle_replicated_life_state(old_state, life_state)
+
+@export var downed_deadline_ms: int = 0
+
 var instance_id: String = ""
 var map_name: String = ""
 var health: int = MAX_HEALTH
 
 var _role_controller: PlayerRoleController = null
 var _input_dir: Vector2 = Vector2.ZERO
-var _last_sent_input: Vector2 = Vector2(-999.0, -999.0)
+var _movement_sent: bool = false
 var _send_accumulator: float = 0.0
 var _input_enabled: bool = false
 
@@ -63,6 +72,13 @@ func setup_server(instance_node: Node, state: Dictionary) -> void:
 	role = int(state.get("role", PlayerRoleController.Role.CITIZEN))
 	if controller != null:
 		controller.apply_state(state)
+		# A transfer respawns the player. The node is fresh, so this is usually
+		# an idempotent no-op, but it also restores full HP explicitly.
+		controller.server_set_life_state(
+			PlayerRoleController.LifeState.ALIVE,
+			"respawn",
+			_now_ms()
+		)
 	var spawn_transform: Variant = instance_node.call("get_spawn_transform", peer_id)
 	if spawn_transform is Transform3D:
 		position = (spawn_transform as Transform3D).origin
@@ -94,16 +110,60 @@ func get_role_controller() -> PlayerRoleController:
 func take_damage(amount: int) -> void:
 	if not multiplayer.is_server() or amount <= 0:
 		return
+	if _role_controller == null:
+		return
+	if _role_controller.life_state == PlayerRoleController.LifeState.DEAD:
+		return
+	var now_ms: int = _now_ms()
+	_role_controller.notify_damage()
+	var server_manager := get_node_or_null("/root/ServerManager")
+	if server_manager != null and server_manager.has_method("notify_player_damaged"):
+		server_manager.notify_player_damaged(self)
+
+	if _role_controller.life_state == PlayerRoleController.LifeState.DOWNED:
+		# A downed body stays at 0 HP; extra hits only shorten the bleed-out.
+		health = 0
+		if _role_controller.server_apply_downed_damage(now_ms):
+			_request_death_resolution()
+		return
+
 	health -= amount
-	if _role_controller != null:
-		_role_controller.notify_damage()
-	if health <= 0:
-		var server_manager := get_node_or_null("/root/ServerManager")
-		if server_manager != null and server_manager.has_method("handle_player_death"):
-			server_manager.handle_player_death(self)
+	if health > 0:
+		return
+	health = 0
+	if not _role_controller.is_in_heist_map():
+		# Outside LootyBay 0 HP goes straight to the death path.
+		_role_controller.server_set_life_state(
+			PlayerRoleController.LifeState.DEAD,
+			"damage",
+			now_ms
+		)
+		_request_death_resolution()
+		return
+	if _role_controller.was_recently_revived(now_ms):
+		_role_controller.server_set_life_state(
+			PlayerRoleController.LifeState.DEAD,
+			"redown",
+			now_ms
+		)
+		_request_death_resolution()
+		return
+	_role_controller.server_set_life_state(
+		PlayerRoleController.LifeState.DOWNED,
+		"damage",
+		now_ms
+	)
 
 
-@rpc("any_peer", "call_remote", "reliable")
+func _request_death_resolution() -> void:
+	# PlayerService owns the death outcome, LootDrop, and deferred respawn
+	# transfer; the life-state handler itself only cancels channels.
+	var server_manager := get_node_or_null("/root/ServerManager")
+	if server_manager != null and server_manager.has_method("handle_player_death"):
+		server_manager.handle_player_death(self)
+
+
+@rpc("any_peer", "call_remote", "unreliable")
 func server_request_move(input: Vector2) -> void:
 	if not multiplayer.is_server():
 		return
@@ -125,11 +185,18 @@ func _server_physics(delta: float) -> void:
 		velocity.y -= GRAVITY * delta
 	else:
 		velocity.y = 0.0
+	var speed: float = SPEED
+	if _role_controller != null:
+		match _role_controller.life_state:
+			PlayerRoleController.LifeState.DOWNED:
+				speed = GameConst.DOWNED_CRAWL_SPEED
+			PlayerRoleController.LifeState.DEAD:
+				speed = 0.0
 	var direction := Vector3(_input_dir.x, 0.0, _input_dir.y)
 	if direction.length_squared() > 1.0:
 		direction = direction.normalized()
-	velocity.x = direction.x * SPEED
-	velocity.z = direction.z * SPEED
+	velocity.x = direction.x * speed
+	velocity.z = direction.z * speed
 	move_and_slide()
 
 
@@ -139,9 +206,16 @@ func _client_input_tick(delta: float) -> void:
 		return
 	_send_accumulator = 0.0
 	var input := _read_input()
-	if input.is_equal_approx(_last_sent_input):
+	if input.is_zero_approx():
+		# The movement RPC is unreliable, so one final zero packet stops the
+		# server from repeating the last input forever after the keys release.
+		if _movement_sent:
+			_movement_sent = false
+			rpc_id(1, "server_request_move", Vector2.ZERO)
 		return
-	_last_sent_input = input
+	# Resend every interval even when unchanged: a dropped unreliable packet
+	# must not freeze the server-side simulation.
+	_movement_sent = true
 	rpc_id(1, "server_request_move", input)
 
 
@@ -166,3 +240,7 @@ func _update_control_state() -> void:
 		_input_enabled = false
 		return
 	_input_enabled = not multiplayer.is_server() and peer_id == multiplayer.get_unique_id()
+
+
+func _now_ms() -> int:
+	return int(Time.get_unix_time_from_system() * 1000.0)

@@ -115,12 +115,44 @@ func test_cop_death_goes_off_duty() -> void:
 	cop.role = RoleControllerScript.Role.COP
 	cop.cop_on_duty = true
 	cop.grant_loot("diamond", 1500)
-	cop.grant_gear("cop_pistol", 0)
+	cop.grant_gear("cop_pistol", 0, true)
 
 	var result: Dictionary = cop.server_apply_death()
-	assert_false(bool(result.get("drops", false)), "cop death drops nothing")
+	assert_true(bool(result.get("drops", false)), "cop death drops non-issued loot")
+	assert_eq((result["gear"] as Array).size(), 0, "cop death never drops issued gear")
+	assert_eq((result["loot"] as Array).size(), 1, "cop death drops non-issued loot")
 	assert_eq(cop.role, RoleControllerScript.Role.CITIZEN, "cop death returns to CITIZEN")
 	assert_false(cop.cop_on_duty, "cop death goes off duty")
 	assert_eq(cop.equipped_gear.size(), 0, "cop death clears free-issue gear")
-	assert_eq(cop.loot_bag.size(), 1, "cop death keeps the loot bag")
+	assert_eq(cop.loot_bag.size(), 0, "cop death clears the dropped loot bag")
 	cop.free()
+
+
+func test_cop_death_drops_only_non_issued_items() -> void:
+	var cop = RoleControllerScript.new()
+	cop.role = RoleControllerScript.Role.COP
+	cop.cop_on_duty = true
+	cop.grant_loot("diamond", 1500)
+	cop.grant_gear("cop_pistol", 0, true)
+	cop.grant_gear("civilian_rifle", 800, false)
+
+	var result: Dictionary = cop.server_apply_death()
+	var dropped_gear: Array = result["gear"]
+	assert_eq(dropped_gear.size(), 1, "only the non-issued gear drops")
+	assert_eq(String(dropped_gear[0].get("id", "")), "civilian_rifle", "issued pistol is destroyed")
+	assert_false(bool(dropped_gear[0].get("issued", false)), "dropped gear is not issued gear")
+	cop.free()
+
+
+func test_dead_criminal_respawns_as_citizen() -> void:
+	var criminal = RoleControllerScript.new()
+	criminal.role = RoleControllerScript.Role.CRIMINAL
+	criminal.grant_loot("diamond", 500)
+	var result: Dictionary = criminal.server_apply_death()
+	assert_eq(criminal.role, RoleControllerScript.Role.CITIZEN, "dead criminal respawns as CITIZEN")
+	assert_eq(
+		int(result.get("respawn_role", -1)),
+		RoleControllerScript.Role.CITIZEN,
+		"pure outcome documents the CITIZEN respawn"
+	)
+	criminal.free()

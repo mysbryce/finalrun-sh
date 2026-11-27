@@ -14,7 +14,63 @@ var _host: Node = null
 var _instances: InstanceRegistry = null
 var _transfers: TransferService = null
 var _parties: PartyService = null
+## DownedService hooks, injected as callables so the two services do not form a
+## RefCounted reference cycle.
+var _life_changed_hook: Callable = Callable()
+var _disconnect_hook: Callable = Callable()
+var _leaving_hook: Callable = Callable()
 var _states: Dictionary = {}
+var _death_pending: Dictionary = {}
+## Stateful item id counter. `ItemUtils` must stay stateless, so allocation is
+## owned here and injected into each spawned role controller.
+var _next_item_uid: int = 1
+
+
+## Allocates a server-wide unique item uid.
+func allocate_item_uid() -> int:
+	var uid: int = _next_item_uid
+	_next_item_uid += 1
+	return uid
+
+
+## Wires the downed service behaviour without holding the service object.
+func set_downed_hooks(
+	life_changed: Callable,
+	disconnected: Callable,
+	leaving: Callable
+) -> void:
+	_life_changed_hook = life_changed
+	_disconnect_hook = disconnected
+	_leaving_hook = leaving
+
+
+func now_ms() -> int:
+	return int(Time.get_unix_time_from_system() * 1000.0)
+
+
+func get_player(peer_id: int) -> PlayerCharacter:
+	return _get_player(peer_id)
+
+
+func get_controller(peer_id: int) -> PlayerRoleController:
+	return _controller_for(_get_player(peer_id))
+
+
+func current_instance(peer_id: int) -> GameInstance:
+	return _instances.current_instance_for_peer(peer_id)
+
+
+func is_peer_alive(peer_id: int) -> bool:
+	var controller := get_controller(peer_id)
+	return controller != null and controller.is_alive()
+
+
+func transfer_to_motel(peer_id: int) -> bool:
+	return _transfers.transfer_to_motel(peer_id)
+
+
+func refresh_police_vehicle(instance: GameInstance) -> void:
+	_refresh_police_vehicle(instance)
 
 
 func configure(
@@ -49,10 +105,27 @@ func handle_peer_joined(peer_id: int) -> void:
 func handle_peer_left(peer_id: int) -> void:
 	if peer_id <= 0:
 		return
-	_transfers.cleanup_transfer(peer_id)
-	var instance := _instances.detach_peer(peer_id)
+	# Cancel channels and search sessions first so live viewers get the
+	# "disconnected" reason before the body or player nodes disappear.
+	if _disconnect_hook.is_valid():
+		_disconnect_hook.call(peer_id)
+	var instance := _instances.current_instance_for_peer(peer_id)
 	if instance != null:
-		_refresh_police_vehicle(instance)
+		var player := instance.get_player(peer_id)
+		var controller := _controller_for(player)
+		# A downed body must still drop its remaining loot before despawn.
+		if controller != null and controller.is_downed():
+			controller.server_set_life_state(
+				RoleControllerScript.LifeState.DEAD,
+				"disconnect",
+				now_ms()
+			)
+			_resolve_death(player, instance)
+	_transfers.cleanup_transfer(peer_id)
+	_death_pending.erase(peer_id)
+	var detached := _instances.detach_peer(peer_id)
+	if detached != null:
+		_refresh_police_vehicle(detached)
 	_states.erase(peer_id)
 	_parties.remove_peer(peer_id)
 
@@ -64,6 +137,8 @@ func prepare_transfer_leave(peer_id: int) -> void:
 	if old_instance == null:
 		_instances.clear_peer_instance(peer_id)
 		return
+	if _leaving_hook.is_valid():
+		_leaving_hook.call(peer_id)
 	var old_player := old_instance.get_player(peer_id)
 	if old_player != null:
 		var controller := _controller_for(old_player)
@@ -97,6 +172,9 @@ func spawn_node(data: Variant) -> Node:
 	var player := PlayerScene.instantiate()
 	player.name = str(peer_id)
 	player.set("peer_id", peer_id)
+	var controller := player.get_node_or_null("PlayerRoleController") as PlayerRoleController
+	if _host.multiplayer.is_server() and controller != null:
+		controller.set_item_uid_allocator(Callable(self, "allocate_item_uid"))
 	if _host.multiplayer.is_server():
 		var instance := _instances.get_instance(instance_id)
 		if instance == null:
@@ -105,6 +183,8 @@ func spawn_node(data: Variant) -> Node:
 		if state == null:
 			state = RoleControllerScript.default_player_state()
 		player.call("setup_server", instance, state)
+		if controller != null:
+			controller.life_state_changed.connect(_on_player_life_state_changed.bind(player))
 	else:
 		var client_instance := _find_client_instance(instance_id)
 		if client_instance != null:
@@ -150,6 +230,9 @@ func mask(peer_id: int) -> void:
 	var controller := player.get_role_controller()
 	if controller == null:
 		return
+	if party_role_conflict(_party_roles(peer_id), RoleControllerScript.Role.CRIMINAL):
+		_notify(peer_id, "A party cannot mix COP and CRIMINAL (mask rejected)")
+		return
 	if controller.server_try_mask():
 		_notify(peer_id, "Masking... hold still for 3 seconds")
 	else:
@@ -174,6 +257,9 @@ func cop_duty(peer_id: int) -> void:
 		else:
 			_notify(peer_id, "Go off duty inside the Police Station")
 		return
+	if party_role_conflict(_party_roles(peer_id), RoleControllerScript.Role.COP):
+		_notify(peer_id, "A party cannot mix COP and CRIMINAL (duty rejected)")
+		return
 	if controller.server_go_on_duty():
 		_refresh_police_vehicle(instance)
 		_notify(peer_id, "On duty: cop loadout issued")
@@ -196,13 +282,29 @@ func attack(peer_id: int, target_peer_id: int) -> void:
 	if _instances.get_peer_instance_id(target_peer_id) != instance.instance_id:
 		return
 	var attacker_controller := attacker.get_role_controller()
-	if attacker_controller == null or not attacker_controller.can_attack(target):
+	if attacker_controller == null:
+		return
+	var same_party: bool = false
+	var party := _parties.get_party(peer_id)
+	if party != null and party.has_member(target_peer_id):
+		same_party = true
+	if not attacker_controller.can_attack(target, same_party):
 		return
 	if attacker.global_position.distance_to(target.global_position) > GameConst.ATTACK_RANGE:
 		return
-	if not _has_line_of_sight(instance, attacker, target):
+	if not has_line_of_sight(instance, attacker, target):
 		return
 	target.take_damage(GameConst.ATTACK_DAMAGE)
+
+
+## Pure party role rule: COP and CRIMINAL may not share a party. CITIZEN is
+## compatible with either side.
+static func party_role_conflict(member_roles: Array, requested_role: int) -> bool:
+	if requested_role == RoleControllerScript.Role.CRIMINAL:
+		return member_roles.has(RoleControllerScript.Role.COP)
+	if requested_role == RoleControllerScript.Role.COP:
+		return member_roles.has(RoleControllerScript.Role.CRIMINAL)
+	return false
 
 
 func surrender(peer_id: int) -> void:
@@ -234,32 +336,80 @@ func surrender(peer_id: int) -> void:
 		_notify(peer_id, "Could not transfer to Motel")
 
 
+## Applies the death outcome and spawns the LootDrop at the body position. No
+## transfer: disconnect cleanup resolves the death and then detaches the peer.
+func _resolve_death(player: Node, instance: GameInstance) -> void:
+	if player == null or not is_instance_valid(player) or instance == null:
+		return
+	var peer_id := int(player.get("peer_id"))
+	var controller := _controller_for(player)
+	if controller == null:
+		return
+	if _death_pending.has(peer_id):
+		return
+	_death_pending[peer_id] = true
+	var result: Dictionary = controller.server_apply_death()
+	var loot: Array = result.get("loot", [])
+	var gear: Array = result.get("gear", [])
+	# A body whose items were all taken while downed produces no empty drop.
+	if bool(result.get("drops", false)) and (not loot.is_empty() or not gear.is_empty()):
+		instance.spawn_loot_drop(peer_id, player.global_position, loot, gear)
+	_states[peer_id] = controller.export_state()
+	_refresh_police_vehicle(instance)
+
+
 func handle_player_death(player: Node) -> void:
 	if not bool(_host.call("is_server_running")) or not _host.multiplayer.is_server():
 		return
 	if player == null or not is_instance_valid(player):
 		return
 	var peer_id := int(player.get("peer_id"))
-	if _transfers.has_transfer(peer_id):
+	if _transfers.has_transfer(peer_id) or _death_pending.has(peer_id):
 		return
 	var instance := _instances.current_instance_for_peer(peer_id)
 	if instance == null or instance.get_player(peer_id) != player:
 		return
 	var controller := _controller_for(player)
-	if controller == null:
+	if controller == null or not controller.is_dead():
 		return
-	var result: Dictionary = controller.server_apply_death()
-	if bool(result.get("drops", false)):
-		instance.spawn_loot_drop(
-			peer_id,
-			player.global_position,
-			result.get("loot", []),
-			result.get("gear", [])
-		)
-	_states[peer_id] = controller.export_state()
-	_refresh_police_vehicle(instance)
+	# Despawn happens in the deferred transfer, never inside the life-state
+	# signal handler that led here.
+	_resolve_death(player, instance)
+	Callable(self, "_transfer_after_death").call_deferred(peer_id)
+
+
+func _transfer_after_death(peer_id: int) -> void:
+	_death_pending.erase(peer_id)
 	if not _transfers.transfer_to_motel(peer_id):
 		_notify(peer_id, "Respawn transfer failed")
+
+
+## Called by DownedService after a successful revive. Area overlap does not fire
+## a new body_entered when the player was already standing inside the zone.
+func run_extraction_if_overlapping(player: Node, instance: GameInstance) -> void:
+	if player == null or not is_instance_valid(player) or instance == null:
+		return
+	var zone := instance.get_zone(GameConst.ZONE_EXTRACT)
+	if zone == null:
+		return
+	if not zone.get_overlapping_bodies().has(player):
+		return
+	# Keep the normal deferred extraction path so a revive never despawns the
+	# player inside the channel/life-state call stack.
+	Callable(self, "_handle_extraction").call_deferred(player, instance)
+
+
+## Life-state signal bridge: the downed service owns channel and search
+## cancellation. Death resolution is explicit in the caller so it never runs
+## inside this handler.
+func _on_player_life_state_changed(
+	old_state: int,
+	new_state: int,
+	cause: String,
+	player: Node
+) -> void:
+	if _life_changed_hook.is_valid():
+		_life_changed_hook.call(player, old_state, new_state, cause)
 
 
 # --- Zones -------------------------------------------------------------------
@@ -305,7 +455,9 @@ func _handle_extraction(player: Node, instance: GameInstance) -> void:
 	if _instances.current_instance_for_peer(peer_id) != instance:
 		return
 	var controller := _controller_for(player)
-	if controller == null:
+	if controller == null or not controller.is_alive():
+		# Downed or dead bodies never extract; a revive inside the zone is
+		# re-checked by DownedService after the state change.
 		return
 	controller.server_on_extraction()
 	_states[peer_id] = controller.export_state()
@@ -342,10 +494,12 @@ func _find_surrender_cop(instance: GameInstance, criminal: Node) -> Node:
 		var controller := _controller_for(player)
 		if controller == null or controller.role != RoleControllerScript.Role.COP:
 			continue
+		if not controller.is_alive():
+			continue
 		var distance: float = criminal.global_position.distance_to(player.global_position)
 		if distance > GameConst.SURRENDER_RANGE:
 			continue
-		if not _has_line_of_sight(instance, player, criminal):
+		if not has_line_of_sight(instance, player, criminal):
 			continue
 		if distance < best_distance:
 			best_distance = distance
@@ -353,9 +507,14 @@ func _find_surrender_cop(instance: GameInstance, criminal: Node) -> Node:
 	return best
 
 
-func _has_line_of_sight(instance: GameInstance, from_player: Node3D, target_player: Node3D) -> bool:
-	# Raycast in the shooter's own instance World3D; instances never share a
-	# physics space, so a ray can never cross into another sub-session.
+## Public static raycast helper shared by combat, surrender and downed actions.
+## The ray runs in the shooter's own instance World3D; instances never share a
+## physics space, so a ray can never cross into another sub-session.
+static func has_line_of_sight(
+	instance: GameInstance,
+	from_player: Node3D,
+	target_player: Node3D
+) -> bool:
 	var world: World3D = from_player.get_world_3d()
 	if world == null:
 		world = instance.get_world_3d()
@@ -386,6 +545,27 @@ func _refresh_police_vehicle(instance: GameInstance) -> void:
 		if controller != null and controller.cop_on_duty:
 			on_duty_count += 1
 	instance.set_police_vehicle_active(on_duty_count > 0)
+
+
+## Current roles of every party member (including the requester). Members that
+## are between instances fall back to their persisted state snapshot.
+func _party_roles(peer_id: int) -> Array:
+	var party := _parties.get_party(peer_id)
+	if party == null:
+		var own_controller := get_controller(peer_id)
+		if own_controller == null:
+			return []
+		return [own_controller.role]
+	var roles: Array = []
+	for member: int in party.members:
+		var controller := get_controller(member)
+		if controller != null:
+			roles.append(controller.role)
+			continue
+		var state: Variant = _states.get(member)
+		if state is Dictionary:
+			roles.append(int((state as Dictionary).get("role", RoleControllerScript.Role.CITIZEN)))
+	return roles
 
 
 func _notify(peer_id: int, text: String) -> void:
