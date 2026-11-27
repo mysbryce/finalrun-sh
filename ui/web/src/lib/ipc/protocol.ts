@@ -32,7 +32,7 @@ export type HudState = {
 export type SearchItem = { uid: number; id: string; label: string; value: number; source: string }
 export type SearchView = { target: number; title: string; items: SearchItem[] }
 
-export type InventoryItem = { uid: number; id: string; label: string; value: number; source: string }
+export type InventoryItem = { uid: number; id: string; label: string; value: number; source: string; slot: number }
 export type InventoryView = {
   cash: number
   bagValue: number

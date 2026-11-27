@@ -1,4 +1,6 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import type { ReactElement } from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { render as rtlRender, fireEvent, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { request } from '@/lib/ipc/bridge'
 import { DEMO_INVENTORY } from './demoInventory'
@@ -6,6 +8,9 @@ import { InventoryScreen } from './InventoryScreen'
 import { useInventoryStore } from './inventoryStore'
 
 vi.mock('@/lib/ipc/bridge', () => ({ request: vi.fn(() => Promise.resolve({})) }))
+
+const render = (ui: ReactElement) =>
+  rtlRender(<QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>)
 
 describe('InventoryScreen', () => {
   beforeEach(() => {
@@ -29,6 +34,16 @@ describe('InventoryScreen', () => {
     expect(screen.getByRole('button', { name: 'BAG' })).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: 'POUCH' })).toHaveLength(4)
     expect(screen.getByText('Select an item')).toBeInTheDocument()
+  })
+
+  it('bag items render at their slots', () => {
+    useInventoryStore.setState({ inventory: DEMO_INVENTORY })
+    render(<InventoryScreen />)
+    const grid = screen.getByRole('button', { name: 'Drill' }).closest('.grid')!
+    const cells = Array.from(grid.children)
+    expect(cells).toHaveLength(36)
+    expect(cells[6].querySelector('button')).toHaveAccessibleName('Empty slot')
+    expect(cells[8].querySelector('button')).toHaveAccessibleName('Drill')
   })
 
   it('selecting an item shows details', () => {
