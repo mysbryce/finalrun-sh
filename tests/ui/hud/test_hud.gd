@@ -205,10 +205,26 @@ func test_route_settings_apply_defers_reply() -> void:
 
 
 func test_route_settings_capture_not_available() -> void:
-	for method: String in ["settings.capture", "settings.capture_cancel", "settings.display_confirm"]:
-		var routed := Hud.route_request({"id": 15, "method": method, "params": {"key": "bind_fire"}}, 0)
-		assert_eq(routed["reply"].get("error"), "not_available", "%s is not_available" % method)
-		assert_eq(routed["action"], [], "%s has no action" % method)
+	var routed := Hud.route_request({"id": 15, "method": "settings.display_confirm", "params": {}}, 0)
+	assert_eq(routed["reply"].get("error"), "not_available", "settings.display_confirm is not_available")
+	assert_eq(routed["action"], [], "settings.display_confirm has no action")
+
+
+func test_route_settings_capture() -> void:
+	var capture := Hud.route_request({"id": 16, "method": "settings.capture", "params": {"key": "bind_interact"}}, 0)
+	var no_key := Hud.route_request({"id": 17, "method": "settings.capture", "params": {}}, 0)
+	var cancel := Hud.route_request({"id": 18, "method": "settings.capture_cancel"}, 0)
+	assert_eq(capture["reply"], null, "capture reply is deferred")
+	assert_eq(capture["action"], ["settings_capture", 16, "bind_interact"], "capture action carries id and key")
+	assert_eq(no_key["reply"].get("error"), "bad_params", "missing key is bad_params")
+	assert_eq(no_key["action"], [], "missing key has no action")
+	assert_true(cancel["reply"]["ok"], "capture_cancel is ok")
+	assert_eq(cancel["reply"]["data"], {}, "capture_cancel replies {}")
+	assert_eq(cancel["action"], ["settings_capture_cancel"], "capture_cancel action")
+
+
+func test_snapshot_active_slot() -> void:
+	assert_eq(Hud.snapshot({"active_slot": 2}, 0).get("activeSlot"), 2, "active slot from ctx")
 
 
 func test_item_label() -> void:

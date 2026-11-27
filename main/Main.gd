@@ -28,6 +28,8 @@ var _lobby_connect_ms: int = 0
 var _settings: SettingsService = null
 ## Instance id of the PlayerCamera that last got the camera settings (0 = none).
 var _applied_camera_id: int = 0
+## Running settings.capture request, or null.
+var _capture: BindingCapture = null
 
 
 func _ready() -> void:
@@ -78,8 +80,11 @@ func _start_client() -> void:
 	_hud.settings_open_requested.connect(_on_settings_open)
 	_hud.settings_close_requested.connect(_on_settings_close)
 	_hud.settings_apply_requested.connect(_on_settings_apply)
+	_hud.settings_capture_requested.connect(_on_settings_capture)
+	_hud.settings_capture_cancel_requested.connect(_on_settings_capture_cancel)
 	_settings = SettingsService.new()
 	_settings.load()
+	InputBindings.set_bindings(_settings.active_bindings())
 	print("[Main] Settings loaded (%d keys)" % _settings.values().size())
 	var settings_values := _settings.values()
 	SettingsApplier.apply_engine(settings_values)
@@ -106,9 +111,9 @@ func _start_client() -> void:
 		_boot.start(Time.get_ticks_msec(), BootFlow.build_id())
 		_hud.show_boot(_boot.view())
 	print(
-		"[Main] Controls: 1 Motel | 2 LootyBay | 3 House | 4 Center | 5 sell loot | "
-		+ "F mask | G cop duty | H surrender | R revive | X finish | "
-		+ "C cuff | E lockpick/search | V smash | T take | Q close | LMB fire | Esc pause menu"
+		"[Main] Controls: 1-6 hotbar | Ctrl+1-4 travel (debug) | Y sell (debug) | "
+		+ "F mask | G cop duty | H surrender | P party | R revive | X finish | "
+		+ "C cuff | E lockpick/search | V smash | T take | Q close | Tab inventory | LMB fire | Esc pause menu"
 	)
 
 
@@ -255,7 +260,36 @@ func _on_settings_open() -> void:
 
 
 func _on_settings_close() -> void:
+	_finish_capture(null)
 	_hud.close_settings()
+
+
+## settings.capture: errors busy, not_available, then the service's error;
+## otherwise start capturing (the reply is sent by _finish_capture).
+func _on_settings_capture(request_id: int, key: String) -> void:
+	if _capture != null:
+		_hud.send_reply(request_id, false, {}, "busy")
+		return
+	if not _hud.is_settings_open():
+		_hud.send_reply(request_id, false, {}, "not_available")
+		return
+	var error := _settings.capture_error(key)
+	if error != "":
+		_hud.send_reply(request_id, false, {}, error)
+		return
+	_capture = BindingCapture.new(request_id, key, Time.get_ticks_msec())
+
+
+func _on_settings_capture_cancel() -> void:
+	_finish_capture(null)
+
+
+## Replies to the running capture with `binding` (a code or null) and ends it.
+func _finish_capture(binding: Variant) -> void:
+	if _capture == null:
+		return
+	_hud.send_reply(_capture.request_id, true, {"binding": binding}, "")
+	_capture = null
 
 
 func _on_settings_apply(request_id: int, revision: int, patch: Dictionary) -> void:
@@ -268,6 +302,7 @@ func _on_settings_apply(request_id: int, revision: int, patch: Dictionary) -> vo
 ## Applied settings changed: engine, window (changed display keys only), every
 ## instance viewport, the local camera and the HUD notification lifetime.
 func _on_settings_changed(values: Dictionary, changed_keys: Array) -> void:
+	InputBindings.set_bindings(_settings.active_bindings())
 	SettingsApplier.apply_engine(values)
 	SettingsApplier.apply_window(values, changed_keys)
 	if _client_view != null and is_instance_valid(_client_view):
@@ -312,6 +347,7 @@ func _on_quit() -> void:
 
 
 func _on_page_ready() -> void:
+	_finish_capture(null)
 	if _boot == null:
 		return
 	_boot.on_page_ready(Time.get_ticks_msec())
@@ -395,6 +431,8 @@ func _create_client_view_container() -> void:
 	var container := SubViewportContainer.new()
 	container.name = "Instances"
 	container.stretch = true
+	# PASS: clicks reach the SubViewport (fire, camera recapture) and Main._unhandled_input (mouse bindings).
+	container.mouse_filter = Control.MOUSE_FILTER_PASS
 	add_child(container)
 	container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_client_view = container
@@ -480,6 +518,10 @@ func _on_viewport_size_changed() -> void:
 func _process(_delta: float) -> void:
 	if _server_mode:
 		return
+	# Capture ends with null on timeout or when Settings is no longer open
+	# (close, show_lobby, end_lobby, leave).
+	if _capture != null and (_capture.timed_out(Time.get_ticks_msec()) or not _hud.is_settings_open()):
+		_finish_capture(null)
 	if _boot != null:
 		_process_boot()
 	if _lobby != null:
@@ -681,58 +723,75 @@ func _is_connected() -> bool:
 func _unhandled_input(event: InputEvent) -> void:
 	if _server_mode:
 		return
-	if not (event is InputEventKey):
+	if event is InputEventKey:
+		var key_event := event as InputEventKey
+		if not key_event.pressed or key_event.echo:
+			return
+		if _boot != null and (key_event.keycode == KEY_ENTER or key_event.keycode == KEY_KP_ENTER):
+			_boot.skip(Time.get_ticks_msec())
+			get_viewport().set_input_as_handled()
+			return
+		if _boot != null or _lobby != null:
+			return
+		if key_event.physical_keycode == KEY_ESCAPE:
+			_on_escape()
+			get_viewport().set_input_as_handled()
+			return
+	elif event is InputEventMouseButton:
+		# Wheel buttons are dropped by InputBindings.action_for_event.
+		if not (event as InputEventMouseButton).pressed:
+			return
+		if _boot != null or _lobby != null:
+			return
+	else:
 		return
-	var key_event := event as InputEventKey
-	if not key_event.pressed or key_event.echo:
+	var action := InputBindings.action_for_event(event)
+	if action == "":
 		return
-	if _boot != null and (key_event.keycode == KEY_ENTER or key_event.keycode == KEY_KP_ENTER):
-		_boot.skip(Time.get_ticks_msec())
-		get_viewport().set_input_as_handled()
-		return
-	if _boot != null or _lobby != null:
-		return
-	if key_event.physical_keycode == KEY_ESCAPE:
-		_on_escape()
-		get_viewport().set_input_as_handled()
-		return
-	if key_event.physical_keycode == KEY_TAB:
+	# Inventory works while a panel is open (it closes the inventory).
+	if action == "bind_inventory":
 		if _hud != null:
 			_hud.toggle_inventory()
 		return
 	# Any open panel (pause, inventory, search) owns the cursor: no gameplay or debug keys.
 	if _hud != null and _hud.is_panel_open():
 		return
-	match key_event.physical_keycode:
-		KEY_1:
+	_run_action(action)
+
+
+## One bound action (setting key). bind_fire is handled by Player. Debug
+## actions need no build check: active_bindings() drops them in release builds.
+func _run_action(action: String) -> void:
+	match action:
+		"bind_join_motel":
 			ServerManager.request_join_map(GameConst.MAP_MOTEL)
-		KEY_2:
+		"bind_join_lootybay":
 			ServerManager.request_join_map(GameConst.MAP_LOOTY_BAY)
-		KEY_3:
+		"bind_join_house":
 			ServerManager.request_join_map(GameConst.MAP_HOUSE)
-		KEY_4:
+		"bind_join_center":
 			ServerManager.request_join_map(GameConst.MAP_CENTER)
-		KEY_5:
+		"bind_sell_loot":
 			ServerManager.request_sell_loot()
-		KEY_F:
+		"bind_mask":
 			ServerManager.request_mask()
-		KEY_G:
+		"bind_cop_duty":
 			ServerManager.request_cop_duty()
-		KEY_H:
+		"bind_surrender":
 			ServerManager.request_surrender()
-		KEY_R:
+		"bind_revive":
 			var revive_target := _target_peer_id()
 			if revive_target > 0:
 				ServerManager.request_revive(revive_target)
-		KEY_X:
+		"bind_finish":
 			var finish_target := _target_peer_id()
 			if finish_target > 0:
 				ServerManager.request_finish(finish_target)
-		KEY_C:
+		"bind_cuff":
 			var cuff_target := _target_peer_id()
 			if cuff_target > 0:
 				ServerManager.request_cuff(cuff_target)
-		KEY_E:
+		"bind_interact":
 			var lootable := _nearest_lootable()
 			if lootable != null:
 				ServerManager.request_loot(String(lootable.name), false)
@@ -740,13 +799,13 @@ func _unhandled_input(event: InputEvent) -> void:
 				var search_target := _target_peer_id()
 				if search_target > 0:
 					ServerManager.request_search_open(search_target)
-		KEY_V:
+		"bind_smash":
 			var smash_target := _nearest_lootable()
 			if smash_target != null:
 				ServerManager.request_loot(String(smash_target.name), true)
 			else:
 				print("[Main] Nothing to smash")
-		KEY_T:
+		"bind_search_take":
 			var take_target := _target_peer_id()
 			if take_target <= 0:
 				return
@@ -756,9 +815,44 @@ func _unhandled_input(event: InputEvent) -> void:
 				return
 			var first: Dictionary = items[0]
 			ServerManager.request_search_take(take_target, int(first.get("uid", 0)))
-		KEY_Q:
+		"bind_search_close":
 			var close_target := _target_peer_id()
 			if close_target > 0:
 				ServerManager.request_search_close(close_target)
+		"bind_hotbar_1":
+			_hud.select_hotbar(0)
+		"bind_hotbar_2":
+			_hud.select_hotbar(1)
+		"bind_hotbar_3":
+			_hud.select_hotbar(2)
+		"bind_hotbar_4":
+			_hud.select_hotbar(3)
+		"bind_hotbar_5":
+			_hud.select_hotbar(4)
+		"bind_hotbar_6":
+			_hud.select_hotbar(5)
+		"bind_party_create":
+			_on_party_action("create", 0)
 		_:
 			pass
+
+
+## Capture sees every input first: consumed events never reach Tab, Esc or the
+## action dispatch in _unhandled_input.
+func _input(event: InputEvent) -> void:
+	if _server_mode:
+		return
+	if _capture == null:
+		return
+	var r := _capture.feed(event)
+	if bool(r["consume"]):
+		get_viewport().set_input_as_handled()
+	if bool(r["done"]):
+		_finish_capture(r["binding"])
+
+
+func _notification(what: int) -> void:
+	if _server_mode:
+		return
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		_finish_capture(null)

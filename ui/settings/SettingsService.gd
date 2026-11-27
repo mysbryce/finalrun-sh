@@ -17,8 +17,6 @@ const UNAVAILABLE_COMING_LATER := "coming_later"
 const DEBUG_CAPABILITY := "debug_shortcuts"
 const VOICE_CAPABILITY := "voice_chat"
 const BACKEND_SUFFIX := "_backend"
-const BINDING_MODIFIERS: PackedStringArray = ["Ctrl", "Alt", "Shift"]
-const BINDING_SEPARATOR := "+"
 ## ConfigFile.set_value(null) erases the key, so an unbound binding is stored as "".
 const UNBOUND_STORED := ""
 const NUMBER_GRID_EPSILON := 1e-6
@@ -86,7 +84,8 @@ func load() -> void:
 				var stored: Variant = config.get_value(tab, key)
 				if String(e.get("type", "")) == TYPE_BINDING and stored is String and stored == UNBOUND_STORED:
 					stored = null
-				if is_valid(e, stored):
+				# Fixed bindings always use the schema default.
+				if is_valid(e, stored) and not GameConst.FIXED_BINDINGS.has(key):
 					value = _normalize(e, stored)
 		_values[key] = value
 	_launch_values = _values.duplicate(true)
@@ -121,7 +120,11 @@ func is_valid(e: Dictionary, value: Variant) -> bool:
 		"number":
 			return _is_valid_number(e, value)
 		TYPE_BINDING:
-			return value == null or (value is String and _is_valid_binding(value))
+			if value == null:
+				return true
+			if not value is String or not _is_valid_binding(value) or not InputBindings.is_valid_code(value):
+				return false
+			return value != GameConst.LOOK_BINDING_CODE or String(e.get("key", "")) == "bind_look"
 		"device":
 			return value is String and value != ""
 		"integer_array":
@@ -142,6 +145,36 @@ func set_capability(capability_name: String, on: bool) -> void:
 	_capabilities[capability_name] = on
 
 
+## Bindings to dispatch, action -> code, in schema order: no unbound (null)
+## values, no fixed bindings, no keys whose capability is not enabled.
+func active_bindings() -> Dictionary:
+	var result: Dictionary = {}
+	for e: Dictionary in _schema:
+		if String(e.get("type", "")) != TYPE_BINDING:
+			continue
+		var key := String(e["key"])
+		var value: Variant = _values.get(key)
+		if value == null or GameConst.FIXED_BINDINGS.has(key):
+			continue
+		if not bool(_availability(e)["enabled"]):
+			continue
+		result[key] = value
+	return result
+
+
+## settings.capture error for `key`: bad_params (unknown, not a binding, fixed),
+## not_available (capability not enabled) or "".
+func capture_error(key: String) -> String:
+	if not _by_key.has(key):
+		return "bad_params"
+	var e: Dictionary = _by_key[key]
+	if String(e.get("type", "")) != TYPE_BINDING or GameConst.FIXED_BINDINGS.has(key):
+		return "bad_params"
+	if not bool(_availability(e)["enabled"]):
+		return "not_available"
+	return ""
+
+
 ## Validates and commits a full patch. Returns {ok, error, data}.
 func apply_patch(revision: int, patch: Dictionary) -> Dictionary:
 	if revision != _revision:
@@ -155,6 +188,10 @@ func apply_patch(revision: int, patch: Dictionary) -> Dictionary:
 			return _fail("bad_params")
 		if not is_valid(e, patch[raw_key]):
 			return _fail("bad_params")
+	for raw_key: Variant in patch.keys():
+		var key := String(raw_key)
+		if GameConst.FIXED_BINDINGS.has(key) and not _same(_values.get(key), _normalize(_by_key[key], patch[raw_key])):
+			return _fail("unsupported")
 	for raw_key: Variant in patch.keys():
 		if not bool(_availability(_by_key[String(raw_key)])["enabled"]):
 			return _fail("unsupported")
@@ -298,12 +335,12 @@ func _is_valid_number(e: Dictionary, value: Variant) -> bool:
 
 ## Ctrl+, Alt+, Shift+ in that order (no duplicates), then one key code.
 func _is_valid_binding(text: String) -> bool:
-	var parts := text.split(BINDING_SEPARATOR)
+	var parts := text.split(GameConst.BINDING_SEPARATOR)
 	if not _key_pattern.search(parts[parts.size() - 1]):
 		return false
 	var last_modifier := -1
 	for i in parts.size() - 1:
-		var index := BINDING_MODIFIERS.find(parts[i])
+		var index := GameConst.BINDING_MODIFIERS.find(parts[i])
 		if index <= last_modifier:
 			return false
 		last_modifier = index

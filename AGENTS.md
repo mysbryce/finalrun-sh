@@ -51,3 +51,5 @@ godot_console --headless --path . -s res://tests/run_tests.gd
 - The Hud is a `CanvasLayer` (layer 1) whose full-screen browser texture eats clicks while a panel is open: native Godot UI that must show above it needs its own `CanvasLayer` with a higher layer (constant in `GameConst`).
 - `Hud.page_ready`-style signals fire on every page load (also after boot, e.g. Vite reloads with `--ui-dev`): handlers for one-off flows must null-check their state object.
 - Run `npm run test` (vitest) from PowerShell with a `d:\...` path. From Git Bash the cwd is `D:/...`; the drive-letter case mismatch loads vitest twice and every suite fails with "Vitest failed to find the current suite".
+- Godot `_input` runs children first: a parent consuming an event in `_input` does not shield child SubViewports (they got it already). Gate gameplay on its own state (captured mouse, panel open), not on `set_input_as_handled` in Main.
+- A `SubViewportContainer` with the default `MOUSE_FILTER_STOP` swallows clicks before root `_unhandled_input`; the `Instances` container uses `MOUSE_FILTER_PASS` so mouse bindings reach Main.

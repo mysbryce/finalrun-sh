@@ -483,9 +483,11 @@ When a player enters the `LootyBay` `ExtractZone` (detected by the server throug
 ## 11. Client controls (temporary, for testing)
 
 Every action key targets the nearest other player in the current instance.
+All keys are rebindable in Settings > Controls (`bind_*` settings, `lib/utils/InputBindings.gd`); the list shows the defaults.
 
-- `1` = Motel, `2` = LootyBay, `3` = House, `4` = Center
-- `5` = sell loot (must be in Center)
+- `1`-`6` = hotbar slot
+- `Ctrl+1..4` = Motel/LootyBay/House/Center and `Y` = sell loot (must be in Center) (debug builds only)
+- `Tab` = inventory
 - `F` = request mask
 - `G` = toggle cop duty
 - `H` = surrender

@@ -143,6 +143,20 @@ const VIEW_DISTANCE_FAR := {"low": 150.0, "medium": 300.0, "high": 600.0}  # Cam
 ## Command-line flags that set the window: display settings are not applied at startup when any is present.
 const DISPLAY_CMDLINE_FLAGS: PackedStringArray = ["--resolution", "--position", "--windowed", "-w", "--fullscreen", "-f"]
 
+# Input bindings
+## Binding settings whose value can never change (Escape stays hard-coded in Main).
+const FIXED_BINDINGS: PackedStringArray = ["bind_look", "bind_pause"]
+const CAPTURE_TIMEOUT_MS: int = 15000  # settings.capture gives up after this
+const ACTION_MOVE_FORWARD := "bind_move_forward"
+const ACTION_MOVE_LEFT := "bind_move_left"
+const ACTION_MOVE_BACK := "bind_move_back"
+const ACTION_MOVE_RIGHT := "bind_move_right"
+const ACTION_FIRE := "bind_fire"
+const LOOK_BINDING_CODE := "MouseMotion"  # fixed Look binding; never produced by an event
+## Binding modifier prefixes, in the only allowed order.
+const BINDING_MODIFIERS: PackedStringArray = ["Ctrl", "Alt", "Shift"]
+const BINDING_SEPARATOR := "+"
+
 # Boot
 const BOOT_TITLE_DWELL_MS: int = 800        # minimum title card time
 const BOOT_SKIP_AFTER_MS: int = 250         # Enter skips the title only after this

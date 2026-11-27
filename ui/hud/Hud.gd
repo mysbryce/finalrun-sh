@@ -33,6 +33,10 @@ signal settings_open_requested
 signal settings_close_requested
 ## The settings page asked to apply a patch. Main answers with send_reply(request_id, ...).
 signal settings_apply_requested(request_id: int, revision: int, patch: Dictionary)
+## The settings page asked to capture one input for binding `key`. Main replies with send_reply(request_id, ...).
+signal settings_capture_requested(request_id: int, key: String)
+## The settings page cancelled a running capture.
+signal settings_capture_cancel_requested
 
 const PARTY_VERBS_WITH_TARGET := {
 	"party.invite": ["invite", "targetPeerId"],
@@ -104,6 +108,8 @@ static func heading_from_yaw(yaw_rad: float) -> int:
 ## Interact card from an InteractArea; null when prompt is empty.
 ## "E lockpick | V smash" -> actions [{key E, label lockpick}, {key V, label smash}].
 static func interact_of(title: String, prompt: String) -> Variant:
+	# ponytail: prompt keys come from the prompt strings ("E ..."); they follow
+	# the bindings in the HUD refine card.
 	if prompt.strip_edges() == "":
 		return null
 	var actions: Array = []
@@ -247,7 +253,7 @@ static func snapshot(ctx: Dictionary, now_ms: int) -> Dictionary:
 		"self": {"name": player_name(self_id)},
 		"party": party,
 		"hotbar": hotbar(),
-		"activeSlot": 0,
+		"activeSlot": int(ctx.get("active_slot", 0)),
 		"net": {"fps": fps, "ping": ping},
 	}
 
@@ -385,8 +391,16 @@ static func route_request(request: Dictionary, open_target: int) -> Dictionary:
 			return _error_reply(id, "bad_params")
 		# Main computes the reply and sends it with send_reply.
 		return {"reply": null, "action": ["settings_apply", id, int(revision), patch]}
-	if method in ["settings.display_confirm", "settings.capture", "settings.capture_cancel"]:
-		# ponytail: display preview and input capture come in later cards.
+	if method == "settings.capture":
+		var key: Variant = params.get("key")
+		if not key is String:
+			return _error_reply(id, "bad_params")
+		# Main captures the input and sends the reply with send_reply.
+		return {"reply": null, "action": ["settings_capture", id, key]}
+	if method == "settings.capture_cancel":
+		return _ok_reply(id, {}, ["settings_capture_cancel"])
+	if method in ["settings.display_confirm"]:
+		# ponytail: display preview comes in a later card.
 		return _error_reply(id, "not_available")
 	return _error_reply(id, "unknown_method")
 
@@ -408,6 +422,8 @@ var _invite: Dictionary = {}
 var _party_pending: String = ""
 var _party_pending_ms: int = 0
 var _last_party_json: String = ""
+## Local active hotbar slot (0-based), shown as HudState.activeSlot.
+var _active_slot: int = 0
 
 var _browser: Control = null
 var _page_ready: bool = false
@@ -499,6 +515,13 @@ func set_net(fps: int, ping_ms: int) -> void:
 	_ping = ping_ms
 
 
+## Hotbar key: select the local active slot (0-based).
+func select_hotbar(slot: int) -> void:
+	# ponytail: the server validates the equipped item when items are Resources
+	# (Phase 3); firing still uses the pistol.
+	_active_slot = clampi(slot, 0, GameConst.HUD_HOTBAR_SLOTS - 1)
+
+
 func _process(_delta: float) -> void:
 	var now_ms := int(Time.get_unix_time_from_system() * 1000.0)
 	_notifications = prune_notifications(_notifications, now_ms)
@@ -511,6 +534,7 @@ func _process(_delta: float) -> void:
 		"fps": _fps,
 		"ping": _ping,
 	}
+	ctx["active_slot"] = _active_slot
 	var self_id := 0
 	if _player != null and is_instance_valid(_player):
 		ctx["role"] = int(_player.get("role"))
@@ -620,6 +644,10 @@ func _on_ipc_message(message: String) -> void:
 			settings_close_requested.emit()
 		elif action.size() == 4 and action[0] == "settings_apply":
 			settings_apply_requested.emit(int(action[1]), int(action[2]), action[3] as Dictionary)
+		elif action.size() == 3 and action[0] == "settings_capture":
+			settings_capture_requested.emit(int(action[1]), String(action[2]))
+		elif action.size() == 1 and action[0] == "settings_capture_cancel":
+			settings_capture_cancel_requested.emit()
 
 
 ## Sends the reply envelope for a request answered later (deferred reply).
@@ -669,6 +697,7 @@ func show_lobby(view: Dictionary) -> void:
 		close_search(_search_target)
 	close_inventory()
 	close_pause()
+	_active_slot = 0
 	# The lobby replaces an open Settings screen (e.g. disconnect while in Settings).
 	_settings_origin = ""
 	publish("lobby", view)

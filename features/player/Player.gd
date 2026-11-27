@@ -252,10 +252,7 @@ func _update_rig_motion(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not _input_enabled:
 		return
-	if not (event is InputEventMouseButton):
-		return
-	var button := event as InputEventMouseButton
-	if not button.pressed or button.button_index != MOUSE_BUTTON_LEFT:
+	if InputBindings.action_for_event(event) != GameConst.ACTION_FIRE:
 		return
 	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		return
@@ -325,13 +322,13 @@ func _read_input() -> Vector2:
 		return Vector2.ZERO
 	var x: float = 0.0
 	var z: float = 0.0
-	if Input.is_physical_key_pressed(KEY_D):
+	if InputBindings.is_held(GameConst.ACTION_MOVE_RIGHT):
 		x += 1.0
-	if Input.is_physical_key_pressed(KEY_A):
+	if InputBindings.is_held(GameConst.ACTION_MOVE_LEFT):
 		x -= 1.0
-	if Input.is_physical_key_pressed(KEY_S):
+	if InputBindings.is_held(GameConst.ACTION_MOVE_BACK):
 		z += 1.0
-	if Input.is_physical_key_pressed(KEY_W):
+	if InputBindings.is_held(GameConst.ACTION_MOVE_FORWARD):
 		z -= 1.0
 	var raw := Vector2(x, z)
 	if _camera != null and is_instance_valid(_camera):

@@ -219,3 +219,59 @@ func test_view_shape_and_pending_restart() -> void:
 	_remove(path)
 	assert_eq(pending, ["textures"], "textures needs a restart after change")
 	assert_eq(back, [], "back to the launch value clears it")
+
+
+func test_active_bindings() -> void:
+	var path := _temp_path()
+	var service := _service(path)
+	var active := service.active_bindings()
+	service.set_capability(SettingsService.DEBUG_CAPABILITY, false)
+	var release := service.active_bindings()
+	service.set_capability(SettingsService.DEBUG_CAPABILITY, true)
+	var debug := service.active_bindings()
+	var result := service.apply_patch(service.view()["revision"], {"bind_party_create": null})
+	var unbound := service.active_bindings()
+	_remove(path)
+	assert_eq(active.get("bind_interact"), "KeyE", "enabled binding is active")
+	for key: String in ["bind_look", "bind_pause", "bind_reload"]:
+		assert_false(active.has(key), "%s is not active" % key)
+	for key: String in ["bind_join_motel", "bind_join_lootybay", "bind_join_house", "bind_join_center", "bind_sell_loot"]:
+		assert_false(release.has(key), "%s is dropped without debug shortcuts" % key)
+		assert_true(debug.has(key), "%s is active with debug shortcuts" % key)
+	assert_true(result["ok"], "unbinding applies")
+	assert_false(unbound.has("bind_party_create"), "unbound binding is not active")
+
+
+func test_fixed_and_invalid_bindings() -> void:
+	var path := _temp_path()
+	var service := _service(path)
+	var look_change := service.apply_patch(service.view()["revision"], {"bind_look": "KeyL"})
+	var look_same := service.apply_patch(service.view()["revision"], {"bind_look": "MouseMotion"})
+	var bad_code := service.apply_patch(service.view()["revision"], {"bind_interact": "KeyFoo"})
+	var bad_motion := service.apply_patch(service.view()["revision"], {"bind_sell_loot": "MouseMotion"})
+	_remove(path)
+	assert_eq(look_change["error"], "unsupported", "fixed binding cannot change")
+	assert_true(look_same["ok"], "fixed binding with its current value passes")
+	assert_eq(bad_code["error"], "bad_params", "unknown code")
+	assert_eq(bad_motion["error"], "bad_params", "MouseMotion only for bind_look")
+
+
+func test_stored_fixed_binding_ignored() -> void:
+	var path := _temp_path()
+	var config := ConfigFile.new()
+	config.set_value("controls", "bind_look", "KeyL")
+	config.save(path)
+	var service := _service(path)
+	_remove(path)
+	assert_eq(service.get_value("bind_look"), "MouseMotion", "fixed binding loads the default")
+
+
+func test_capture_error() -> void:
+	var path := _temp_path()
+	var service := _service(path)
+	_remove(path)
+	assert_eq(service.capture_error("nope"), "bad_params", "unknown key")
+	assert_eq(service.capture_error("fov"), "bad_params", "not a binding")
+	assert_eq(service.capture_error("bind_pause"), "bad_params", "fixed binding")
+	assert_eq(service.capture_error("bind_reload"), "not_available", "coming later binding")
+	assert_eq(service.capture_error("bind_interact"), "", "capturable binding")
