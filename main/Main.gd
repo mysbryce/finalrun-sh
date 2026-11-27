@@ -62,7 +62,7 @@ func _start_client() -> void:
 	print(
 		"[Main] Controls: 1 Motel | 2 LootyBay | 3 House | 4 Center | 5 sell loot | "
 		+ "F mask | G cop duty | H surrender | P create party | R revive | X finish | "
-		+ "C cuff | E search | T take | Q close | K attack"
+		+ "C cuff | E search | T take | Q close | LMB fire (mouse captured, Esc frees it)"
 	)
 
 
@@ -281,9 +281,5 @@ func _unhandled_input(event: InputEvent) -> void:
 			var close_target := _target_peer_id()
 			if close_target > 0:
 				ServerManager.request_search_close(close_target)
-		KEY_K:
-			var attack_target := _target_peer_id()
-			if attack_target > 0:
-				ServerManager.request_attack(attack_target)
 		_:
 			pass

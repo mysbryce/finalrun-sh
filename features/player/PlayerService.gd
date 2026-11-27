@@ -24,6 +24,8 @@ var _death_pending: Dictionary = {}
 ## Stateful item id counter. `ItemUtils` must stay stateless, so allocation is
 ## owned here and injected into each spawned role controller.
 var _next_item_uid: int = 1
+## peer_id -> unix ms of the last accepted shot
+var _last_fire_ms: Dictionary = {}
 
 
 ## Allocates a server-wide unique item uid.
@@ -128,6 +130,7 @@ func handle_peer_left(peer_id: int) -> void:
 		_refresh_police_vehicle(detached)
 	_states.erase(peer_id)
 	_parties.remove_peer(peer_id)
+	_last_fire_ms.erase(peer_id)
 
 
 ## TransferService callback: snapshot the role state, then despawn and detach
@@ -267,34 +270,65 @@ func cop_duty(peer_id: int) -> void:
 		_notify(peer_id, "Go on duty inside the Police Station as a CITIZEN")
 
 
-## Server-authoritative hit detection. The target is resolved only inside the
-## sender's own instance; the raycast runs in that instance's World3D.
-func attack(peer_id: int, target_peer_id: int) -> void:
+## Server-authoritative hitscan fire. The ray runs in the attacker's own
+## World3D and the target must belong to the attacker's instance.
+func fire(peer_id: int, aim: Vector3, now_ms: int) -> void:
 	if _transfers.has_transfer(peer_id):
 		return
 	var instance := _instances.current_instance_for_peer(peer_id)
-	if instance == null or instance.map_name != GameConst.MAP_LOOTY_BAY:
+	if instance == null:
 		return
 	var attacker := instance.get_player(peer_id) as PlayerCharacter
-	var target := instance.get_player(target_peer_id) as PlayerCharacter
-	if attacker == null or target == null or attacker == target:
+	if attacker == null:
 		return
-	if _instances.get_peer_instance_id(target_peer_id) != instance.instance_id:
+	if not fire_allowed(now_ms, int(_last_fire_ms.get(peer_id, 0)), GameConst.FIRE_INTERVAL_MS):
 		return
-	var attacker_controller := attacker.get_role_controller()
-	if attacker_controller == null:
+	_last_fire_ms[peer_id] = now_ms
+	if instance.safezone or instance.map_name != GameConst.MAP_LOOTY_BAY:
+		_notify(peer_id, "Weapons are locked here")
+		return
+	var dir := sanitize_aim(aim)
+	if dir == Vector3.ZERO:
+		return
+	var world: World3D = attacker.get_world_3d()
+	var space := world.direct_space_state
+	var from: Vector3 = attacker.global_position + Vector3(0.0, GameConst.LINE_OF_SIGHT_EYE_HEIGHT, 0.0)
+	var to: Vector3 = from + dir * GameConst.ATTACK_RANGE
+	var query := PhysicsRayQueryParameters3D.create(
+		from,
+		to,
+		GameConst.RAYCAST_COLLISION_MASK
+	)
+	var exclude: Array[RID] = [attacker.get_rid()]
+	query.exclude = exclude
+	var hit: Dictionary = space.intersect_ray(query)
+	if hit.is_empty():
+		return
+	var target := hit.get("collider") as PlayerCharacter
+	if target == null or instance.get_player(int(target.peer_id)) != target:
 		return
 	var same_party: bool = false
 	var party := _parties.get_party(peer_id)
-	if party != null and party.has_member(target_peer_id):
+	if party != null and party.has_member(int(target.peer_id)):
 		same_party = true
+	var attacker_controller := attacker.get_role_controller()
+	if attacker_controller == null:
+		return
 	if not attacker_controller.can_attack(target, same_party):
 		return
-	if attacker.global_position.distance_to(target.global_position) > GameConst.ATTACK_RANGE:
-		return
-	if not has_line_of_sight(instance, attacker, target):
-		return
 	target.take_damage(GameConst.ATTACK_DAMAGE)
+
+
+## True when enough time has passed since the last accepted shot.
+static func fire_allowed(now_ms: int, last_fire_ms: int, interval_ms: int) -> bool:
+	return now_ms - last_fire_ms >= interval_ms
+
+
+## Normalized aim, or Vector3.ZERO when the client sent garbage.
+static func sanitize_aim(aim: Vector3) -> Vector3:
+	if not aim.is_finite() or aim.length_squared() < 0.0001:
+		return Vector3.ZERO
+	return aim.normalized()
 
 
 ## Pure party role rule: COP and CRIMINAL may not share a party. CITIZEN is

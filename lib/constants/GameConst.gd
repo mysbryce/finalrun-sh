@@ -65,6 +65,7 @@ const NOTORIETY_MAX_BONUS: float = 1.5
 
 const ATTACK_RANGE: float = 40.0
 const ATTACK_DAMAGE: int = 25
+const FIRE_INTERVAL_MS: int = 250  # minimum time between shots per player
 const LINE_OF_SIGHT_EYE_HEIGHT: float = 1.4
 const LINE_OF_SIGHT_TARGET_HEIGHT: float = 1.2
 

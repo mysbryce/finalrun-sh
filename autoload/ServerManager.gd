@@ -193,10 +193,10 @@ func server_request_cop_duty() -> void:
 
 
 @rpc("any_peer", "call_remote", "reliable")
-func server_request_attack(target_peer_id: int) -> void:
+func server_request_fire(aim: Vector3) -> void:
 	var sender: int = multiplayer.get_remote_sender_id()
 	if _can_accept_alive_request(sender):
-		_players.attack(sender, target_peer_id)
+		_players.fire(sender, aim, _now_ms())
 
 
 @rpc("any_peer", "call_remote", "reliable")
@@ -315,7 +315,7 @@ func request_sell_loot() -> void: _send_client_request("server_request_sell_loot
 func request_mask() -> void: _send_client_request("server_request_mask")
 func request_cop_duty() -> void: _send_client_request("server_request_cop_duty")
 func request_surrender() -> void: _send_client_request("server_request_surrender")
-func request_attack(target_peer_id: int) -> void: _send_client_request("server_request_attack", [target_peer_id])
+func request_fire(aim: Vector3) -> void: _send_client_request("server_request_fire", [aim])
 func request_revive(target_peer_id: int) -> void: _send_client_request("server_request_revive", [target_peer_id])
 func request_finish(target_peer_id: int) -> void: _send_client_request("server_request_finish", [target_peer_id])
 func request_cuff(target_peer_id: int) -> void: _send_client_request("server_request_cuff", [target_peer_id])
