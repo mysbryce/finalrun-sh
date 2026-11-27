@@ -121,7 +121,7 @@ func _start_client() -> void:
 	print(
 		"[Main] Controls: 1-6 hotbar | Ctrl+1-4 travel (debug) | Y sell (debug) | "
 		+ "F mask | G cop duty | H surrender | P party | R revive | X finish | "
-		+ "C cuff | E lockpick/search | V smash | T take | Q close | Tab inventory | LMB fire | Esc pause menu"
+		+ "C cuff | E lockpick/search | V smash | T take (debug) | Q close | Tab inventory | LMB fire | Esc pause menu"
 	)
 
 
@@ -873,6 +873,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		if _hud != null:
 			_hud.toggle_inventory()
 		return
+	# Search close/take act on the open search panel.
+	if _hud != null and _hud.is_search_open() and (action == "bind_search_close" or action == "bind_search_take"):
+		_run_action(action)
+		return
 	# Any open panel (pause, inventory, search) owns the cursor: no gameplay or debug keys.
 	if _hud != null and _hud.is_panel_open():
 		return
@@ -926,9 +930,9 @@ func _run_action(action: String) -> void:
 			else:
 				print("[Main] Nothing to smash")
 		"bind_search_take":
-			var take_target := _target_peer_id()
-			if take_target <= 0:
+			if not _hud.is_search_open():
 				return
+			var take_target: int = _hud.search_target()
 			var items: Array = _search_items.get(take_target, [])
 			if items.is_empty():
 				print("[Main] No items in the open search")
@@ -936,9 +940,8 @@ func _run_action(action: String) -> void:
 			var first: Dictionary = items[0]
 			ServerManager.request_search_take(take_target, int(first.get("uid", 0)))
 		"bind_search_close":
-			var close_target := _target_peer_id()
-			if close_target > 0:
-				ServerManager.request_search_close(close_target)
+			if _hud.is_search_open():
+				_hud.request_search_close()
 		"bind_hotbar_1":
 			_hud.select_hotbar(0)
 		"bind_hotbar_2":

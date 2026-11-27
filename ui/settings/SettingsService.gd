@@ -1,6 +1,7 @@
 class_name SettingsService
 extends RefCounted
-## Client settings: schema (ui/web/public/settings-schema.json), validation,
+## Client settings: schema (runtime res://ui/dist/settings-schema.json, copied by
+## the web build from ui/web/public/settings-schema.json), validation,
 ## ConfigFile storage and the SettingsView snapshot for the page
 ## (docs/ui-design/03-settings.md, DATA_CONTRACTS.md). Values are only stored,
 ## validated and published here; engine effects live elsewhere.

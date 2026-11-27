@@ -351,14 +351,18 @@ func test_open_and_close_search_headless() -> void:
 	(Engine.get_main_loop() as SceneTree).root.add_child(hud)
 	hud.open_search(7, [{"uid": 1, "id": "jewelry", "value": 300}])
 	var opened := hud.is_search_open()
+	var target_open := hud.search_target()
 	hud.close_search(8)
 	var still_open := hud.is_search_open()
 	hud.close_search(7)
 	var closed := not hud.is_search_open()
+	var target_closed := hud.search_target()
 	hud.free()
 	assert_true(opened, "search opens")
+	assert_eq(target_open, 7, "search target after open")
 	assert_true(still_open, "other target does not close it")
 	assert_true(closed, "search closes")
+	assert_eq(target_closed, 0, "search target after close")
 
 
 func test_item_view_default_source() -> void:

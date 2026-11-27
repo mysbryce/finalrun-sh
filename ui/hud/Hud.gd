@@ -992,6 +992,10 @@ func is_search_open() -> bool:
 	return _search_target != 0
 
 
+func search_target() -> int:
+	return _search_target
+
+
 func is_inventory_open() -> bool:
 	return _route == "/inventory"
 

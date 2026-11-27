@@ -235,7 +235,7 @@ func test_active_bindings() -> void:
 	assert_eq(active.get("bind_interact"), "KeyE", "enabled binding is active")
 	for key: String in ["bind_look", "bind_pause", "bind_reload"]:
 		assert_false(active.has(key), "%s is not active" % key)
-	for key: String in ["bind_join_motel", "bind_join_lootybay", "bind_join_house", "bind_join_center", "bind_sell_loot"]:
+	for key: String in ["bind_join_motel", "bind_join_lootybay", "bind_join_house", "bind_join_center", "bind_sell_loot", "bind_search_take"]:
 		assert_false(release.has(key), "%s is dropped without debug shortcuts" % key)
 		assert_true(debug.has(key), "%s is active with debug shortcuts" % key)
 	assert_true(result["ok"], "unbinding applies")
