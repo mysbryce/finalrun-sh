@@ -33,7 +33,7 @@ Status: `[x]` done · `[~]` in progress · `[ ]` planned. Each item ships as one
 - [x] Body search panel on the web UI (route + virtualized item list + take request), mouse freed while open (in-game click-through not yet verified with two clients)
 - [x] Base character: CC0 low-poly modular humanoid + animations, male/female on one skeleton ([art direction](design/ART_DIRECTION.md)) (Kenney Mini Characters, CC0; see assets/CREDITS.md)
 - [x] Appearance foundation: `AppearanceData` Resource (body type, slot → item id), synced once on spawn, modular character rig with swappable slots. Built now so later cosmetics are data only, no code changes. (placeholder primitive meshes until the CC0 base character lands)
-- [ ] Local 1 server + 3 clients smoke test script
+- [x] Local 1 server + 3 clients smoke test script (`pwsh tools/smoke_local.ps1`; 3 clients connect and see each other spawn in Motel-01)
 
 ## Phase 3: Heist loop `[ ]`
 Adopted from [genre reference](research/GENRE_REFERENCE.md) (owner decision 2026-11-27).
