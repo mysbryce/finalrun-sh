@@ -25,6 +25,7 @@ var _last_boot_phase: String = ""
 var _fallback: CanvasLayer = null
 var _lobby: LobbyState = null
 var _lobby_connect_ms: int = 0
+var _settings: SettingsService = null
 
 
 func _ready() -> void:
@@ -72,6 +73,12 @@ func _start_client() -> void:
 	_hud.lobby_news_retry_requested.connect(_on_lobby_news_retry)
 	_hud.session_leave_requested.connect(_leave_session)
 	_hud.party_action_requested.connect(_on_party_action)
+	_hud.settings_open_requested.connect(_on_settings_open)
+	_hud.settings_close_requested.connect(_on_settings_close)
+	_hud.settings_apply_requested.connect(_on_settings_apply)
+	_settings = SettingsService.new()
+	_settings.load()
+	print("[Main] Settings loaded (%d keys)" % _settings.values().size())
 	_endpoint = BootFlow.parse_endpoint(OS.get_cmdline_user_args())
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	ServerManager.search_contents_received.connect(_on_search_contents)
@@ -161,6 +168,7 @@ func _show_lobby(error: Variant) -> void:
 	_create_client_view_container()
 	_search_items.clear()
 	_hud.clear_party_session()
+	_clear_settings_session()
 	# ponytail: 3D preview viewport when the semi-realistic characters land.
 	_hud.show_lobby(_lobby.view())
 	print("[Main] Lobby shown")
@@ -219,7 +227,32 @@ func _leave_session() -> void:
 	multiplayer.multiplayer_peer = null
 	_search_items.clear()
 	_hud.clear_party_session()
+	_clear_settings_session()
 	_show_lobby(null)
+
+
+## Session settings (party invites, muted players) reset with the connection.
+func _clear_settings_session() -> void:
+	if _settings == null:
+		return
+	_settings.clear_session()
+	if _hud.is_settings_open():
+		_hud.push_settings(_settings.view())
+
+
+func _on_settings_open() -> void:
+	_hud.open_settings(_settings.view())
+
+
+func _on_settings_close() -> void:
+	_hud.close_settings()
+
+
+func _on_settings_apply(request_id: int, revision: int, patch: Dictionary) -> void:
+	var result := _settings.apply_patch(revision, patch)
+	_hud.send_reply(request_id, bool(result["ok"]), result["data"], String(result["error"]))
+	if bool(result["ok"]):
+		_hud.push_settings(_settings.view())
 
 
 func _on_quit() -> void:
@@ -565,6 +598,10 @@ func _life_state_name(state: int) -> String:
 ## resume from pause, open pause from the plain HUD in a live session.
 func _on_escape() -> void:
 	if _hud == null:
+		return
+	# ponytail: Esc over Settings is ignored; the page's Back button closes it
+	# (keys never reach the page). Capture/dialog Esc comes with later cards.
+	if _hud.is_settings_open():
 		return
 	if _hud.is_inventory_open():
 		_hud.close_inventory()

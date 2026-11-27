@@ -134,6 +134,11 @@ const UI_DEV_URL: String = "http://localhost:5173/"     # Vite dev server
 const UI_DEV_FLAG: String = "--ui-dev"                  # client user arg: load UI_DEV_URL
 const NEWS_PATH: String = "res://ui/dist/news.json"     # patch notes (ui/web/public/news.json, copied by Vite)
 
+# Settings
+const SETTINGS_PATH: String = "user://settings.cfg"  # durable settings, section = tab
+const SETTINGS_SCHEMA_PATH: String = "res://ui/dist/settings-schema.json"  # ui/web/public/settings-schema.json, copied by Vite
+const SETTINGS_TABS: PackedStringArray = ["graphics", "controls", "social", "others"]
+
 # Boot
 const BOOT_TITLE_DWELL_MS: int = 800        # minimum title card time
 const BOOT_SKIP_AFTER_MS: int = 250         # Enter skips the title only after this

@@ -27,6 +27,12 @@ signal session_leave_requested
 ## The pause party panel asked for a party action (create, invite, accept,
 ## decline, leave, kick). peer_id is 0 for create and leave. Main forwards it.
 signal party_action_requested(verb: String, peer_id: int)
+## The lobby or pause menu asked to open Settings. Main replies with open_settings.
+signal settings_open_requested
+## The settings page pressed Back.
+signal settings_close_requested
+## The settings page asked to apply a patch. Main answers with send_reply(request_id, ...).
+signal settings_apply_requested(request_id: int, revision: int, patch: Dictionary)
 
 const PARTY_VERBS_WITH_TARGET := {
 	"party.invite": ["invite", "targetPeerId"],
@@ -363,7 +369,24 @@ static func route_request(request: Dictionary, open_target: int) -> Dictionary:
 			return _error_reply(id, "bad_params")
 		return _ok_reply(id, {}, ["party", spec[0], peer_id])
 	if method == "settings.open":
-		# ponytail: not_available until the settings card.
+		return _ok_reply(id, {}, ["settings_open"])
+	if method == "settings.tab":
+		var tab: Variant = params.get("tab")
+		if not tab is String or not GameConst.SETTINGS_TABS.has(tab):
+			return _error_reply(id, "bad_params")
+		return _ok_reply(id, {}, ["settings_tab", tab])
+	if method == "settings.close":
+		return _ok_reply(id, {}, ["settings_close"])
+	if method == "settings.apply":
+		var revision: Variant = params.get("revision")
+		var patch: Variant = params.get("patch")
+		var int_like: bool = revision is int or (revision is float and is_finite(revision) and revision == floorf(revision))
+		if not int_like or not patch is Dictionary:
+			return _error_reply(id, "bad_params")
+		# Main computes the reply and sends it with send_reply.
+		return {"reply": null, "action": ["settings_apply", id, int(revision), patch]}
+	if method in ["settings.display_confirm", "settings.capture", "settings.capture_cancel"]:
+		# ponytail: display preview and input capture come in later cards.
 		return _error_reply(id, "not_available")
 	return _error_reply(id, "unknown_method")
 
@@ -392,6 +415,8 @@ var _search_target: int = 0
 var _search_items: Array = []
 var _route: String = "/"
 var _snapshots: Dictionary = {}
+## Route Settings was opened from (/lobby or /pause); "" when closed.
+var _settings_origin: String = ""
 
 
 func _ready() -> void:
@@ -552,7 +577,8 @@ func _on_ipc_message(message: String) -> void:
 		page_ready.emit()
 	elif type == "request":
 		var routed := route_request(parsed, _search_target)
-		_send_json(JSON.stringify(routed["reply"]))
+		if routed["reply"] != null:
+			_send_json(JSON.stringify(routed["reply"]))
 		var action: Array = routed["action"]
 		if action.size() == 3 and action[0] == "take":
 			search_take_requested.emit(int(action[1]), int(action[2]))
@@ -583,6 +609,28 @@ func _on_ipc_message(message: String) -> void:
 			if verb == "decline":
 				_invite = {}
 			party_action_requested.emit(verb, int(action[2]))
+		elif action.size() == 1 and action[0] == "settings_open":
+			settings_open_requested.emit()
+		elif action.size() == 2 and action[0] == "settings_tab":
+			if is_settings_open():
+				_navigate("/settings/%s" % String(action[1]))
+		elif action.size() == 1 and action[0] == "settings_close":
+			settings_close_requested.emit()
+		elif action.size() == 4 and action[0] == "settings_apply":
+			settings_apply_requested.emit(int(action[1]), int(action[2]), action[3] as Dictionary)
+
+
+## Sends the reply envelope for a request answered later (deferred reply).
+func send_reply(id: int, ok: bool, data: Variant, error: String) -> void:
+	var reply: Dictionary = {"type": "reply", "id": id, "ok": ok}
+	if ok:
+		reply["data"] = data
+	else:
+		reply["error"] = error
+		# Error details (e.g. binding_conflict keys) ride along in data.
+		if data is Dictionary and not (data as Dictionary).is_empty():
+			reply["data"] = data
+	_send_json(JSON.stringify(reply))
 
 
 ## Sends a snapshot message for `boot`, `lobby`, `party`, `settings`, `transfer`
@@ -619,6 +667,8 @@ func show_lobby(view: Dictionary) -> void:
 		close_search(_search_target)
 	close_inventory()
 	close_pause()
+	# The lobby replaces an open Settings screen (e.g. disconnect while in Settings).
+	_settings_origin = ""
 	publish("lobby", view)
 	if _route != "/lobby":
 		_navigate("/lobby")
@@ -712,6 +762,35 @@ func close_pause() -> void:
 		return
 	_navigate("/")
 	_set_panel_input(false)
+
+
+## Opens Settings on the Graphics tab. Only from the lobby or the pause menu.
+func open_settings(view: Dictionary) -> void:
+	if _route != "/lobby" and _route != "/pause":
+		return
+	_settings_origin = _route
+	publish("settings", view)
+	_navigate("/settings/graphics")
+	_set_panel_input(true)
+
+
+## Back to the route Settings was opened from. Both origins keep panel input.
+func close_settings() -> void:
+	if not is_settings_open():
+		return
+	var origin := _settings_origin
+	_settings_origin = ""
+	_navigate(origin if origin != "" else "/")
+	if origin == "":
+		_set_panel_input(false)
+
+
+func is_settings_open() -> bool:
+	return _route.begins_with("/settings/")
+
+
+func push_settings(view: Dictionary) -> void:
+	publish("settings", view)
 
 
 ## Esc over an open body search: ask the server to close it (it replies with close).

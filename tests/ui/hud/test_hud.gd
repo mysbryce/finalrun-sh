@@ -172,9 +172,43 @@ func test_route_lobby_news_retry_and_settings() -> void:
 	var settings := Hud.route_request({"id": 6, "method": "settings.open"}, 0)
 	assert_true(retry["reply"]["ok"], "news retry is ok")
 	assert_eq(retry["action"], ["news_retry"], "news retry action")
-	assert_false(settings["reply"]["ok"], "settings is not open yet")
-	assert_eq(settings["reply"].get("error"), "not_available", "settings not_available")
-	assert_eq(settings["action"], [], "settings has no action")
+	assert_true(settings["reply"]["ok"], "settings.open is ok")
+	assert_eq(settings["action"], ["settings_open"], "settings.open action")
+
+
+func test_route_settings_tab_and_close() -> void:
+	var good := Hud.route_request({"id": 7, "method": "settings.tab", "params": {"tab": "controls"}}, 0)
+	var bad := Hud.route_request({"id": 8, "method": "settings.tab", "params": {"tab": "audio"}}, 0)
+	var missing := Hud.route_request({"id": 9, "method": "settings.tab"}, 0)
+	var close := Hud.route_request({"id": 10, "method": "settings.close"}, 0)
+	assert_true(good["reply"]["ok"], "known tab is ok")
+	assert_eq(good["action"], ["settings_tab", "controls"], "tab action")
+	assert_eq(bad["reply"].get("error"), "bad_params", "unknown tab is bad_params")
+	assert_eq(bad["action"], [], "unknown tab has no action")
+	assert_eq(missing["reply"].get("error"), "bad_params", "missing tab is bad_params")
+	assert_true(close["reply"]["ok"], "settings.close is ok")
+	assert_eq(close["action"], ["settings_close"], "close action")
+
+
+func test_route_settings_apply_defers_reply() -> void:
+	var patch := {"fov": 90.0}
+	var apply := Hud.route_request({"id": 11, "method": "settings.apply", "params": {"revision": 3.0, "patch": patch}}, 0)
+	var fractional := Hud.route_request({"id": 12, "method": "settings.apply", "params": {"revision": 1.5, "patch": patch}}, 0)
+	var no_patch := Hud.route_request({"id": 13, "method": "settings.apply", "params": {"revision": 0}}, 0)
+	var bad_patch := Hud.route_request({"id": 14, "method": "settings.apply", "params": {"revision": 0, "patch": []}}, 0)
+	assert_eq(apply["reply"], null, "apply reply is deferred")
+	assert_eq(apply["action"], ["settings_apply", 11, 3, patch], "apply action carries id, revision and patch")
+	assert_true(apply["action"][2] is int, "revision is converted to int")
+	assert_eq(fractional["reply"].get("error"), "bad_params", "fractional revision is bad_params")
+	assert_eq(no_patch["reply"].get("error"), "bad_params", "missing patch is bad_params")
+	assert_eq(bad_patch["reply"].get("error"), "bad_params", "non-dictionary patch is bad_params")
+
+
+func test_route_settings_capture_not_available() -> void:
+	for method: String in ["settings.capture", "settings.capture_cancel", "settings.display_confirm"]:
+		var routed := Hud.route_request({"id": 15, "method": method, "params": {"key": "bind_fire"}}, 0)
+		assert_eq(routed["reply"].get("error"), "not_available", "%s is not_available" % method)
+		assert_eq(routed["action"], [], "%s has no action" % method)
 
 
 func test_item_label() -> void:
