@@ -1,4 +1,4 @@
-# FinalRun Architecture (Phase 1)
+# FinalRun Architecture (Phase 2)
 
 This document describes the scene tree, synchronization rules, instance isolation, and transfer flow
 of the core systems defined in `docs/BRIEF_core_systems.md`.
@@ -34,6 +34,7 @@ and the server checks `multiplayer.get_remote_sender_id()` on every call.
 | `features/party/PartyService.gd` | create, invite/accept, leave, kick, pending invites, leader rules |
 | `features/transfer/TransferService.gd` | allowed routes (`is_route_allowed`), transfer state, ack wait, timeout, disconnect cleanup, LootyBay party entry |
 | `features/player/PlayerService.gd` | connection state, custom spawn, sell/mask/cop duty, combat, surrender, death, extraction and zones |
+| `features/downed/DownedService.gd` | bleed-out tick, revive/finish/cuff/search rules, body containers and open search sessions |
 
 `ServerManager` keeps the fixed RPC method names and node path, validates senders, and forwards to
 these services. Cross-service helpers with no project imports live in `lib/`
@@ -149,12 +150,16 @@ replication):
 |---|---|
 | `.:peer_id` | Tells the client which peer owns this node; enables input only on the owner's machine |
 | `.:role` | Syncs `CITIZEN` / `CRIMINAL` / `COP` to clients |
+| `.:life_state` | Syncs `ALIVE` / `DOWNED` / `DEAD` to clients |
+| `.:downed_deadline_ms` | Unix-ms bleed-out deadline; the client computes the remaining seconds |
 | `.:position` | Server-owned position |
 | `.:rotation` | Server-owned rotation |
 
-`PlayerRoleController` owns the role logic, but the replicated value is stored on `Player.role` so the
-synchronizer at the root of `Player.tscn` can replicate it directly. The controller reads and writes
-through that property once bound to a player (with a standalone fallback for unit tests).
+`PlayerRoleController` owns the role and life rules, but the replicated values are stored on
+`Player.role` / `Player.life_state` so the synchronizer at the root of `Player.tscn` can replicate
+them directly. The controller reads and writes through those properties once bound to a player
+(with a standalone fallback for unit tests). `life_state` is not part of `export_state()`:
+`setup_server()` always starts a fresh node `ALIVE` with full HP.
 
 ### 4.2 Custom spawn on both sides
 
@@ -217,8 +222,9 @@ Details:
   `saved_civilian_gear`, `notoriety`, `cash`, `cop_on_duty`
 - The server waits for `client_instance_ready()` at most `TRANSFER_TIMEOUT_SECONDS` (10 s); on timeout
   it releases the reservation and disconnects the peer
-- If the peer disconnects at any step, `ServerManager.handle_peer_left()` clears the transfer,
-  reservation, instance membership, party, and state
+- If the peer disconnects at any step, `ServerManager.handle_peer_left()` delegates to
+  `PlayerService.handle_peer_left()`, which clears the transfer, reservation, instance membership,
+  party and state (resolving a downed body's death and LootDrop before despawn)
 - The client builds the new instance before acking, and the server spawns only after the ack, so the
   destination spawner and synchronizer exist when the spawn message arrives
 
@@ -271,25 +277,30 @@ not a shared heist run).
 
 ### 7.1 Mask
 
-- Requestable only in `LootyBay` and only as `CITIZEN`
-- Starts a 3 s channel with a server `Timer` (`MASK_CHANNEL_SECONDS`)
-- Cancelled immediately if the player moves more than `0.5` m (`MASK_MOVE_CANCEL_DISTANCE`), takes
-  damage (`notify_damage()`), or leaves `LootyBay`
-- On success the role becomes `CRIMINAL`
-- `CRIMINAL → CITIZEN` happens only through successful extraction or surrender; there is no request to
-  remove the mask manually
+- Requestable only in `LootyBay`, only as a live `CITIZEN`
+- Starts a 3 s channel on `lib/components/ChannelTimer.gd` (`MASK_CHANNEL_SECONDS`)
+- Cancelled with one of four reasons: `moved` (more than `MASK_MOVE_CANCEL_DISTANCE`),
+  `damaged`, `left_instance`, or `invalid_state` (role/life changed)
+- On completion the controller re-checks state before becoming `CRIMINAL`
+- `CRIMINAL → CITIZEN` happens only through successful extraction, surrender, cuff, or death; there
+  is no request to remove the mask manually
 
 ### 7.2 Cop
 
 - Go on duty only inside the `LootyBay` `PoliceStation`, and only as `CITIZEN`
-- On duty: civilian gear is stored in `_saved_civilian_gear`, `COP_LOADOUT` is equipped, role becomes
-  `COP`, and the instance's `PoliceVehicle` placeholder is enabled
+- On duty: civilian gear is stored in `_saved_civilian_gear`, the `COP_LOADOUT` items are issued
+  (`issued: true`) with their own uids, role becomes `COP`, and the instance's `PoliceVehicle`
+  placeholder is enabled
 - Going off duty requires being in the `PoliceStation` (except when forced by extraction or death);
   civilian gear is restored and the role returns to `CITIZEN`
+- A party cannot mix roles: mask is rejected if any member is `COP`, cop duty is rejected if any
+  member is `CRIMINAL` (`PlayerService.party_role_conflict`)
 
 ### 7.3 `can_attack` matrix
 
-`can_attack_roles(attacker_role, target_role, map_name, safezone)` is a pure static function:
+`can_attack_roles(attacker_role, target_role, map_name, safezone, same_party = false)` is a pure
+static function. `same_party` is appended last, so existing callers keep the old behavior; passing
+`true` returns `false` (party friendly fire is off, which also blocks finish-off by teammates).
 
 | Attacker | Target | Result |
 |---|---|---|
@@ -302,23 +313,96 @@ not a shared heist run).
 | `COP` | `CITIZEN` | `false` |
 | anyone | anyone | `false` in `Motel` (safezone), `House`, `Center` |
 
-The controller's `can_attack(target)` uses this static function with the instance context.
-`PlayerService.attack()` (called by `ServerManager.server_request_attack()`) checks instance
-membership, range, `can_attack()`, and raycast LOS before calling `target.take_damage()`.
-All rule constants come from `lib/constants/GameConst.gd`.
+The controller's `can_attack(target, same_party = false)` uses this static function with the instance
+context. `PlayerService.attack()` (called by `ServerManager.server_request_attack()`) computes
+`same_party` from the party service and checks instance membership, range, `can_attack()`, and
+raycast LOS before calling `target.take_damage()`. All rule constants come from
+`lib/constants/GameConst.gd`.
+
+### 7.4 Life state and downed actions
+
+`PlayerRoleController` owns `enum LifeState { ALIVE, DOWNED, DEAD }` and the signal
+`life_state_changed(old, new, cause)`. `server_set_life_state(new_state, cause, now_ms)` is the only
+writer; it is idempotent and validates the cause (`damage`, `bleedout`, `finish`, `disconnect`,
+`redown`, `revive`, `cuff`, `respawn`). All server time comparisons take an injected `now_ms`; the
+source is `int(Time.get_unix_time_from_system() * 1000.0)`.
+
+| Transition | Rule |
+|---|---|
+| `ALIVE → DOWNED` | 0 HP in `LootyBay`; deadline = now + `DOWNED_BLEEDOUT_SECONDS` |
+| `ALIVE → DEAD` | 0 HP outside `LootyBay`, or a re-down inside `REDOWN_WINDOW_SECONDS` |
+| `DOWNED` + damage | HP stays 0, deadline moves back `DOWNED_HIT_PENALTY_SECONDS`; at/after deadline → `DEAD` (`bleedout`) |
+| `DOWNED → DEAD` | bleed-out, finish-off, or disconnect |
+| `DOWNED → ALIVE` | revive: party member, same role, one reviver; `REVIVE_HP_RATIO` HP |
+| `DOWNED → ALIVE` (cuff) | COP arrest: surrender outcome, citizen, transferred to Motel, never DEAD |
+
+A downed player crawls at `DOWNED_CRAWL_SPEED` and cannot attack, mask, take cop duty, surrender,
+join a map or extract. `setup_server()` always starts a fresh player `ALIVE` with full HP.
+
+`features/downed/DownedService.gd` is a `RefCounted` service owned by `ServerManager`. It owns no
+Nodes: channels are `ChannelTimer` nodes parented under the acting player, and body search lists are
+`LootContainer` nodes parented under the downed player. `ServerManager._process` calls
+`DownedService.tick(now_ms)` for bleed-out and to close search sessions whose range, LOS or
+permission no longer holds.
+
+`lib/components/ChannelTimer.gd` is the shared hold-interact node:
+
+```gdscript
+start(duration: float, actor: Node3D, max_move: float, cancel_check: Callable)
+cancel(reason: String)
+signal completed
+signal cancelled(reason: String)
+```
+
+`cancel_check()` returns `""` or one of `moved`, `out_of_range`, `no_los`, `damaged`, `disconnected`,
+`target_state`, `actor_state`, `left_instance`, `invalid_state`. On `completed` the owner re-checks
+permission and target state before applying anything, so the first finished timer wins.
+
+#### Downed RPCs
+
+All are `@rpc("any_peer", "call_remote", "reliable")` on `ServerManager`, validate
+`multiplayer.get_remote_sender_id()` with `_can_accept_alive_request`, and delegate to
+`DownedService`:
+
+| RPC | Action |
+|---|---|
+| `server_request_revive(target_peer_id)` | `REVIVE_SECONDS` channel |
+| `server_request_finish(target_peer_id)` | `FINISH_SECONDS` channel |
+| `server_request_cuff(target_peer_id)` | `CUFF_SECONDS` channel |
+| `server_request_search_open(target_peer_id)` | `SEARCH_OPEN_SECONDS` channel |
+| `server_request_search_take(target_peer_id, item_uid)` | take/seize one item, re-check everything |
+| `server_request_search_close(target_peer_id)` | close the viewer's session |
+
+Server-to-client replies are `client_search_contents(target_peer_id, items)` and
+`client_search_closed(target_peer_id, reason)`; both use `NetUtil.rpc_to_peer`, and contents go only
+to the viewer (updates only to open viewers). `server_request_move` remains allowed while downed so
+the body can crawl at `DOWNED_CRAWL_SPEED`; a `DEAD` player's speed is zero.
+
+Every other request in spec §7 is gated by `_can_accept_alive_request`: attack, mask, cop duty,
+surrender, join map, sell loot, party create/invite/accept, and all six downed requests.
 
 ## 8. Inventory, notoriety, and ending a run
 
 `PlayerRoleController` stores:
 
 ```gdscript
-var loot_bag: Array[Dictionary] = []        # {id, value}
-var equipped_gear: Array[Dictionary] = []   # {id, value}
+var loot_bag: Array[Dictionary] = []        # {uid, id, value, issued}
+var equipped_gear: Array[Dictionary] = []   # {uid, id, value, issued}
 var notoriety: float = 0.0
 var cash: int = 0
 ```
 
-- `grant_loot(id, value)` adds to `loot_bag` and increases `notoriety` by the loot value
+The server-wide uid counter (`_next_item_uid`) lives in `PlayerService`; `lib/utils/ItemUtils.gd` is
+stateless (`make_item`, `find_by_uid`, `remove_by_uid`, `lootable_only`). Items that arrive without a
+uid in a transfer snapshot receive one in `apply_state()`. The `source` tag (`bag` / `gear`) is added
+only while an item is listed for a search and is never stored in an inventory.
+
+- `grant_loot(id, value)` adds one `ItemUtils.make_item` entry and raises notoriety by its value;
+  `grant_gear(id, value)` adds gear without notoriety
+- `receive_item(item, source)` transfers an item and keeps its uid (bag items raise notoriety)
+- `remove_item_by_uid(uid)` removes from bag or gear and lowers the owner's notoriety by the value,
+  clamped at 0
+- Issued items (cop loadout) are never lootable and never shown in a body search
 - `sell_multiplier() = 1.0 + min(notoriety / 10000.0, 1.5)` (max 2.5x)
 - **Notoriety resets** on death, surrender, or a successful sale at `Center` (`server_sell_loot()`).
   Extraction alone does not reset it, so the player can still cash in the multiplier.
@@ -338,16 +422,26 @@ var cash: int = 0
 | Role at death | LootDrop | Inventory after respawn | Role after respawn |
 |---|---|---|---|
 | `CITIZEN` | none | everything kept | `CITIZEN` |
-| `CRIMINAL` | all of `loot_bag` + `equipped_gear` | both cleared | still `CRIMINAL` |
-| `COP` | none (gear is free issue) | cop gear cleared, `loot_bag` kept | `CITIZEN`, off duty |
+| `CRIMINAL` | all of `loot_bag` + `equipped_gear` | both cleared | `CITIZEN` |
+| `COP` | `loot_bag` + non-issued gear; issued items are destroyed, never dropped | everything cleared, off duty | `CITIZEN` |
 
-In every case the player respawns at `Motel` and notoriety resets.
-The `LootDrop` is created at the death position in the original instance before despawn.
+In every case the player respawns at `Motel`, notoriety resets, and `life_state` returns to `ALIVE`
+with full HP. The `LootDrop` is created at the death position in the original instance before
+despawn; a body whose items were all taken while downed produces no empty drop.
+
+Order on `DEAD`: cancel channels where the player is actor or target → close search sessions (body
+or viewer) → create the `LootDrop` → despawn/transfer on `call_deferred`. Despawning never happens
+inside a `life_state_changed` handler. `PlayerService.handle_player_death()` applies the outcome and
+defers the Motel transfer; `PlayerService.handle_peer_left()` resolves a downed body's death and
+LootDrop synchronously before `detach_peer()`.
 
 ### 8.3 Extraction
 
 When a player enters the `LootyBay` `ExtractZone` (detected by the server through `Area3D`):
 
+- Extraction requires `ALIVE`; the deferred handler re-checks it, so a downed body cannot extract
+- After a revive inside the zone, `DownedService` re-checks `ExtractZone.get_overlapping_bodies()`
+  (no new `body_entered` fires) and runs extraction if the player stands inside
 - `CITIZEN` → transferred to `Motel`
 - `CRIMINAL` → role becomes `CITIZEN` (this is the successful extraction), then `Motel`
 - `COP` → goes off duty (gear restored), then `Motel`
@@ -365,11 +459,14 @@ When a player enters the `LootyBay` `ExtractZone` (detected by the server throug
 
 ### 9.2 LootDrop
 
-`features/heist/LootDrop.gd` holds the dead player's `loot_items` + `gear_items`:
+`features/heist/LootDrop.gd` holds the dead player's `loot_items` + `gear_items` through a
+`features/heist/LootContainer.gd` (items, viewers, take-by-uid, injected `can_access` / `on_take`).
 
-- The server creates the real node under `<instance>/Drops` and sends a visual placeholder to instance members
+- The server creates the real node under `<instance>/Drops`; contents stay server-side
+- `client_add_loot_drop` / `sync_state_to_peer` mirror only the drop id and position (a visual
+  placeholder); no item lists are ever sent
 - Clients that join the instance later receive existing drops through `sync_state_to_peer()`
-- Actual loot contents live on the server only
+- When a drop is emptied the server calls `client_remove_loot_drop` and frees the node
 
 ## 10. Map placeholders
 
@@ -384,13 +481,19 @@ When a player enters the `LootyBay` `ExtractZone` (detected by the server throug
 
 ## 11. Client controls (temporary, for testing)
 
+Every action key targets the nearest other player in the current instance.
+
 - `1` = Motel, `2` = LootyBay, `3` = House, `4` = Center
 - `5` = sell loot (must be in Center)
 - `F` = request mask
 - `G` = toggle cop duty
 - `H` = surrender
 - `P` = create party
+- `R` = revive target, `X` = finish target, `C` = cuff target
+- `E` = open body search (contents are printed), `T` = take first listed item, `Q` = close search
+- `K` = attack target (`request_attack`)
 - WASD = movement (client sends `server_request_move` to the server)
+- The client prints its own life state and bleed-out seconds whenever they change
 
 ## 12. Running and testing
 
@@ -418,9 +521,15 @@ through the shared `tests/TestCase.gd` assertions, prints per-file results, then
 
 Coverage mirrors the source tree: server id format (`tests/autoload/`), party max 3 and leader
 transfer (`tests/features/party/`), instance selection and id format
-(`tests/features/instance/`), the `can_attack` matrix, sale multiplier, surrender and death rules
-(`tests/features/player/`), allowed map routes (`tests/features/transfer/`), and sender validation
-(`tests/lib/net/`).
+(`tests/features/instance/`), the `can_attack` matrix including real `Player` node shapes and
+same-party friendly fire, sale multiplier, surrender, death outcomes, item uids and notoriety, life
+state transitions, mask/ChannelTimer cancellation reasons (`tests/features/player/`,
+`tests/lib/components/`), downed permission/payout rules and cuff (`tests/features/downed/`),
+`LootContainer` take-by-uid concurrency (`tests/features/heist/`), allowed map routes
+(`tests/features/transfer/`), and sender validation (`tests/lib/net/`).
+
+`tests/run_tests.gd` defers test execution to the first idle frame so tests may add real Nodes to the
+tree.
 
 ## 13. Key files
 
@@ -430,6 +539,7 @@ res://
   lib/constants/GameConst.gd
   lib/net/NetUtil.gd
   lib/utils/ItemUtils.gd
+  lib/components/ChannelTimer.gd
   features/instance/Instance.gd
   features/instance/InstanceRegistry.gd
   features/party/Party.gd
@@ -438,6 +548,8 @@ res://
   features/player/Player.gd
   features/player/PlayerRoleController.gd
   features/player/PlayerService.gd
+  features/downed/DownedService.gd
+  features/heist/LootContainer.gd
   features/transfer/TransferService.gd
   features/heist/Lootable.gd
   features/heist/LootDrop.gd
