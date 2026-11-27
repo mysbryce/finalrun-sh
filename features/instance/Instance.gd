@@ -13,6 +13,8 @@ extends SubViewport
 
 signal zone_entered(zone_name: String, player: Node3D)
 signal zone_exited(zone_name: String, player: Node3D)
+## Client: a loud loot alert arrived for this instance.
+signal loot_alert(loot_id: String, world_position: Vector3)
 
 enum Kind {
 	INSTANCED,
@@ -105,6 +107,15 @@ func setup(
 		_connect_zones_server()
 	else:
 		_install_client_camera()
+
+
+## Shared weapons rule: weapons work only in LootyBay outside a safezone.
+static func weapons_locked_for(p_map_name: String, p_safezone: bool) -> bool:
+	return p_safezone or p_map_name != GameConst.MAP_LOOTY_BAY
+
+
+func weapons_locked() -> bool:
+	return weapons_locked_for(map_name, safezone)
 
 
 func is_shared() -> bool:
@@ -299,6 +310,8 @@ func client_loot_alert(world_position: Vector3, loot_id: String, loud: bool) -> 
 	# Placeholder feedback: a real client would raise an alarm marker / sound.
 	if loud:
 		print("[LootyBay] Loud alert at %s (loot: %s)" % [world_position, loot_id])
+	if loud:
+		loot_alert.emit(loot_id, world_position)
 
 
 @rpc("authority", "call_remote", "reliable")

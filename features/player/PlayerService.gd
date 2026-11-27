@@ -28,6 +28,10 @@ var _next_item_uid: int = 1
 var _last_fire_ms: Dictionary = {}
 ## peer_id -> appearance dictionary; kept across map transfers.
 var _appearances: Dictionary = {}
+## peer_id -> last surrender eligibility sent to that client.
+var _surrender_sent: Dictionary = {}
+## Server ms of the next surrender eligibility check.
+var _next_surrender_check_ms: int = 0
 
 
 ## Allocates a server-wide unique item uid.
@@ -154,6 +158,7 @@ func handle_peer_left(peer_id: int) -> void:
 	_appearances.erase(peer_id)
 	_parties.remove_peer(peer_id)
 	_last_fire_ms.erase(peer_id)
+	_surrender_sent.erase(peer_id)
 
 
 ## TransferService callback: snapshot the role state, then despawn and detach
@@ -324,7 +329,7 @@ func fire(peer_id: int, aim: Vector3, now_ms: int) -> void:
 	if not fire_allowed(now_ms, int(_last_fire_ms.get(peer_id, 0)), GameConst.FIRE_INTERVAL_MS):
 		return
 	_last_fire_ms[peer_id] = now_ms
-	if instance.safezone or instance.map_name != GameConst.MAP_LOOTY_BAY:
+	if instance.weapons_locked():
 		_notify(peer_id, "Weapons are locked here")
 		return
 	var dir := sanitize_aim(aim)
@@ -431,24 +436,79 @@ static func parties_role_conflict(roles_a: Array, roles_b: Array) -> bool:
 	return (roles_a.has(cop) and roles_b.has(criminal)) or (roles_a.has(criminal) and roles_b.has(cop))
 
 
-func surrender(peer_id: int) -> void:
-	if _transfers.has_transfer(peer_id):
-		return
-	var player := _get_player(peer_id)
-	if player == null:
-		return
+## Pure surrender rule. "" when allowed, else the first failing check in order:
+## "silent" (in transfer, no player, not ALIVE), "map", "role", "no_cop".
+static func surrender_block(
+	in_transfer: bool,
+	has_player: bool,
+	map_name: String,
+	role: int,
+	life: int,
+	has_cop: bool
+) -> String:
+	if in_transfer or not has_player or life != RoleControllerScript.LifeState.ALIVE:
+		return "silent"
+	if map_name != GameConst.MAP_LOOTY_BAY:
+		return "map"
+	if role != RoleControllerScript.Role.CRIMINAL:
+		return "role"
+	if not has_cop:
+		return "no_cop"
+	return ""
+
+
+## {"block": String, "cop": Node or null}. Raycasts for a cop only after the
+## silent/map/role checks pass (criminals in LootyBay).
+func _surrender_check(peer_id: int) -> Dictionary:
+	var in_transfer := _transfers.has_transfer(peer_id)
+	var player: PlayerCharacter = null if in_transfer else _get_player(peer_id)
 	var instance := _instances.current_instance_for_peer(peer_id)
-	if instance == null or instance.map_name != GameConst.MAP_LOOTY_BAY:
-		_notify(peer_id, "Only criminals inside LootyBay can surrender")
-		return
-	var controller := player.get_role_controller()
-	if controller == null or controller.role != RoleControllerScript.Role.CRIMINAL:
-		_notify(peer_id, "Only CRIMINAL players can surrender")
-		return
+	var controller := _controller_for(player)
+	var map_name := instance.map_name if instance != null else ""
+	var role := controller.role if controller != null else -1
+	var life := controller.life_state if controller != null else -1
+	var block := surrender_block(in_transfer, player != null, map_name, role, life, true)
+	if block != "":
+		return {"block": block, "cop": null}
 	var cop := _find_surrender_cop(instance, player)
-	if cop == null:
-		_notify(peer_id, "No COP within %.0f m with line of sight" % GameConst.SURRENDER_RANGE)
+	block = surrender_block(in_transfer, true, map_name, role, life, cop != null)
+	return {"block": block, "cop": cop}
+
+
+func surrender_available(peer_id: int) -> bool:
+	return String(_surrender_check(peer_id).get("block", "")) == ""
+
+
+## Sends client_surrender_available to each peer whose eligibility changed.
+## Ticked by ServerManager with the injected server clock.
+func tick_surrender(now_ms: int) -> void:
+	if now_ms < _next_surrender_check_ms:
 		return
+	_next_surrender_check_ms = now_ms + GameConst.SURRENDER_CHECK_INTERVAL_MS
+	for id: int in peer_ids():
+		var v := surrender_available(id)
+		if v != bool(_surrender_sent.get(id, false)):
+			_host.call("_send_client_rpc", id, "client_surrender_available", [v])
+			_surrender_sent[id] = v
+
+
+func surrender(peer_id: int) -> void:
+	var check := _surrender_check(peer_id)
+	match String(check.get("block", "")):
+		"silent":
+			return
+		"map":
+			_notify(peer_id, "Only criminals inside LootyBay can surrender")
+			return
+		"role":
+			_notify(peer_id, "Only CRIMINAL players can surrender")
+			return
+		"no_cop":
+			_notify(peer_id, "No COP within %.0f m with line of sight" % GameConst.SURRENDER_RANGE)
+			return
+	var player := _get_player(peer_id)
+	var controller := player.get_role_controller()
+	var cop: Node = check.get("cop")
 	var cop_controller: PlayerRoleController = _controller_for(cop)
 	var result: Dictionary = controller.server_apply_surrender(cop_controller)
 	if not bool(result.get("ok", false)):

@@ -62,6 +62,7 @@ const MASK_CHANNEL_SECONDS: float = 3.0
 const MASK_MOVE_CANCEL_DISTANCE: float = 0.5
 const SURRENDER_RANGE: float = 6.0
 const SURRENDER_COP_REWARD_RATIO: float = 0.5
+const SURRENDER_CHECK_INTERVAL_MS: int = 250  # server re-checks surrender eligibility this often
 const NOTORIETY_DIVISOR: float = 10000.0
 const NOTORIETY_MAX_BONUS: float = 1.5
 
@@ -124,6 +125,8 @@ const DOWNED_CHANNEL_MAX_MOVE: float = 0.75
 const HUD_NOTIFICATION_MS: int = 4000   # how long a notification stays on screen
 const HUD_MAX_NOTIFICATIONS: int = 4    # newest kept, oldest dropped
 const HUD_HOTBAR_SLOTS: int = 6  # hotbar slots, keys 1-6
+const HEIST_TOAST_MS: int = 8000          # heist alert toast countdown
+const HEIST_ALERT_ACTIVE_MS: int = 90000  # heist alert line stays active this long (local expiry)
 const INVENTORY_BAG_COLUMNS: int = 6
 const INVENTORY_BAG_SLOTS: int = 54  # bag grid slots (6 columns x 9 rows)
 const HUD_MINIMAP_RECT := Rect2(24, 40, 200, 170)  # px; must match ui/web/src/features/hud/layout.ts MINIMAP
@@ -162,6 +165,7 @@ const LOOK_BINDING_CODE := "MouseMotion"  # fixed Look binding; never produced b
 ## Binding modifier prefixes, in the only allowed order.
 const BINDING_MODIFIERS: PackedStringArray = ["Ctrl", "Alt", "Shift"]
 const BINDING_SEPARATOR := "+"
+const UNBOUND_KEY_LABEL := "—"  # key label shown for an unbound action (HUD)
 
 # Boot
 const BOOT_TITLE_DWELL_MS: int = 800        # minimum title card time

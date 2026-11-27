@@ -46,6 +46,19 @@ const PARTY_VERBS_WITH_TARGET := {
 	"party.accept": ["accept", "inviterPeerId"],
 	"party.decline": ["decline", "inviterPeerId"],
 }
+## Prompt key letter (as written in InteractArea prompts) -> binding action.
+const PROMPT_KEY_ACTIONS := {
+	"E": "bind_interact",
+	"V": "bind_smash",
+	"R": "bind_revive",
+	"X": "bind_finish",
+	"C": "bind_cuff",
+	"T": "bind_search_take",
+	"Q": "bind_search_close",
+	"H": "bind_surrender",
+	"F": "bind_mask",
+	"G": "bind_cop_duty",
+}
 
 
 static func role_text(role: int) -> String:
@@ -110,8 +123,8 @@ static func heading_from_yaw(yaw_rad: float) -> int:
 ## Interact card from an InteractArea; null when prompt is empty.
 ## "E lockpick | V smash" -> actions [{key E, label lockpick}, {key V, label smash}].
 static func interact_of(title: String, prompt: String) -> Variant:
-	# ponytail: prompt keys come from the prompt strings ("E ..."); they follow
-	# the bindings in the HUD refine card.
+	# Prompt key letters map to their action's current binding label (unbound
+	# shows GameConst.UNBOUND_KEY_LABEL); a letter not in PROMPT_KEY_ACTIONS stays as written.
 	if prompt.strip_edges() == "":
 		return null
 	var actions: Array = []
@@ -123,8 +136,46 @@ static func interact_of(title: String, prompt: String) -> Variant:
 		if space < 0:
 			actions.append({"key": "", "label": part})
 		else:
-			actions.append({"key": part.left(space), "label": part.substr(space + 1).strip_edges()})
+			var key := part.left(space)
+			if PROMPT_KEY_ACTIONS.has(key):
+				key = InputBindings.label_for(InputBindings.code_for(String(PROMPT_KEY_ACTIONS[key])))
+			actions.append({"key": key, "label": part.substr(space + 1).strip_edges()})
 	return {"title": title, "actions": actions}
+
+
+## HeistAlertView for the page; null when there is no alert or it expired.
+static func heist_alert_view(heist: Dictionary, now_ms: int) -> Variant:
+	if heist.is_empty():
+		return null
+	var started_ms := int(heist.get("started_ms", 0))
+	if now_ms >= started_ms + GameConst.HEIST_ALERT_ACTIVE_MS:
+		return null
+	var location := String(heist.get("location", ""))
+	return {
+		"id": String(heist.get("id", "")),
+		"label": "Heist alert",
+		"location": null if location == "" else location,
+		"active": true,
+		"toastSecondsLeft": seconds_left(started_ms + GameConst.HEIST_TOAST_MS, now_ms),
+	}
+
+
+## DownedChannels for the page; null unless DOWNED. `channels` is
+## kind -> {end_ms, duration_ms}.
+static func channels_view(channels: Dictionary, life: int, now_ms: int) -> Variant:
+	if life != PlayerRoleController.LifeState.DOWNED:
+		return null
+	var view: Dictionary = {}
+	for kind: String in [DownedService.KIND_REVIVE, DownedService.KIND_FINISH]:
+		var entry: Variant = channels.get(kind)
+		if entry is Dictionary:
+			view[kind] = {
+				"secondsLeft": seconds_left(int(entry.get("end_ms", 0)), now_ms),
+				"durationSeconds": int(entry.get("duration_ms", 0)) / 1000.0,
+			}
+		else:
+			view[kind] = null
+	return view
 
 
 ## Streamer mode: mask player IDs and the server ID in page text (set by Main).
@@ -283,6 +334,15 @@ static func snapshot(ctx: Dictionary, now_ms: int) -> Dictionary:
 		"hotbar": hotbar(),
 		"activeSlot": int(ctx.get("active_slot", 0)),
 		"net": {"fps": fps, "ping": ping},
+		"weaponsLocked": bool(ctx.get("weapons_locked", false)),
+		"surrenderAvailable": (
+			bool(ctx.get("surrender_available", false))
+			and role == PlayerRoleController.Role.CRIMINAL
+			and life == PlayerRoleController.LifeState.ALIVE
+		),
+		"surrenderKey": InputBindings.label_for(InputBindings.code_for("bind_surrender")),
+		"heistAlert": heist_alert_view(ctx.get("heist", {}), now_ms),
+		"channels": channels_view(ctx.get("channels", {}), life, now_ms),
 	}
 
 
@@ -456,6 +516,14 @@ var _party_pending_ms: int = 0
 var _last_party_json: String = ""
 ## Local active hotbar slot (0-based), shown as HudState.activeSlot.
 var _active_slot: int = 0
+## Last surrender eligibility from the server.
+var _surrender_available: bool = false
+## Heist alert: {"id", "location", "started_ms"}; empty when none.
+# ponytail: no server clear event exists; the active line expires locally after HEIST_ALERT_ACTIVE_MS.
+var _heist: Dictionary = {}
+## Revive/finish channels on the local downed player: kind -> {end_ms, duration_ms}.
+var _channels: Dictionary = {}
+var _last_life: int = -1
 
 var _browser: Control = null
 var _page_ready: bool = false
@@ -512,7 +580,33 @@ func add_notification(text: String, now_ms: int) -> void:
 
 
 func set_instance(instance: GameInstance) -> void:
+	if instance != _instance:
+		_heist = {}
 	_instance = instance
+
+
+func set_surrender_available(on: bool) -> void:
+	_surrender_available = on
+
+
+## Loud loot alert. The same id inside the active window is ignored; otherwise
+## the alert is replaced and the toast restarts.
+func add_heist_alert(loot_id: String, now_ms: int) -> void:
+	if (
+		not _heist.is_empty()
+		and String(_heist.get("id", "")) == loot_id
+		and now_ms < int(_heist.get("started_ms", 0)) + GameConst.HEIST_ALERT_ACTIVE_MS
+	):
+		return
+	_heist = {"id": loot_id, "location": item_label(loot_id), "started_ms": now_ms}
+
+
+## A revive/finish channel on us: duration_ms > 0 started, 0 ended.
+func set_downed_channel(kind: String, duration_ms: int, now_ms: int) -> void:
+	if duration_ms > 0:
+		_channels[kind] = {"end_ms": now_ms + duration_ms, "duration_ms": duration_ms}
+	else:
+		_channels.erase(kind)
 
 
 func set_party(info: Dictionary) -> void:
@@ -563,6 +657,14 @@ func select_hotbar(slot: int) -> void:
 func _process(_delta: float) -> void:
 	var now_ms := int(Time.get_unix_time_from_system() * 1000.0)
 	_notifications = prune_notifications(_notifications, now_ms)
+	if not _heist.is_empty() and now_ms >= int(_heist.get("started_ms", 0)) + GameConst.HEIST_ALERT_ACTIVE_MS:
+		_heist = {}
+	var has_player := _player != null and is_instance_valid(_player)
+	var current_life := int(_player.get("life_state")) if has_player else -1
+	# A channel start may arrive before the DOWNED sync, so only clear on leaving DOWNED.
+	if _last_life == PlayerRoleController.LifeState.DOWNED and current_life != PlayerRoleController.LifeState.DOWNED:
+		_channels = {}
+	_last_life = current_life
 	if not _page_ready:
 		return
 	var ctx: Dictionary = {
@@ -571,6 +673,10 @@ func _process(_delta: float) -> void:
 		"notifications": _notifications,
 		"fps": _fps,
 		"ping": _ping,
+		"weapons_locked": _instance.weapons_locked() if _instance != null and is_instance_valid(_instance) else false,
+		"surrender_available": _surrender_available,
+		"heist": _heist,
+		"channels": _channels,
 	}
 	ctx["active_slot"] = _active_slot
 	var self_id := 0
@@ -740,6 +846,9 @@ func show_lobby(view: Dictionary) -> void:
 	close_inventory()
 	close_pause()
 	_active_slot = 0
+	_surrender_available = false
+	_heist = {}
+	_channels = {}
 	# The lobby replaces an open Settings screen (e.g. disconnect while in Settings).
 	_settings_origin = ""
 	publish("lobby", view)

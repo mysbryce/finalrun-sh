@@ -105,6 +105,8 @@ func _start_client() -> void:
 	ServerManager.notification_received.connect(_on_hud_notification)
 	ServerManager.hud_state_received.connect(_on_hud_state)
 	ServerManager.mask_channel_received.connect(_on_hud_mask_channel)
+	ServerManager.surrender_available_changed.connect(_on_surrender_available)
+	ServerManager.downed_channel_changed.connect(_on_downed_channel)
 	ServerManager.party_changed_client.connect(_on_hud_party)
 	ServerManager.party_invite_received.connect(_on_party_invite)
 	ServerManager.party_roster_received.connect(_on_party_roster)
@@ -535,6 +537,7 @@ func client_show_instance(instance_id: String, map_name: String) -> void:
 		false
 	)
 	ServerManager.configure_spawner(instance.spawner)
+	instance.loot_alert.connect(_on_loot_alert)
 	if _settings != null:
 		SettingsApplier.apply_viewport(instance, _settings.values())
 	print("[Main] Client loaded instance %s (%s)" % [instance_id, map_name])
@@ -652,6 +655,21 @@ func _on_hud_state(state: Dictionary) -> void:
 func _on_hud_mask_channel(seconds: float) -> void:
 	if _hud != null:
 		_hud.set_mask_channel(seconds, _client_now_ms())
+
+
+func _on_surrender_available(on: bool) -> void:
+	if _hud != null:
+		_hud.set_surrender_available(on)
+
+
+func _on_downed_channel(kind: String, ms: int) -> void:
+	if _hud != null:
+		_hud.set_downed_channel(kind, ms, _client_now_ms())
+
+
+func _on_loot_alert(loot_id: String, _pos: Vector3) -> void:
+	if _hud != null:
+		_hud.add_heist_alert(loot_id, _client_now_ms())
 
 
 func _on_hud_party(info: Dictionary) -> void:

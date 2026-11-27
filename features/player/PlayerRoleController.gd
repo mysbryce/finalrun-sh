@@ -272,7 +272,7 @@ static func can_attack_roles(
 ) -> bool:
 	if same_party:
 		return false
-	if p_safezone or p_map_name != GameConst.MAP_LOOTY_BAY:
+	if GameInstance.weapons_locked_for(p_map_name, p_safezone):
 		return false
 	match attacker_role:
 		Role.CITIZEN:

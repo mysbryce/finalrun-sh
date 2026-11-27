@@ -22,6 +22,7 @@ const REASONS: Array[String] = [
 	"actor_state",
 	"left_instance",
 	"invalid_state",
+	"pressed_again",
 ]
 
 var _actor: Node3D = null

@@ -33,7 +33,42 @@ const _MOUSE_CODES := {
 const _WHEEL_BUTTONS := [
 	MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN, MOUSE_BUTTON_WHEEL_LEFT, MOUSE_BUTTON_WHEEL_RIGHT,
 ]
+## Readable names; copied from NAMED in ui/web/src/features/settings/format.ts.
+const _LABELS := {
+	"MouseLeft": "LMB",
+	"MouseRight": "RMB",
+	"MouseMiddle": "MMB",
+	"MouseBack": "Mouse 4",
+	"MouseForward": "Mouse 5",
+	"MouseMotion": "Mouse",
+	"ShiftLeft": "Left Shift",
+	"ShiftRight": "Right Shift",
+	"ControlLeft": "Left Ctrl",
+	"ControlRight": "Right Ctrl",
+	"AltLeft": "Left Alt",
+	"AltRight": "Right Alt",
+	"Escape": "Esc",
+	"Backquote": "`",
+	"Minus": "-",
+	"Equal": "=",
+	"BracketLeft": "[",
+	"BracketRight": "]",
+	"Backslash": "\\",
+	"Semicolon": ";",
+	"Quote": "'",
+	"Comma": ",",
+	"Period": ".",
+	"Slash": "/",
+	"ArrowUp": "↑",
+	"ArrowDown": "↓",
+	"ArrowLeft": "←",
+	"ArrowRight": "→",
+	"PageUp": "Page Up",
+	"PageDown": "Page Down",
+	"CapsLock": "Caps Lock",
+}
 const _LETTERS := "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const _DIGIT_CHARS := "0123456789"
 const _DIGITS := 10
 const _FUNCTION_KEYS := 12
 
@@ -199,6 +234,30 @@ static func is_held(action: String) -> bool:
 
 static func code_for(action: String) -> String:
 	return String(_action_to_code.get(action, ""))
+
+
+## Readable key label for a binding code (`Ctrl+KeyB` -> `Ctrl+B`, `MouseRight`
+## -> `RMB`). Same rules as the web bindingText, except "" gives
+## GameConst.UNBOUND_KEY_LABEL.
+static func label_for(code: String) -> String:
+	if code == "":
+		return GameConst.UNBOUND_KEY_LABEL
+	var parts := code.split(GameConst.BINDING_SEPARATOR)
+	var last := parts.size() - 1
+	parts[last] = _code_label(parts[last])
+	return GameConst.BINDING_SEPARATOR.join(parts)
+
+
+static func _code_label(code: String) -> String:
+	if _LABELS.has(code):
+		return String(_LABELS[code])
+	if code.length() == 4 and code.begins_with("Key") and _LETTERS.contains(code.right(1)):
+		return code.right(1)
+	if code.length() == 6 and code.begins_with("Digit") and _DIGIT_CHARS.contains(code.right(1)):
+		return code.right(1)
+	if code.length() == 7 and code.begins_with("Numpad") and _DIGIT_CHARS.contains(code.right(1)):
+		return "Num " + code.right(1)
+	return code
 
 
 static func _prefix(event: InputEventWithModifiers) -> String:

@@ -121,3 +121,14 @@ func test_bindings_lookup() -> void:
 	assert_false(results[7], "unbound action is never held")
 	assert_eq(first_wins, "bind_interact", "first action keeps a duplicate code")
 	InputBindings.clear()
+
+
+func test_label_for() -> void:
+	assert_eq(InputBindings.label_for("KeyE"), "E", "letter key")
+	assert_eq(InputBindings.label_for("Ctrl+KeyB"), "Ctrl+B", "prefix kept")
+	assert_eq(InputBindings.label_for("MouseRight"), "RMB", "named mouse button")
+	assert_eq(InputBindings.label_for("ShiftLeft"), "Left Shift", "named modifier")
+	assert_eq(InputBindings.label_for("PageUp"), "Page Up", "named key")
+	assert_eq(InputBindings.label_for("Numpad7"), "Num 7", "numpad digit")
+	assert_eq(InputBindings.label_for("Digit3"), "3", "digit")
+	assert_eq(InputBindings.label_for(""), "—", "unbound")

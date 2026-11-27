@@ -110,6 +110,10 @@ static func seizure_reward(item: Dictionary, source: String) -> int:
 # --- Requests ----------------------------------------------------------------
 
 func request_revive(actor_peer: int, target_peer: int) -> void:
+	var running := _find_channel(actor_peer, target_peer, KIND_REVIVE)
+	if not running.is_empty():
+		_cancel_record(running, "pressed_again")
+		return
 	if _actor_is_busy(actor_peer):
 		_notify(actor_peer, "You are already channelling")
 		return
@@ -121,6 +125,10 @@ func request_revive(actor_peer: int, target_peer: int) -> void:
 
 
 func request_finish(actor_peer: int, target_peer: int) -> void:
+	var running := _find_channel(actor_peer, target_peer, KIND_FINISH)
+	if not running.is_empty():
+		_cancel_record(running, "pressed_again")
+		return
 	if _actor_is_busy(actor_peer):
 		_notify(actor_peer, "You are already channelling")
 		return
@@ -132,6 +140,10 @@ func request_finish(actor_peer: int, target_peer: int) -> void:
 
 
 func request_cuff(actor_peer: int, target_peer: int) -> void:
+	var running := _find_channel(actor_peer, target_peer, KIND_CUFF)
+	if not running.is_empty():
+		_cancel_record(running, "pressed_again")
+		return
 	if _actor_is_busy(actor_peer):
 		_notify(actor_peer, "You are already channelling")
 		return
@@ -293,6 +305,38 @@ func _start_channel(
 		GameConst.DOWNED_CHANNEL_MAX_MOVE,
 		Callable(self, "_channel_cancel_reason").bind(kind, actor_peer, target_peer)
 	)
+	if kind == KIND_REVIVE or kind == KIND_FINISH:
+		_send_client(target_peer, "client_downed_channel", [kind, int(duration * 1000.0)])
+
+
+## The running channel of `actor` on `target` of `kind`, or {}.
+func _find_channel(actor: int, target: int, kind: String) -> Dictionary:
+	for record: Dictionary in _channels:
+		if (
+			int(record.get("actor", 0)) == actor
+			and int(record.get("target", 0)) == target
+			and String(record.get("kind", "")) == kind
+		):
+			return record
+	return {}
+
+
+## Tells the downed target about its revive/finish channel after `record` was
+## erased: another running channel of the same kind on the same target is
+## re-sent with its time left, otherwise the kind is cleared with 0.
+func _channel_ended(record: Dictionary) -> void:
+	var kind := String(record.get("kind", ""))
+	if kind != KIND_REVIVE and kind != KIND_FINISH:
+		return
+	var target_peer := int(record.get("target", 0))
+	for other: Dictionary in _channels:
+		if String(other.get("kind", "")) != kind or int(other.get("target", 0)) != target_peer:
+			continue
+		var timer: Variant = other.get("timer")
+		if timer is ChannelTimer and is_instance_valid(timer):
+			_send_client(target_peer, "client_downed_channel", [kind, int((timer as ChannelTimer).time_left() * 1000.0)])
+			return
+	_send_client(target_peer, "client_downed_channel", [kind, 0])
 
 
 func _channel_cancel_reason(kind: String, actor_peer: int, target_peer: int) -> String:
@@ -314,6 +358,7 @@ func _on_channel_completed(record: Dictionary) -> void:
 		return
 	_channels.erase(record)
 	_free_timer(record)
+	_channel_ended(record)
 	var kind := String(record.get("kind", ""))
 	var actor_peer := int(record.get("actor", 0))
 	var target_peer := int(record.get("target", 0))
@@ -334,10 +379,11 @@ func _on_channel_completed(record: Dictionary) -> void:
 			_open_search(actor_peer, target_peer)
 
 
-func _on_channel_cancelled(record: Dictionary, reason: String) -> void:
+func _on_channel_cancelled(reason: String, record: Dictionary) -> void:
 	if _channels.has(record):
 		_channels.erase(record)
 	_free_timer(record)
+	_channel_ended(record)
 	_notify(int(record.get("actor", 0)), "Action cancelled (%s)" % reason)
 
 
@@ -369,6 +415,7 @@ func _cancel_record(record: Dictionary, reason: String) -> void:
 	# The channel node is already gone; drop the stale bookkeeping.
 	if _channels.has(record):
 		_channels.erase(record)
+		_channel_ended(record)
 
 
 func _has_active_reviver(target_peer: int, exclude_actor: int = -1) -> bool:

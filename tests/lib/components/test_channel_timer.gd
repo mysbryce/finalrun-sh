@@ -92,5 +92,6 @@ func test_reason_contract() -> void:
 		"actor_state",
 		"left_instance",
 		"invalid_state",
+		"pressed_again",
 	]
 	assert_eq(ChannelTimer.REASONS, expected, "ChannelTimer exposes the documented reason set")

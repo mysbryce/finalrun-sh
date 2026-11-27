@@ -59,15 +59,18 @@ func test_snapshot_mask_timer() -> void:
 
 
 func test_snapshot_interact_only_when_alive() -> void:
+	InputBindings.set_bindings({"bind_interact": "KeyE", "bind_smash": "KeyV"})
 	var ctx := {"role": CRIMINAL, "life": ALIVE, "interact_title": "Loot crate", "interact_prompt": "E lockpick"}
 	var state := Hud.snapshot(ctx, 1000)
+	ctx["life"] = DOWNED
+	var downed_interact: Variant = Hud.snapshot(ctx, 1000).get("interact")
+	InputBindings.clear()
 	assert_eq(
 		state.get("interact"),
 		{"title": "Loot crate", "actions": [{"key": "E", "label": "lockpick"}]},
 		"interact card while alive"
 	)
-	ctx["life"] = DOWNED
-	assert_eq(Hud.snapshot(ctx, 1000).get("interact"), null, "interact card hidden while downed")
+	assert_eq(downed_interact, null, "interact card hidden while downed")
 
 
 func test_snapshot_notification_texts() -> void:
@@ -84,18 +87,84 @@ func test_heading_from_yaw() -> void:
 
 
 func test_interact_of() -> void:
-	assert_eq(Hud.interact_of("", ""), null, "empty prompt gives no card")
+	InputBindings.set_bindings({"bind_interact": "KeyE", "bind_smash": "KeyV"})
+	var empty: Variant = Hud.interact_of("", "")
 	var card: Dictionary = Hud.interact_of("Loot crate", "E lockpick | V smash")
+	var single: Variant = Hud.interact_of("", "Interact")
+	var unknown_letter: Dictionary = Hud.interact_of("", "Z wave")
+	InputBindings.clear()
 	var actions: Array = card.get("actions")
+	assert_eq(empty, null, "empty prompt gives no card")
 	assert_eq(card.get("title"), "Loot crate", "card title")
 	assert_eq(actions.size(), 2, "two actions")
 	assert_eq(actions[0], {"key": "E", "label": "lockpick"}, "first action")
 	assert_eq(actions[1], {"key": "V", "label": "smash"}, "second action")
 	assert_eq(
-		Hud.interact_of("", "Interact"),
+		single,
 		{"title": "", "actions": [{"key": "", "label": "Interact"}]},
 		"single action without a key"
 	)
+	assert_eq(unknown_letter.get("actions")[0].get("key"), "Z", "unmapped letter stays as written")
+
+
+func test_interact_of_follows_bindings() -> void:
+	InputBindings.clear()
+	var unbound: Dictionary = Hud.interact_of("Loot crate", "E lockpick")
+	InputBindings.set_bindings({"bind_interact": "KeyF", "bind_smash": "MouseRight"})
+	var rebound: Dictionary = Hud.interact_of("Loot crate", "E lockpick | V smash")
+	InputBindings.clear()
+	assert_eq(unbound.get("actions")[0].get("key"), "—", "unbound action shows the unbound label")
+	assert_eq(rebound.get("actions")[0].get("key"), "F", "E follows its binding")
+	assert_eq(rebound.get("actions")[1].get("key"), "RMB", "V follows its binding")
+
+
+func test_heist_alert_view() -> void:
+	var heist := {"id": "jewelry", "location": "Jewelry", "started_ms": 1000}
+	var at_start: Variant = Hud.heist_alert_view(heist, 1000)
+	var after_toast: Variant = Hud.heist_alert_view(heist, 1000 + GameConst.HEIST_TOAST_MS)
+	var expired: Variant = Hud.heist_alert_view(heist, 1000 + GameConst.HEIST_ALERT_ACTIVE_MS)
+	assert_eq(Hud.heist_alert_view({}, 1000), null, "no alert gives null")
+	assert_eq(
+		at_start,
+		{"id": "jewelry", "label": "Heist alert", "location": "Jewelry", "active": true, "toastSecondsLeft": 8},
+		"toast 8 at start"
+	)
+	assert_true(after_toast != null, "alert still active after the toast")
+	assert_eq((after_toast as Dictionary).get("toastSecondsLeft"), 0, "toast over after 8 s")
+	assert_eq(expired, null, "alert gone after 90 s")
+
+
+func test_add_heist_alert_dedupe() -> void:
+	var hud := Hud.new()
+	hud.add_heist_alert("jewelry", 1000)
+	hud.add_heist_alert("jewelry", 5000)
+	var same_id: Dictionary = hud._heist.duplicate()
+	hud.add_heist_alert("electronics", 6000)
+	var new_id: Dictionary = hud._heist.duplicate()
+	hud.free()
+	assert_eq(same_id.get("started_ms"), 1000, "same id within the window keeps the first start")
+	assert_eq(new_id.get("id"), "electronics", "a new id replaces the alert")
+	assert_eq(new_id.get("started_ms"), 6000, "a new id restarts the toast")
+	assert_eq(new_id.get("location"), "Electronics", "location is the item label")
+
+
+func test_channels_view() -> void:
+	var channels := {"revive": {"end_ms": 6000, "duration_ms": 5000}}
+	assert_eq(Hud.channels_view(channels, ALIVE, 1000), null, "null while alive")
+	assert_eq(
+		Hud.channels_view(channels, DOWNED, 1000),
+		{"revive": {"secondsLeft": 5, "durationSeconds": 5.0}, "finish": null},
+		"revive entry while downed"
+	)
+
+
+func test_snapshot_weapons_and_surrender() -> void:
+	assert_true(Hud.snapshot({"weapons_locked": true}, 0)["weaponsLocked"], "weapons locked from ctx")
+	assert_false(Hud.snapshot({}, 0)["weaponsLocked"], "weapons unlocked when the key is missing")
+	var cop_ctx := {"role": PlayerRoleController.Role.COP, "life": ALIVE, "surrender_available": true}
+	assert_false(Hud.snapshot(cop_ctx, 0)["surrenderAvailable"], "a COP never sees surrender")
+	var criminal_ctx := {"role": CRIMINAL, "life": ALIVE, "surrender_available": true}
+	assert_true(Hud.snapshot(criminal_ctx, 0)["surrenderAvailable"], "an alive CRIMINAL sees surrender")
 
 
 func test_party_entry() -> void:

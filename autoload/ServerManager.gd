@@ -15,6 +15,8 @@ signal search_contents_received(target_peer_id: int, items: Array)
 signal search_closed_received(target_peer_id: int, reason: String)
 signal hud_state_received(state: Dictionary)
 signal mask_channel_received(seconds: float)
+signal surrender_available_changed(available: bool)
+signal downed_channel_changed(kind: String, duration_ms: int)
 
 const MAP_SCENES := {
 	GameConst.MAP_MOTEL: preload("res://maps/motel/Motel.tscn"),
@@ -343,6 +345,19 @@ func client_mask_channel(seconds: float) -> void:
 	mask_channel_received.emit(seconds)
 
 
+## Owner-only surrender eligibility, sent when it changes.
+@rpc("authority", "call_remote", "reliable")
+func client_surrender_available(available: bool) -> void:
+	surrender_available_changed.emit(available)
+
+
+## Downed target only: a revive/finish channel on us started (duration_ms > 0)
+## or ended (0).
+@rpc("authority", "call_remote", "reliable")
+func client_downed_channel(kind: String, duration_ms: int) -> void:
+	downed_channel_changed.emit(kind, duration_ms)
+
+
 @rpc("authority", "call_remote", "reliable")
 func client_party_invite(inviter_id: int, ttl_seconds: int) -> void:
 	party_invite_received.emit(inviter_id, ttl_seconds)
@@ -423,6 +438,7 @@ func _process(delta: float) -> void:
 	_transfers.update()
 	_instances.update(delta)
 	_downed.tick(_now_ms())
+	_players.tick_surrender(_now_ms())
 	if _smoke_enabled:
 		_tick_smoke()
 
