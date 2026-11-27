@@ -11,12 +11,10 @@ type Props = {
   dragRef?: (el: HTMLElement | null) => void
   dragProps?: Record<string, unknown>
   dragging?: boolean
-  dropOver?: boolean
 }
 
-export function ItemTile({ item, size, selected, onSelect, emptyLabel, dragRef, dragProps, dragging, dropOver }: Props) {
+export function ItemTile({ item, size, selected, onSelect, emptyLabel, dragRef, dragProps, dragging }: Props) {
   const style = { width: size.w, height: size.h }
-  const overRing = dropOver && !selected ? 'ring-2 ring-white/60' : ''
   if (!item) {
     return (
       <button
@@ -24,7 +22,7 @@ export function ItemTile({ item, size, selected, onSelect, emptyLabel, dragRef, 
         disabled
         aria-label={emptyLabel ?? 'Empty slot'}
         style={style}
-        className={`relative grid place-items-center bg-zinc-800/50 ${overRing}`}
+        className={`relative grid place-items-center bg-zinc-800/50`}
       >
         {emptyLabel ? (
           <span className="text-[10px] uppercase text-white/25">{emptyLabel}</span>
@@ -42,7 +40,7 @@ export function ItemTile({ item, size, selected, onSelect, emptyLabel, dragRef, 
       aria-label={item.label}
       style={style}
       onClick={() => onSelect?.(item.uid)}
-      className={`relative ${RARITY_TILE[rarityOf(item.value)]} ${selected ? 'ring-2 ring-amber-400' : overRing} ${dragging ? 'opacity-40' : ''}`}
+      className={`relative ${RARITY_TILE[rarityOf(item.value)]} ${selected ? 'ring-2 ring-amber-400' : ''} ${dragging ? 'opacity-40' : ''}`}
     >
       <span className="absolute left-1 top-1 line-clamp-2 text-left text-[10px] font-semibold leading-tight">
         {item.label}

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { InventoryView } from '@/lib/ipc/protocol'
+import { BAG_COLUMNS } from './layout'
 import { moveBagItem } from './placement'
 
 type InventoryStore = {
@@ -25,6 +26,6 @@ export const useInventoryStore = create<InventoryStore>((set) => ({
     set((state) => {
       const inv = state.inventory
       if (!inv) return {}
-      return { inventory: { ...inv, bag: moveBagItem(inv.bag, uid, slot, inv.bagSlots) } }
+      return { inventory: { ...inv, bag: moveBagItem(inv.bag, uid, slot, inv.bagSlots, BAG_COLUMNS) } }
     }),
 }))

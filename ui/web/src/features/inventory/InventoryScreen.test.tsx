@@ -29,7 +29,7 @@ describe('InventoryScreen', () => {
     expect(screen.getByText('INVENTORY')).toBeInTheDocument()
     expect(screen.getByText('$79,900')).toBeInTheDocument()
     expect(screen.getByText('$3,530')).toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: 'Empty slot' })).toHaveLength(28)
+    expect(screen.getAllByRole('button', { name: 'Empty slot' })).toHaveLength(33)
     expect(screen.queryByRole('button', { name: 'SECONDARY' })).toBeNull()
     expect(screen.getByRole('button', { name: 'BAG' })).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: 'POUCH' })).toHaveLength(4)
@@ -39,11 +39,18 @@ describe('InventoryScreen', () => {
   it('bag items render at their slots', () => {
     useInventoryStore.setState({ inventory: DEMO_INVENTORY })
     render(<InventoryScreen />)
-    const grid = screen.getByRole('button', { name: 'Drill' }).closest('.grid')!
-    const cells = Array.from(grid.children)
-    expect(cells).toHaveLength(36)
-    expect(cells[6].querySelector('button')).toHaveAccessibleName('Empty slot')
-    expect(cells[8].querySelector('button')).toHaveAccessibleName('Drill')
+    expect(screen.getByRole('button', { name: 'Drill' }).parentElement).toHaveStyle({
+      left: '255px',
+      top: '51px',
+      width: '50px',
+      height: '152px',
+    })
+    expect(screen.getByRole('button', { name: 'Painting' }).parentElement).toHaveStyle({
+      left: '102px',
+      top: '102px',
+      width: '101px',
+      height: '152px',
+    })
   })
 
   it('selecting an item shows details', () => {

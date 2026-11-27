@@ -7,15 +7,15 @@ describe('inventoryStore.moveLocal', () => {
     useInventoryStore.setState({ inventory: null, selectedUid: null })
   })
 
-  it('swaps the first two items, then setInventory replaces the optimistic state', () => {
+  it('swaps two 1x1 items, then setInventory replaces the optimistic state', () => {
     const { setInventory, moveLocal } = useInventoryStore.getState()
     setInventory(DEMO_INVENTORY)
-    const first = DEMO_INVENTORY.bag.find((i) => i.slot === 0)!
-    const second = DEMO_INVENTORY.bag.find((i) => i.slot === 1)!
-    moveLocal(first.uid, 1)
+    const first = DEMO_INVENTORY.bag.find((i) => i.id === 'jewelry')!
+    const second = DEMO_INVENTORY.bag.find((i) => i.id === 'lockpick')!
+    moveLocal(first.uid, second.slot)
     const bag = useInventoryStore.getState().inventory!.bag
-    expect(bag.find((i) => i.uid === first.uid)?.slot).toBe(1)
-    expect(bag.find((i) => i.uid === second.uid)?.slot).toBe(0)
+    expect(bag.find((i) => i.uid === first.uid)?.slot).toBe(second.slot)
+    expect(bag.find((i) => i.uid === second.uid)?.slot).toBe(first.slot)
 
     setInventory(DEMO_INVENTORY)
     expect(useInventoryStore.getState().inventory).toBe(DEMO_INVENTORY)

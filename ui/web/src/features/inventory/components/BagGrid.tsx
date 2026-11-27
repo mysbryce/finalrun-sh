@@ -1,7 +1,7 @@
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 import type { InventoryItem } from '@/lib/ipc/protocol'
-import { GAP, TILE } from '../layout'
-import { placeBagItems } from '../placement'
+import { BAG_COLUMNS, cellBox } from '../layout'
+import { occupancy, placeBagItems } from '../placement'
 import { ItemTile } from './ItemTile'
 
 type Props = {
@@ -9,66 +9,76 @@ type Props = {
   slots: number
   selectedUid: number | null
   onSelect: (uid: number) => void
+  preview?: { slot: number; w: number; h: number; ok: boolean } | null
 }
 
-const SIZE = { w: TILE, h: TILE }
-
-export function BagGrid({ items, slots, selectedUid, onSelect }: Props) {
-  const cells = placeBagItems(items, slots)
+export function BagGrid({ items, slots, selectedUid, onSelect, preview }: Props) {
+  const rows = Math.ceil(slots / BAG_COLUMNS)
+  const placed = placeBagItems(items, slots, BAG_COLUMNS)
+  const occ = occupancy(placed, slots, BAG_COLUMNS)
+  const outer = cellBox(0, BAG_COLUMNS, rows)
   return (
-    <div className="grid grid-cols-6" style={{ gap: GAP }}>
-      {cells.map((item, i) => (
-        <BagCell
-          key={item ? item.uid : `empty-${i}`}
-          index={i}
+    <div className="relative" style={{ width: outer.width, height: outer.height }}>
+      {occ.map((uid, i) => (
+        <BagCell key={`cell-${i}`} index={i} covered={uid !== null} />
+      ))}
+      {placed.map(({ item, slot }) => (
+        <DraggableTile
+          key={item.uid}
           item={item}
-          selected={item !== null && item.uid === selectedUid}
+          slot={slot}
+          selected={item.uid === selectedUid}
           onSelect={onSelect}
         />
       ))}
+      {preview && (
+        <div
+          className={`pointer-events-none absolute ${
+            preview.ok ? 'ring-2 ring-inset ring-white/70 bg-white/10' : 'ring-2 ring-inset ring-red-500/80 bg-red-500/15'
+          }`}
+          style={cellBox(preview.slot, preview.w, preview.h)}
+        />
+      )}
     </div>
   )
 }
 
 type CellProps = {
   index: number
-  item: InventoryItem | null
-  selected: boolean
-  onSelect: (uid: number) => void
+  covered: boolean
 }
 
-function BagCell({ index, item, selected, onSelect }: CellProps) {
-  const { setNodeRef, isOver } = useDroppable({ id: `slot-${index}` })
+function BagCell({ index, covered }: CellProps) {
+  const { setNodeRef } = useDroppable({ id: `slot-${index}` })
+  const box = cellBox(index)
   return (
-    <div ref={setNodeRef} style={{ width: TILE, height: TILE }}>
-      {item ? (
-        <DraggableTile item={item} selected={selected} onSelect={onSelect} dropOver={isOver} />
-      ) : (
-        <ItemTile size={SIZE} dropOver={isOver} />
-      )}
+    <div ref={setNodeRef} className="absolute" style={box}>
+      {covered ? <div /> : <ItemTile size={{ w: box.width, h: box.height }} />}
     </div>
   )
 }
 
 type TileProps = {
   item: InventoryItem
+  slot: number
   selected: boolean
   onSelect: (uid: number) => void
-  dropOver: boolean
 }
 
-function DraggableTile({ item, selected, onSelect, dropOver }: TileProps) {
+function DraggableTile({ item, slot, selected, onSelect }: TileProps) {
   const { setNodeRef, attributes, listeners, isDragging } = useDraggable({ id: item.uid })
+  const box = cellBox(slot, item.w, item.h)
   return (
-    <ItemTile
-      item={item}
-      size={SIZE}
-      selected={selected}
-      onSelect={onSelect}
-      dragRef={setNodeRef}
-      dragProps={{ ...attributes, ...listeners }}
-      dragging={isDragging}
-      dropOver={dropOver}
-    />
+    <div className="absolute" style={box}>
+      <ItemTile
+        item={item}
+        size={{ w: box.width, h: box.height }}
+        selected={selected}
+        onSelect={onSelect}
+        dragRef={setNodeRef}
+        dragProps={{ ...attributes, ...listeners }}
+        dragging={isDragging}
+      />
+    </div>
   )
 }
