@@ -32,7 +32,8 @@ describe('InventoryScreen', () => {
     expect(screen.getAllByRole('button', { name: 'Empty slot' })).toHaveLength(33)
     expect(screen.queryByRole('button', { name: 'SECONDARY' })).toBeNull()
     expect(screen.getByRole('button', { name: 'BAG' })).toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: 'POUCH' })).toHaveLength(4)
+    expect(screen.getAllByRole('button', { name: 'POUCH' })).toHaveLength(1)
+    expect(screen.getAllByRole('button', { name: 'Pocket' })).toHaveLength(4)
     expect(screen.getByText('Select an item')).toBeInTheDocument()
   })
 

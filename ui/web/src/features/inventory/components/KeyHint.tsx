@@ -1,10 +1,10 @@
 export function KeyHint({ k, label }: { k: string; label: string }) {
   return (
     <span className="flex items-center gap-2">
-      <span className="grid h-6 min-w-6 place-items-center rounded-sm bg-white/90 px-1 text-[11px] font-bold text-zinc-900">
+      <span className="grid h-4 min-w-4 place-items-center rounded-[2px] border border-white/70 px-1 text-[10px] font-bold leading-none">
         {k}
       </span>
-      <span className="text-xs font-semibold uppercase tracking-wider">{label}</span>
+      <span className="text-[11px] font-semibold uppercase tracking-wider">{label}</span>
     </span>
   )
 }

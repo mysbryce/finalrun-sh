@@ -8,8 +8,8 @@ export function rarityOf(value: number): Rarity {
 }
 
 export const RARITY_TILE: Record<Rarity, string> = {
-  issued: 'bg-gradient-to-b from-zinc-600/70 to-zinc-800/80',
-  common: 'bg-gradient-to-b from-emerald-600/70 to-emerald-900/80',
-  rare: 'bg-gradient-to-b from-violet-600/70 to-violet-900/80',
-  epic: 'bg-gradient-to-b from-amber-500/70 to-amber-800/80',
+  issued: 'bg-gradient-to-t from-[#4d4d4d] to-[#2e2e2e]',
+  common: 'bg-gradient-to-t from-[#557a43] to-[#273822]',
+  rare: 'bg-gradient-to-t from-[#7a4f9a] to-[#352640]',
+  epic: 'bg-gradient-to-t from-[#a8922a] to-[#4a4114]',
 }

@@ -1,5 +1,6 @@
 import type { InventoryItem } from '@/lib/ipc/protocol'
 import { formatMoney } from '@/lib/format'
+import { BAG_GRID, HEADER_GAP } from '../layout'
 import { RARITY_TILE, rarityOf } from '../rarity'
 import { PanelHeader } from './PanelHeader'
 
@@ -7,7 +8,7 @@ export function DetailsPanel({ item }: { item?: InventoryItem }) {
   return (
     <div>
       <PanelHeader title="DETAILS" />
-      <div className="bg-zinc-900/70 p-4">
+      <div className="bg-black/20 p-4" style={{ marginTop: HEADER_GAP, height: BAG_GRID.height }}>
         {!item ? (
           <span className="text-sm text-white/50">Select an item</span>
         ) : (

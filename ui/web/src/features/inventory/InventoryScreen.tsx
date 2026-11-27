@@ -6,7 +6,19 @@ import { request } from '@/lib/ipc/bridge'
 import { formatMoney } from '@/lib/format'
 import type { InventoryView } from '@/lib/ipc/protocol'
 import { useInventoryStore } from './inventoryStore'
-import { BAG, BAG_COLUMNS, DETAILS, EQUIPMENT, FOOTER_HEIGHT, TABS, TITLE, cellBox } from './layout'
+import {
+  BAG,
+  BAG_COLUMNS,
+  BAG_GRID,
+  CASH,
+  DETAILS,
+  EQUIPMENT,
+  FOOTER_HEIGHT,
+  HEADER_GAP,
+  TABS,
+  TITLE,
+  cellBox,
+} from './layout'
 import { moveBagItem, placeBagItems, slotFromDropId, targetSlot } from './placement'
 import { BagGrid } from './components/BagGrid'
 import { DetailsPanel } from './components/DetailsPanel'
@@ -102,7 +114,7 @@ export function InventoryScreen() {
   const activeItem = activeUid === null ? undefined : inventory.bag.find((i) => i.uid === activeUid)
 
   return (
-    <div className="pointer-events-auto fixed inset-0 bg-zinc-950/85 text-white">
+    <div className="pointer-events-auto fixed inset-0 bg-gradient-to-br from-[#3b3b3b]/95 via-[#303030]/95 to-[#262626]/95 text-white">
       <div
         className="absolute text-[44px] font-black uppercase leading-none tracking-tight"
         style={{ left: TITLE.left, top: TITLE.top }}
@@ -110,17 +122,20 @@ export function InventoryScreen() {
         INVENTORY
       </div>
       <div className="absolute" style={{ left: TABS.left, top: TABS.top }}>
-        <div className="grid h-[27px] w-[132px] place-items-center bg-amber-400 text-sm font-bold uppercase text-zinc-900">
+        <div
+          className="grid place-items-center bg-amber-400 text-sm font-bold uppercase text-zinc-900"
+          style={{ width: TABS.width, height: TABS.height }}
+        >
           BAG
         </div>
       </div>
-      <div className="absolute rounded bg-zinc-800/90 px-3 py-1 text-lg font-bold" style={{ right: 80, top: 26 }}>
+      <div
+        className="absolute flex items-center rounded-sm bg-black/40 px-2 text-sm font-bold"
+        style={{ right: CASH.right, top: CASH.top, height: CASH.height }}
+      >
         {formatMoney(inventory.cash)}
       </div>
-      <div
-        className="absolute"
-        style={{ left: DETAILS.left, top: DETAILS.top, width: DETAILS.width, height: DETAILS.height }}
-      >
+      <div className="absolute" style={{ left: DETAILS.left, top: DETAILS.top, width: DETAILS.width }}>
         <DetailsPanel item={selected} />
       </div>
       <DndContext
@@ -132,8 +147,8 @@ export function InventoryScreen() {
         onDragCancel={clearDrag}
       >
         <div className="absolute" style={{ left: BAG.left, top: BAG.top }}>
-          <PanelHeader title="BAG" right={formatMoney(inventory.bagValue)} />
-          <div className="mt-1">
+          <PanelHeader title="BAG" right={formatMoney(inventory.bagValue)} width={BAG_GRID.width} />
+          <div style={{ marginTop: HEADER_GAP }}>
             <BagGrid
               items={inventory.bag}
               slots={inventory.bagSlots}
@@ -156,10 +171,14 @@ export function InventoryScreen() {
         <EquipmentPanel gear={inventory.gear} selectedUid={selectedUid} onSelect={select} />
       </div>
       <div
-        className="absolute inset-x-0 bottom-0 flex items-center gap-8 bg-zinc-900/95 px-[30px]"
+        className="absolute inset-x-0 bottom-0 flex items-center gap-8 bg-[#1b1b1b] px-[30px]"
         style={{ height: FOOTER_HEIGHT }}
       >
-        <button type="button" onClick={() => void request('inventory.close', {})}>
+        <button
+          type="button"
+          className="flex h-[22px] items-center rounded-sm bg-white/10 px-2"
+          onClick={() => void request('inventory.close', {})}
+        >
           <KeyHint k="ESC" label="Back" />
         </button>
         <KeyHint k="TAB" label="Close" />
